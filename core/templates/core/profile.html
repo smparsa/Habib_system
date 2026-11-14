@@ -1,0 +1,2955 @@
+{% load static location_tags %}
+{% load core_extras %}
+<!DOCTYPE html>
+<html lang='fa'>
+<head>
+  <meta charset='UTF-8'>
+  <!-- ظاهر رابط: تم و رنگ تأکیدی از تنظیمات کاربر (برای جلوگیری از پرش،
+       قبل از CSS اعمال می‌شود) -->
+  <meta name='hb-appearance' data-hb-theme='{{ ui_theme }}' data-hb-accent='{{ ui_accent }}'>
+  <script>
+    (function(){try{var m=document.querySelector('meta[name=hb-appearance]');var th=(m&&m.dataset.hbTheme)||'dark';var ac=(m&&m.dataset.hbAccent)||'#c9a227';document.addEventListener('DOMContentLoaded',function(){document.body.dataset.hbTheme=th;document.body.dataset.hbAccent=ac;if(th==='light')document.body.classList.add('hb-theme-light');});}catch(e){}})();
+  </script>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title data-page-title='profile'>
+HabibHub</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'>
+  <style>
+    .hb-shamsi-picker{position:relative;}
+    .hb-shamsi-field{position:relative;}
+    .hb-shamsi-field>i{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--hb-text-muted);pointer-events:none;}
+    .hb-shamsi-field .hb-shamsi-input{padding-right:2.3rem;}
+    .hb-shamsi-popup{position:absolute;top:calc(100% + 4px);right:0;width:264px;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:12px;padding:0.75rem;box-shadow:0 12px 32px rgba(0,0,0,.45);z-index:60;}
+    .hb-shamsi-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;}
+    .hb-shamsi-nav button{background:none;border:none;color:var(--hb-gold-400);font-size:1.2rem;cursor:pointer;line-height:1;padding:0 0.4rem;}
+    .hb-shamsi-quick{display:flex;gap:0.35rem;margin-bottom:0.55rem;}
+    .hb-shamsi-quick select{flex:1;min-width:0;background:var(--hb-navy-800);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.3rem 0.45rem;font-size:0.8rem;cursor:pointer;}
+    .hb-shamsi-quick select:hover{border-color:var(--hb-gold-400);}
+    .hb-shamsi-quick select:focus{outline:none;border-color:var(--hb-gold-400);box-shadow:0 0 0 2px rgba(201,162,39,0.18);}
+    .hb-shamsi-title{font-size:0.85rem;color:var(--hb-text-primary);font-weight:600;}
+    .hb-shamsi-dow,.hb-shamsi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+    .hb-shamsi-dow span{font-size:0.7rem;color:var(--hb-text-muted);padding:0.2rem 0;}
+    .hb-shamsi-grid span{padding:0.35rem 0;border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--hb-text-secondary);}
+    .hb-shamsi-grid span:hover{background:rgba(201,162,39,0.15);}
+    .hb-shamsi-grid span.off{visibility:hidden;cursor:default;}
+    .hb-shamsi-grid span.day.sel{background:var(--hb-gold-400);color:#0b101d;font-weight:700;}
+    .hb-shamsi-grid span.day.today{outline:1px solid var(--hb-gold-400);}
+    .hb-shamsi-info{margin-top:0.4rem;font-size:0.8rem;color:var(--hb-text-secondary);padding:0.35rem 0.7rem;background:rgba(201,162,39,0.08);border-radius:8px;display:none;}
+    .hb-field-error{color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;display:flex;align-items:center;gap:0.3rem;}
+    /* جعبهٔ خطای «درون همان فریم اطلاعات شغلی»: فیلدهای ستاره‌دارِ بخش‌های ب/ج
+       الزامی‌اند؛ app.js در صورت خالی بودن، همین جعبه را داخل فرم پر می‌کند و
+       فوکوس را روی نخستین فیلد ناقص می‌برد (به‌جای پیام بالای صفحه). */
+    .hb-job-error-box{display:flex;align-items:flex-start;gap:0.5rem;border:1px solid rgba(231,76,60,0.55);background:rgba(231,76,60,0.10);color:#ff8a80;border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.9rem;font-size:0.82rem;line-height:1.8;}
+    .hb-job-error-box i{color:#e74c3c;margin-top:0.2rem;flex-shrink:0;}
+    .hb-job-error-box ul{margin:0.25rem 0 0;padding-inline-start:1.1rem;}
+    .hb-job-error-box li{margin-bottom:0.1rem;}
+    .hb-invalid-field{border-color:#e74c3c !important;box-shadow:0 0 0 2px rgba(231,76,60,0.18) !important;}
+    .hb-section-card.hb-section-disabled{opacity:.55;}
+    .hb-section-card.hb-section-disabled .hb-section-header{cursor:not-allowed;}
+    .hb-section-card.hb-section-disabled .hb-section-header:hover{background:var(--hb-accent-03);}
+    .hb-section-card.hb-section-disabled .hb-section-toggle{display:none;}
+    .hb-section-card.hb-section-disabled .hb-section-body{display:none !important;}
+    /* چیدمان بخش‌های پروفایل: ستون واحد، وسط‌چین و هم‌عرض (سط‌چین) — همهٔ کارت‌ها
+       پیش‌فرض بسته‌اند و با کلیک باز می‌شوند؛ لینک‌های لنگر (#financial و ...)
+       و بخش‌های خطادار به‌صورت خودکار باز می‌شوند. */
+    .hb-profile-form.hb-profile-sections{max-width:1080px;margin-inline:auto;width:100%;}
+    .hb-section-card{scroll-margin-top:calc(var(--hb-header-height,64px) + 12px);}
+    .hb-section-header{gap:0.75rem;}
+    .hb-section-header h3{flex-wrap:wrap;}
+    @media (max-width:768px){
+      .hb-profile-form.hb-profile-sections{padding:1rem 0.9rem;}
+      .hb-section-header{padding:1rem 1.1rem;}
+      .hb-section-header h3{font-size:0.97rem;}
+      .hb-section-header h3 small{display:block;width:100%;margin-top:0.25rem;}
+      .hb-section-body{padding:1.1rem;}
+    }
+    .hb-section-soon{font-size:0.68rem;font-weight:600;color:var(--hb-gold-400);background:rgba(201,162,39,0.1);border:1px solid rgba(201,162,39,0.3);border-radius:999px;padding:0.15rem 0.6rem;white-space:nowrap;}
+
+    .hb-job-cascade{border:1px solid var(--hb-navy-500);border-radius:10px;padding:0.7rem 0.75rem;background:rgba(255,255,255,0.02);}
+    .hb-cascade-search{position:relative;}
+    .hb-cascade-qres{position:absolute;top:calc(100% + 4px);right:0;left:0;z-index:70;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:10px;max-height:240px;overflow:auto;box-shadow:0 12px 32px rgba(0,0,0,.45);}
+    .hb-cascade-qres .hb-cq-item{padding:0.5rem 0.8rem;cursor:pointer;font-size:0.82rem;border-bottom:1px solid rgba(255,255,255,0.05);}
+    .hb-cascade-qres .hb-cq-item:last-child{border-bottom:none;}
+    .hb-cascade-qres .hb-cq-item:hover{background:rgba(201,162,39,0.14);}
+    .hb-cascade-qres .hb-cq-label{font-weight:600;color:var(--hb-text-primary);}
+    .hb-cascade-qres .hb-cq-path{font-size:0.7rem;color:var(--hb-text-muted);margin-top:0.15rem;}
+    .hb-cascade-qres .hb-cq-desc{font-size:0.7rem;color:var(--hb-text-secondary);margin-top:0.25rem;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;border-top:1px dashed rgba(255,255,255,0.06);padding-top:0.2rem;}
+    .hb-cascade-qres .hb-cq-desc i{font-style:normal;color:var(--hb-text-muted);}
+    .hb-cascade-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.5rem;margin-top:0.6rem;}
+    .hb-cc-label{display:block;font-size:0.72rem;color:var(--hb-gold-400);margin-bottom:0.25rem;font-weight:600;}
+    .hb-cascade-preview{margin-top:0.6rem;font-size:0.82rem;color:var(--hb-text-secondary);background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.25);border-radius:8px;padding:0.4rem 0.7rem;display:flex;gap:0.4rem;align-items:center;}
+    .hb-cascade-preview b{color:var(--hb-gold-400);font-weight:600;}
+    .hb-cascade-desc{display:flex;gap:0.6rem;align-items:flex-start;font-size:0.8rem;color:var(--hb-text-secondary);margin-top:0.5rem;padding:0.45rem 0.7rem;background:rgba(88,166,255,0.06);border:1px solid rgba(88,166,255,0.22);border-radius:8px;}
+    .hb-cascade-desc i{color:var(--hb-info);margin-top:0.1rem;}
+    .hb-cascade-desc span{color:var(--hb-text-primary);line-height:1.7;white-space:pre-wrap;}
+    .hb-job-missing{margin-top:0.6rem;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:0.7rem 0.85rem;background:rgba(255,255,255,0.015);}
+    .hb-job-missing summary{list-style:none;cursor:pointer;user-select:none;}
+    .hb-job-missing summary::-webkit-details-marker{display:none;}
+    .hb-job-missing summary:hover span{color:var(--hb-gold-400);}
+    .hb-job-missing-caret{margin-inline-start:auto;font-size:0.8rem;color:var(--hb-text-muted);transition:transform .15s ease;}
+    .hb-job-missing[open] .hb-job-missing-caret{transform:rotate(180deg);}
+    /* چهار فریم جدا برای «نوع ثبت شغل»: کارت انتخاب‌شده هایلایت طلایی می‌شود */
+    .hb-job-kind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0.55rem;}
+    .hb-job-kind-card{display:flex;flex-direction:column;gap:0.35rem;padding:0.6rem 0.8rem;border:1px dashed var(--hb-navy-500);border-radius:10px;background:rgba(255,255,255,0.015);cursor:pointer;transition:border-color .15s ease,background .15s ease,opacity .15s ease;}
+    .hb-job-kind-card:hover{border-color:var(--hb-gold-400);}
+    .hb-job-kind-card.hb-job-kind-active{border-style:solid;border-color:var(--hb-gold-400);background:rgba(184,134,11,0.09);box-shadow:inset 0 0 0 1px rgba(184,134,11,0.35);}
+    .hb-job-kind-card.hb-job-kind-disabled{opacity:0.55;cursor:not-allowed;}
+    .hb-job-kind-card.hb-job-kind-disabled:hover{border-color:var(--hb-navy-500);}
+    .hb-job-kind-radio-row{display:flex;align-items:center;gap:0.45rem;font-size:0.9rem;}
+    .hb-job-kind-hint{font-size:0.72rem;color:var(--hb-text-muted);line-height:1.7;}
+    .hb-job-missing-head{font-size:0.84rem;font-weight:700;color:var(--hb-text-primary);display:flex;gap:0.4rem;align-items:center;margin-bottom:0.3rem;}
+    .hb-job-missing-head i{color:var(--hb-gold-400);}
+    .hb-job-missing-sub{font-size:0.75rem;color:var(--hb-text-muted);margin-bottom:0.5rem;line-height:1.8;}
+    .hb-job-missing-chain{font-size:0.78rem;color:var(--hb-text-secondary);background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.25);border-radius:8px;padding:0.4rem 0.7rem;margin-top:0.5rem;display:flex;gap:0.45rem;align-items:center;flex-wrap:wrap;}
+    .hb-job-missing-chain i{color:var(--hb-info);}
+    /* تفکیک فرم شغل به زیربخش‌های الف/ب/ج */
+    .hb-job-subsection{margin:1.1rem 0 0.4rem;border:1px solid var(--hb-navy-500);border-radius:10px;padding:0.55rem 0.85rem;background:rgba(201,162,39,0.05);display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;}
+    .hb-job-subsection-head{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;font-size:0.92rem;color:var(--hb-text-primary);}
+    .hb-job-subsection-head i{color:var(--hb-gold-400);}
+    .hb-job-subsection-hint{font-size:0.72rem;color:var(--hb-text-muted);font-weight:400;}
+    .hb-job-subsection.hb-job-off{opacity:0.5;border-style:dashed;}
+    .hb-job-subsection.hb-job-off .hb-job-subsection-head{color:var(--hb-text-muted);}
+    .hb-job-missing-chain b{color:var(--hb-info);font-weight:600;}
+    .hb-job-confirm{margin-top:0.6rem;border:1px solid rgba(88,166,255,0.35);background:rgba(88,166,255,0.06);border-radius:8px;padding:0.6rem 0.8rem;}
+    .hb-job-confirm-head{font-size:0.8rem;font-weight:700;color:var(--hb-info);margin-bottom:0.45rem;display:flex;gap:0.35rem;align-items:center;}
+    .hb-job-confirm-chain{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.3rem 1rem;margin-bottom:0.6rem;}
+    .hb-job-confirm-row{font-size:0.78rem;color:var(--hb-text-secondary);display:flex;gap:0.4rem;align-items:center;}
+    .hb-job-confirm-level{color:var(--hb-text-muted);white-space:nowrap;}
+    .hb-job-confirm-name{color:var(--hb-text-primary);font-weight:600;}
+    .hb-job-confirm-actions{display:flex;gap:0.5rem;}
+    /* عکس پروفایل شغل + استتوس‌های ۲۴ ساعته (شبیه واتساپ) */
+    .hb-job-head{display:flex;gap:0.75rem;align-items:flex-start;}
+    .hb-job-avatar-wrap{position:relative;flex-shrink:0;}
+    .hb-job-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--hb-gold-400);background:var(--hb-navy-800);display:block;}
+    .hb-job-avatar-empty{display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--hb-gold-400);}
+    .hb-job-status-ring{position:absolute;bottom:-2px;inset-inline-end:-2px;width:18px;height:18px;border-radius:50%;background:var(--hb-accent-20);border:1px solid var(--hb-gold-400);color:var(--hb-gold-300);display:flex;align-items:center;justify-content:center;font-size:0.65rem;}
+    .hb-job-statuses{margin-top:0.75rem;border-top:1px dashed var(--hb-border);padding-top:0.6rem;display:flex;flex-direction:column;gap:0.45rem;}
+    .hb-status-card{display:flex;align-items:center;gap:0.6rem;border:1px solid var(--hb-border);border-radius:10px;padding:0.4rem 0.6rem;background:rgba(255,255,255,0.02);}
+    .hb-status-thumb{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--hb-border);flex-shrink:0;background:var(--hb-navy-800);}
+    .hb-status-main{flex:1;min-width:0;}
+    .hb-status-caption{font-size:0.8rem;color:var(--hb-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .hb-status-meta{font-size:0.72rem;color:var(--hb-text-muted);display:flex;gap:0.35rem;align-items:center;margin-top:0.1rem;}
+    .hb-status-empty{font-size:0.75rem;color:var(--hb-text-muted);padding:0.25rem 0;}
+    .hb-status-add-row{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;}
+    .hb-status-pick{position:relative;overflow:hidden;cursor:pointer;}
+    .hb-status-pick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+    .hb-status-caption-input{flex:1;min-width:180px;max-width:340px;}
+    .hb-job-gps-badge{color:var(--hb-info);font-family:ui-monospace,Consolas,monospace;font-size:0.75rem;direction:ltr;}
+    .hb-job-gps-badge i{direction:rtl;font-style:normal;}
+    /* پیش‌نمایش عکس پروفایل شغل در فرم افزودن */
+    .hb-job-photo-row{display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;}
+    .hb-job-photo-preview{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--hb-gold-400);}
+    .hb-job-photo-empty{font-size:0.78rem;color:var(--hb-text-muted);display:inline-flex;gap:0.35rem;align-items:center;}
+    /* «مدارک و فایل‌ها» */
+    .hb-docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.75rem;}
+    .hb-doc-tile{border:1px dashed var(--hb-border);border-radius:12px;padding:0.75rem;background:rgba(255,255,255,0.02);}
+    .hb-doc-tile-title{font-size:0.85rem;font-weight:700;color:var(--hb-text-primary);display:flex;align-items:center;gap:0.4rem;margin-bottom:0.25rem;}
+    .hb-doc-tile-title i{color:var(--hb-gold-400);}
+    .hb-doc-hint{font-size:0.72rem;color:var(--hb-text-muted);margin-bottom:0.5rem;}
+    .hb-doc-input{width:100%;font-size:0.78rem;color:var(--hb-text-secondary);}
+    .hb-doc-input::file-selector-button{background:var(--hb-navy-700);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.35rem 0.7rem;margin-inline-end:0.5rem;cursor:pointer;font-size:0.75rem;}
+    .hb-doc-input:hover::file-selector-button{border-color:var(--hb-gold-400);}
+    .hb-docs-saved{margin-top:1.25rem;border-top:1px solid var(--hb-border);padding-top:0.9rem;}
+    .hb-docs-saved h4{font-size:0.85rem;color:var(--hb-text-primary);margin:0 0 0.6rem;display:flex;align-items:center;gap:0.4rem;}
+    .hb-doc-row{display:flex;align-items:center;gap:0.7rem;border:1px solid var(--hb-border);border-radius:10px;padding:0.5rem 0.75rem;margin-bottom:0.45rem;background:rgba(255,255,255,0.02);}
+    .hb-doc-row-thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--hb-border);flex-shrink:0;background:var(--hb-navy-800);}
+    .hb-doc-row-icon{width:38px;height:38px;border-radius:8px;border:1px solid var(--hb-border);display:flex;align-items:center;justify-content:center;font-size:1.05rem;color:var(--hb-gold-400);flex-shrink:0;background:var(--hb-navy-800);}
+    .hb-doc-row-main{flex:1;min-width:0;}
+    .hb-doc-row-name{font-size:0.8rem;color:var(--hb-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:right;}
+    .hb-doc-row-meta{font-size:0.7rem;color:var(--hb-text-muted);display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:0.15rem;}
+    .hb-doc-row-meta .hb-doc-type-badge{background:rgba(201,162,39,0.12);color:var(--hb-gold-400);border-radius:6px;padding:0.05rem 0.4rem;}
+    .hb-doc-row-actions{display:flex;gap:0.35rem;flex-shrink:0;align-items:center;}
+    .hb-doc-row-actions a,.hb-doc-row-actions button{background:none;border:1px solid transparent;color:var(--hb-text-muted);cursor:pointer;font-size:1rem;padding:0.25rem 0.4rem;border-radius:8px;text-decoration:none;}
+    .hb-doc-row-actions a:hover{color:var(--hb-info);border-color:var(--hb-border);}
+    .hb-doc-row-actions button:hover{color:#e74c3c;border-color:var(--hb-border);}
+    .hb-docs-locked{border:1px solid rgba(201,162,39,0.35);background:rgba(201,162,39,0.06);border-radius:10px;padding:0.85rem 1rem;font-size:0.85rem;color:var(--hb-text-secondary);display:flex;gap:0.55rem;align-items:flex-start;}
+    .hb-docs-locked i{color:var(--hb-gold-400);margin-top:0.15rem;}
+  </style>
+  {% if neshan_api_key %}
+  <meta name='neshan-maps-key' content='{{ neshan_api_key }}'>
+  {% endif %}
+  {% if google_maps_api_key %}
+  <meta name='google-maps-key' content='{{ google_maps_api_key }}'>
+  {% endif %}
+  {% location_service_config %}
+</head>
+<body data-has-jobs="{% if has_jobs %}1{% else %}0{% endif %}">
+<!-- Sidebar -->
+<aside class='hb-sidebar' id='sidebar'>
+  <button class='hb-sidebar-toggle'>
+<i class='bi bi-chevron-left'>
+</i>
+</button>
+  <div class='hb-sidebar-header'>
+    <img src='{% static "core/assets/logo.png" %}' alt='Logo' class='hb-sidebar-logo'>
+    <div>
+      <div class='hb-sidebar-brand'>
+Habib<span>
+Hub</span>
+</div>
+      <small style='color:var(--hb-text-muted);font-size:0.7rem;' data-i18n='tagline'>
+همه ابزارها · یک هاب</small>
+    </div>
+  </div>
+{% include "core/_sidebar_nav.html" with nav_active="profile" %}
+  <div class='hb-sidebar-footer'>
+    <div style='display:flex;align-items:center;gap:0.75rem;'>
+      {% if profile.avatar %}
+      <img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;object-fit:cover;'>
+      {% else %}
+      <img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;'>
+      {% endif %}
+      <div class='user-info'>
+        <div style='font-weight:600;font-size:0.85rem;'>
+{{ profile.full_name }}</div>
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>
+{{ request.user.mobile_number }}</div>
+      </div>
+      <form method='post' action="{% url 'accounts:logout' %}" style='margin-inline-start:auto;'>
+{% csrf_token %}<button type='submit' title='خروج' style='background:none;border:none;color:var(--hb-text-muted);cursor:pointer;font-size:1.1rem;'>
+<i class='bi bi-box-arrow-right'>
+</i>
+</button>
+</form>
+    </div>
+  </div>
+</aside>
+<div class='hb-overlay'>
+</div>
+<header class='hb-header'>
+  <div style='display:flex;align-items:center;gap:1rem;'>
+  {% include "core/_breaking_news_bar.html" %}
+    <button class='hb-mobile-toggle'>
+<i class='bi bi-list'>
+</i>
+</button>
+    <div class='hb-header-search'>
+      <i class='bi bi-search'>
+</i>
+      <input type='text' data-i18n='search' placeholder='جستجو...'>
+    </div>
+  </div>
+  <div class='hb-header-actions'>
+    <a class='hb-header-btn' href="{% url 'magazine:inbox' %}" title='تیکت‌های مجله' aria-label='تیکت‌ها' style='text-decoration:none;'>
+<i class='bi bi-bell'>
+</i>
+{% if ticket_unread %}
+<span class='badge'>
+{{ ticket_unread }}</span>
+{% endif %}
+</a>
+    <div class='hb-lang-dropdown'>
+      <button class='hb-header-btn hb-lang-toggle'>
+<i class='bi bi-globe'>
+</i>
+</button>
+      <div class='hb-lang-menu'>
+        <div class='hb-lang-item active' data-lang='fa'>
+<span class='hb-lang-flag'>
+🇮🇷</span>
+<span>
+فارسی</span>
+</div>
+        <div class='hb-lang-item' data-lang='en'>
+<span class='hb-lang-flag'>
+🇺🇸</span>
+<span>
+English</span>
+</div>
+        <div class='hb-lang-item' data-lang='zh'>
+<span class='hb-lang-flag'>
+🇨🇳</span>
+<span>
+中文</span>
+</div>
+        <div class='hb-lang-item' data-lang='ar'>
+<span class='hb-lang-flag'>
+🇸🇦</span>
+<span>
+العربية</span>
+</div>
+      </div>
+    </div>
+    {% if profile.avatar %}
+    <img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='object-fit:cover;'>
+    {% else %}
+    <img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar'>
+    {% endif %}
+  </div>
+</header>
+<main class='hb-main'>
+  <div class='hb-page-header'>
+    <h1>
+<i class='bi bi-person'>
+</i>
+ <span data-i18n='profile'>
+پروفایل من</span>
+</h1>
+    <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+مدیریت جامع اطلاعات کاربر</p>
+  </div>
+  <!-- Profile Card -->
+  <div style='padding:1.5rem 2rem;'>
+    <div class='hb-card' style='display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;'>
+      {% if profile.avatar %}
+      <img src='{{ profile.avatar.url }}' alt='Profile' style='width:100px;height:100px;border-radius:50%;border:3px solid var(--hb-gold-400);box-shadow:0 0 20px rgba(201,162,39,0.2);object-fit:cover;'>
+      {% else %}
+      <img src='{% static "core/assets/logo.png" %}' alt='Profile' style='width:100px;height:100px;border-radius:50%;border:3px solid var(--hb-gold-400);box-shadow:0 0 20px rgba(201,162,39,0.2);'>
+      {% endif %}
+      <div style='flex:1;min-width:200px;'>
+        <h3 style='margin-bottom:0.25rem;'>
+{{ profile.full_name }}</h3>
+        <p style='color:var(--hb-text-muted);margin-bottom:0.5rem;'>
+          {% if profile.email %}{{ profile.email }} | {% endif %}
+          {{ request.user.mobile_number }}
+        </p>
+        <div style='display:flex;gap:0.5rem;flex-wrap:wrap;'>
+          {% if profile.national_id %}
+          <span class='hb-badge hb-badge-success'>
+<i class='bi bi-check-circle'>
+</i>
+ کد ملی: {{ profile.national_id }}</span>
+          {% else %}
+          <span class='hb-badge hb-badge-warning'>
+<i class='bi bi-exclamation-triangle'>
+</i>
+ کد ملی ثبت نشده</span>
+          {% endif %}
+          {% if profile.national_id %}
+          <span class='hb-badge hb-badge-info'>
+<i class='bi bi-envelope'>
+</i>
+ {{ profile.email }}</span>
+          {% endif %}
+          {% if profile.citizenship %}
+          <span class='hb-badge hb-badge-info'>
+<i class='bi bi-flag'>
+</i>
+ تابعیت: <span data-loc-fa='{{ profile.citizenship }}' data-loc-en='{{ profile.citizenship_en }}'>{{ profile.citizenship }}</span></span>
+          {% endif %}
+          {% if profile.nationality %}
+          <span class='hb-badge hb-badge-info'>
+<i class='bi bi-person-badge'>
+</i>
+ ملیت: <span data-loc-fa='{{ profile.nationality }}' data-loc-en='{{ profile.nationality_en }}'>{{ profile.nationality }}</span></span>
+          {% endif %}
+          {% if profile.permanent_residence %}
+          <span class='hb-badge hb-badge-info'>
+<i class='bi bi-house-check'>
+</i>
+ اقامت دائم: <span data-loc-fa='{{ profile.permanent_residence }}' data-loc-en='{{ profile.permanent_residence_en }}'>{{ profile.permanent_residence }}</span></span>
+          {% endif %}
+          <span class='hb-badge hb-badge-warning'>
+<i class='bi bi-shield-check'>
+</i>
+ سطح دسترسی: کامل</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Profile Form Sections -->
+  <div class='hb-profile-form hb-profile-sections'>
+    <!-- 1. Personal Information -->
+    <div class='hb-section-card' id='personal-info'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-person-vcard'>
+</i>
+ <span data-i18n='personal_info'>
+اطلاعات شخصی</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <form method='post' action="{% url 'core:profile' %}" data-personal-info-form novalidate>
+          {% csrf_token %}
+          {% if info_form.non_field_errors %}
+          <div style='margin-bottom:1rem;'>
+            {% for error in info_form.non_field_errors %}
+              <div style='padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;background:rgba(192,57,43,0.12);color:#e74c3c;'>
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              </div>
+            {% endfor %}
+              </div>
+            {% endif %}
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='first_name'>
+نام</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ info_form.first_name }}
+            {% if info_form.first_name.errors %}
+            <div class='hb-field-error' data-field-error='first_name'>
+              {% for error in info_form.first_name.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='last_name'>
+نام خانوادگی</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ info_form.last_name }}
+            {% if info_form.last_name.errors %}
+            <div class='hb-field-error' data-field-error='last_name'>
+              {% for error in info_form.last_name.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='family_suffix'>
+پسوند فامیل</span>
+</label>
+            {{ info_form.family_suffix }}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='fame_name'>
+شهرت</span>
+</label>
+            {{ info_form.fame_name }}
+            {% if info_form.fame_name.errors %}
+            <div class='hb-field-error' data-field-error='fame_name'>
+              {% for error in info_form.fame_name.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='national_id'>
+کد ملی</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ info_form.national_id }}
+            {% if info_form.national_id.errors %}
+              <div class='hb-field-error' data-field-error='national_id'>
+                {% for error in info_form.national_id.errors %}
+                  <i class='bi bi-exclamation-circle'></i> {{ error }}
+                {% endfor %}
+                  </div>
+                {% endif %}
+            {% if info_form.national_id_locked %}
+            <small style='color:var(--hb-text-muted);font-size:0.72rem;display:block;margin-top:0.3rem;'><i class='bi bi-lock-fill'></i> {{ info_form.fields.national_id.help_text }}</small>
+            {% elif national_id_verify %}
+            {% if national_id_verify.match == True %}
+            <small style='color:var(--hb-success);font-size:0.72rem;display:block;margin-top:0.3rem;'><i class='bi bi-shield-check'></i> کد ملی با نام و نام‌خانوادگی شما کنترل و تأیید شد.</small>
+            {% elif national_id_verify.match == False %}
+            <small style='color:#e74c3c;font-size:0.72rem;display:block;margin-top:0.3rem;'><i class='bi bi-shield-x'></i> کد ملی تأیید نمی‌شود — ثبت نشده است.</small>
+            {% endif %}
+            {% endif %}
+          </div>
+        </div>
+        {% if profile.user.referrer_national_id %}
+        <div class='hb-form-row'>
+          <div class='hb-form-group' style='flex:1 1 100%;'>
+            <label class='hb-form-label'>
+<span data-i18n='referrer'>
+کد ملی معرف</span>
+            </label>
+            <input type='text' class='hb-form-control' dir='ltr' value='{{ profile.user.referrer_national_id }}' readonly disabled>
+            {% if profile.user.referrer %}
+            <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'>
+<i class='bi bi-person-check'></i>
+ معرف: {{ profile.user.referrer.profile.full_name }} ({{ profile.user.referrer.mobile_number }})</small>
+            {% endif %}
+            <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'>
+کد ملیِ عضوی که هنگام ورود شما را معرفی کرده است؛ از صفحهٔ ورود ثبت شده و در این بخش قابل ویرایش نیست (در بخش «اطلاعات ارتباطی» می‌توانید آن را تغییر دهید).</small>
+          </div>
+        </div>
+        {% endif %}
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='date_of_birth'>
+تاریخ تولد</span>
+ <span class='required'>
+*
+</span>
+</label>
+            <div class='hb-shamsi-picker' data-shamsi-picker>
+              <div class='hb-shamsi-field'>
+                <i class='bi bi-calendar-event'></i>
+                <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۳۶۸/۰۲/۱۵' readonly data-shamsi-input dir='rtl'>
+                <input type='hidden' name='date_of_birth' data-shamsi-gregorian value='{{ profile.date_of_birth|date:"Y-m-d" }}'>
+              </div>
+              <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+              <div class='hb-shamsi-info' data-shamsi-info></div>
+            </div>
+            {% if info_form.date_of_birth.errors %}
+            <div class='hb-field-error' data-field-error='date_of_birth'>
+              {% for error in info_form.date_of_birth.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='gender'>
+جنسیت</span>
+ <span class='required'>
+*
+</span>
+</label>
+            {{ info_form.gender }}
+            {% if info_form.gender.errors %}
+            <div class='hb-field-error' data-field-error='gender'>
+              {% for error in info_form.gender.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='citizenship'>
+تابعیت</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ info_form.citizenship }}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='nationality'>
+ملیت</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ info_form.nationality }}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='permanent_residence'>
+اقامت دائم</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ info_form.permanent_residence }}
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='religion'>
+دین</span>
+ <span class='required'>
+*
+</span>
+</label>
+            {{ info_form.religion }}
+            {% if info_form.religion.errors %}
+            <div class='hb-field-error' data-field-error='religion'>
+              {% for error in info_form.religion.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='sect'>
+مذهب</span>
+ <span class='required'>
+*
+</span>
+</label>
+            {{ info_form.sect }}
+            {% if info_form.sect.errors %}
+            <div class='hb-field-error' data-field-error='sect'>
+              {% for error in info_form.sect.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='bio'>
+بیوگرافی</span>
+</label>
+            {{ info_form.bio }}
+          </div>
+        </div>
+        <div style='margin-top:1rem;'>
+          <button type='submit' class='hb-btn hb-btn-primary'>
+<i class='bi bi-check-lg'>
+</i>
+ ذخیره اطلاعات شخصی</button>
+          <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>«پسوند فامیل» و «شهرت» اختیاری‌اند؛ نام پدر، نام مادر و وضعیت تأهل در بخش «اطلاعات خانواده» تکمیل می‌شوند.</small>
+        </div>
+        </form>
+        <!-- عکس پروفایل — فیلد اختیاری (انتقال‌یافته از داشبورد) -->
+        <div style='margin-top:1rem;padding-top:1rem;border-top:1px solid var(--hb-border);'>
+          <form method='post' action="{% url 'core:profile' %}" enctype='multipart/form-data'>
+            {% csrf_token %}
+            <input type='hidden' name='action' value='avatar'>
+            <div class='hb-form-row'>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>عکس پروفایل <small style='color:var(--hb-text-muted);'>(اختیاری)</small></label>
+                {{ avatar_form.avatar }}
+                {% if avatar_form.avatar.errors %}
+                <div class='hb-field-error'>
+                  {% for error in avatar_form.avatar.errors %}
+                    <i class='bi bi-exclamation-circle'></i> {{ error }}
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره عکس</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- 1b. Family Information -->
+    <div class='hb-section-card' id='family'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-people-fill'>
+</i>
+ <span data-i18n='family'>
+اطلاعات خانواده</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='family'>
+        {% if family_form.non_field_errors %}
+        <div class='hb-field-error' style='margin-bottom:1rem;'>
+          {% for error in family_form.non_field_errors %}
+            <i class='bi bi-exclamation-circle'></i> {{ error }}
+          {% endfor %}
+            </div>
+          {% endif %}
+        <p style="font-size:0.8rem;color:var(--hb-text-muted);margin:0 0 0.75rem;">
+          <i class="bi bi-info-circle"></i>
+          فیلدهای ستاره‌دار الزامی‌اند. ثبت تعداد و کد ملیِ همسر و فرزندان کلاً اختیاری است و کد ملی برای همسر/فرزندان الزامی نیست؛ برای هر همسر/فرزند فقط «کد ملی» او گرفته می‌شود و اگر فرد قبلاً در سیستم ثبت‌نام کرده باشد، نام و نام خانوادگی‌اش به‌صورت خودکار فراخوانی می‌شود.
+        </p>
+        {% if family_form.errors %}
+        <div class='hb-family-error-box' style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;background:rgba(192,57,43,0.12);color:#e74c3c;display:flex;align-items:center;gap:0.4rem;">
+          <i class='bi bi-exclamation-circle'></i>
+          <span>لطفاً فیلدهای ضروری اطلاعات خانواده را به‌درستی تکمیل کنید.</span>
+        </div>
+        {% endif %}
+        {% if family_saved %}
+        <div id='hb-family-saved-msg' class='hb-family-success-box' style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;background:rgba(46,160,67,0.12);color:var(--hb-success);display:flex;align-items:center;gap:0.4rem;">
+          <i class='bi bi-check-circle'></i>
+          <span>اطلاعات خانواده با موفقیت ذخیره شد.</span>
+        </div>
+        {% endif %}
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='father_name'>
+نام پدر</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ family_form.father_name }}
+            {% if family_form.father_name.errors %}
+            <div class='hb-field-error' data-field-error='father_name'>
+              {% for error in family_form.father_name.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='mother_name'>
+نام مادر</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ family_form.mother_name }}
+            {% if family_form.mother_name.errors %}
+            <div class='hb-field-error' data-field-error='mother_name'>
+              {% for error in family_form.mother_name.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='marital_status'>
+وضعیت تأهل</span>
+ <span class='required'>
+*</span>
+</label>
+            {{ family_form.marital_status }}
+            {% if family_form.marital_status.errors %}
+            <div class='hb-field-error' data-field-error='marital_status'>
+              {% for error in family_form.marital_status.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+        </div>
+        <div class='hb-form-row' id='family-spouse-wrap' hidden>
+          <div class='hb-form-group' style='flex:1 1 10rem;'>
+            <label class='hb-form-label'>
+<span data-i18n='spouses_count'>
+تعداد همسر(های) قانونی</span>
+</label>
+            {{ family_form.spouses_count }}
+            {% if family_form.spouses_count.errors %}
+            <div class='hb-field-error'>
+              {% for error in family_form.spouses_count.errors %}
+                <i class='bi bi-exclamation-circle'></i> {{ error }}
+              {% endfor %}
+                </div>
+              {% endif %}
+          </div>
+          <div class='hb-form-group' style='flex:1 1 100%;'>
+            <label class='hb-form-label'>
+همسر(های) قانونی</label>
+            <p style="font-size:0.75rem;color:var(--hb-text-muted);margin:0 0 0.5rem;">
+              ثبت همسر اختیاری است؛ تعداد را وارد کنید و برای هر همسر فقط کد ملی او را (اختیاری) بنویسید — اگر در سیستم ثبت‌نام کرده باشد، نامش خودکار فراخوانی می‌شود.
+            </p>
+            <div id='family-spouse-rows'></div>
+            <div id='family-spouse-errors' class='hb-field-error' hidden></div>
+            <div>
+              <button type='button' class='hb-btn hb-btn-secondary hb-family-add' data-family-add='spouse' disabled style='margin-top:0.5rem;'>
+<i class="bi bi-plus-lg"></i>
+ افزودن ردیف کد ملی</button>
+            </div>
+          </div>
+        </div>
+        <div id='family-children-wrap' hidden>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+تعداد فرزندان پسر</label>
+              {{ family_form.sons_count }}
+              {% if family_form.sons_count.errors %}
+              <div class='hb-field-error'>
+                {% for error in family_form.sons_count.errors %}
+                  <i class='bi bi-exclamation-circle'></i> {{ error }}
+                {% endfor %}
+                  </div>
+                {% endif %}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+تعداد فرزندان دختر</label>
+              {{ family_form.daughters_count }}
+              {% if family_form.daughters_count.errors %}
+              <div class='hb-field-error'>
+                {% for error in family_form.daughters_count.errors %}
+                  <i class='bi bi-exclamation-circle'></i> {{ error }}
+                {% endfor %}
+                  </div>
+                {% endif %}
+            </div>
+          </div>
+          <p style="font-size:0.75rem;color:var(--hb-text-muted);margin:0.25rem 0 0.5rem;">
+            ثبت فرزندان اختیاری است؛ با تغییر تعداد یا با «افزودن ردیف کد ملی»، کد ملیِ هر فرزند را (اختیاری) وارد کنید.
+          </p>
+          <div id='family-sons-rows'></div>
+          <div>
+            <button type='button' class='hb-btn hb-btn-secondary hb-family-add' data-family-add='sons' disabled style='margin-top:0.5rem;'>
+<i class="bi bi-plus-lg"></i>
+ افزودن ردیف کد ملی</button>
+          </div>
+          <div id='family-daughters-rows'></div>
+          <div>
+            <button type='button' class='hb-btn hb-btn-secondary hb-family-add' data-family-add='daughters' disabled style='margin-top:0.5rem;'>
+<i class="bi bi-plus-lg"></i>
+ افزودن ردیف کد ملی</button>
+          </div>
+        </div>
+        <div id='family-rows-errors' class='hb-field-error' hidden style='margin-top:0.5rem;'></div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+افراد تحت تکفل</label>
+            {{ family_form.dependents_count }}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='emergency_contact'>
+تماس اضطراری</span>
+</label>
+            {{ family_form.emergency_contact }}
+          </div>
+        </div>
+        <template id='family-person-row-tpl'>
+          <div class='hb-person-row hb-form-row' style='gap:0.5rem;align-items:flex-end;'>
+            <div class='hb-form-group' style='flex:1 1 10rem;'>
+              <label class='hb-form-label'>
+کد ملی (اختیاری)
+</label>
+              <input type="text" class="hb-form-control" inputmode="numeric" maxlength="10" dir="ltr" placeholder="۱۰ رقم" data-family-field="national_id">
+              <div class='hb-nid-feedback' hidden style="font-size:0.75rem;margin-top:0.25rem;"></div>
+            </div>
+            <div style='flex:0 0 auto;'>
+              <button type='button' class='hb-btn hb-btn-secondary hb-family-remove' title="حذف ردیف">
+<i class="bi bi-trash"></i>
+</button>
+            </div>
+          </div>
+        </template>
+        <script id="family-section-data" type="application/json">
+{{ family_form.family_data_json }}
+</script>
+        <div style='margin-top:1rem;'>
+          <button type='submit' class='hb-btn hb-btn-primary'>
+<i class='bi bi-check-lg'>
+</i>
+ ذخیره اطلاعات خانواده</button>
+        </div>
+        </form>
+      </div>
+    </div>
+    <!-- 2. Job Information -->
+    <div class='hb-section-card' id='jobs'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-briefcase'>
+</i>
+ <span data-i18n='job_info'>
+اطلاعات شغلی</span>
+ <span style='font-size:0.75rem;color:var(--hb-text-muted);font-weight:400;'>
+({{ jobs|length }} از {{ max_jobs }})</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+{% for job in jobs %}
+          <div class='hb-job-item' style='border:1px solid var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;position:relative;'>
+            <div class='hb-job-head'>
+              <div class='hb-job-avatar-wrap'>
+                {% if job.photo %}
+                <img class='hb-job-avatar' src='{{ job.photo.url }}' alt='{{ job.title }}'>
+                {% else %}
+                <span class='hb-job-avatar hb-job-avatar-empty'><i class='bi bi-person-bounding-box'></i></span>
+                {% endif %}
+                <span class='hb-job-status-ring' title='استتوس‌های ۲۴ ساعتهٔ این شغل'><i class='bi bi-record-circle'></i></span>
+              </div>
+              <div style='flex:1;min-width:0;'>
+                <div style='display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;'>
+                  <b style='font-size:0.9rem;'>{{ job.title }}</b>
+                  {% if job.employment_mode %}<span style='background:rgba(201,162,39,0.14);color:var(--hb-gold-400);border-radius:6px;padding:0.05rem 0.45rem;font-size:0.7rem;'>{{ job.get_employment_mode_display }}</span>{% endif %}
+                  {% if job.is_current %}<span style='background:rgba(201,162,39,0.14);color:var(--hb-gold-400);border-radius:6px;padding:0.05rem 0.45rem;font-size:0.7rem;'><i class='bi bi-star-fill'></i> شغل فعلی</span>{% endif %}
+                </div>
+                {% if job.organization %}<div class='hb-status-meta'><i class='bi bi-building'></i> {{ job.organization }}{% if job.department %} — {{ job.department }}{% endif %}{% if job.employment_type %} · {{ job.get_employment_type_display }}{% endif %}</div>{% endif %}
+                {% if job.catalog_breadcrumb %}<div class='hb-status-meta'><i class='bi bi-diagram-3'></i> {{ job.catalog_breadcrumb }}</div>{% endif %}
+                {% if job.hire_date %}<div class='hb-status-meta'><i class='bi bi-calendar3'></i> تاریخ استخدام: {{ job.hire_date|jdate }}</div>{% endif %}
+                {% if job.employment_mode == 'free' %}
+                  {% if job.free_province or job.free_city or job.free_address %}<div class='hb-status-meta'><i class='bi bi-geo-alt'></i> <span data-loc-fa='{{ job.free_province }}' data-loc-en='{{ job.free_province_en }}'>{{ job.free_province }}</span>{% if job.free_city %} / <span data-loc-fa='{{ job.free_city }}' data-loc-en='{{ job.free_city_en }}'>{{ job.free_city }}</span>{% endif %}{% if job.free_address %} — {{ job.free_address }}{% endif %}</div>{% endif %}
+                {% else %}
+                  {% if job.work_province or job.work_city or job.work_address %}<div class='hb-status-meta'><i class='bi bi-geo-alt'></i> <span data-loc-fa='{{ job.work_province }}' data-loc-en='{{ job.work_province_en }}'>{{ job.work_province }}</span>{% if job.work_city %} / <span data-loc-fa='{{ job.work_city }}' data-loc-en='{{ job.work_city_en }}'>{{ job.work_city }}</span>{% endif %}{% if job.work_address %} — {{ job.work_address }}{% endif %}</div>{% endif %}
+                {% endif %}
+                {% if job.employment_mode == 'free' %}
+                  {% if job.has_free_gps %}<div class='hb-status-meta'><span class='hb-job-gps-badge'>GPS: {{ job.free_gps_latitude|floatformat:6 }}, {{ job.free_gps_longitude|floatformat:6 }}</span></div>{% endif %}
+                {% else %}
+                  {% if job.work_gps_latitude != None and job.work_gps_longitude != None %}<div class='hb-status-meta'><span class='hb-job-gps-badge'>GPS: {{ job.work_gps_latitude|floatformat:6 }}, {{ job.work_gps_longitude|floatformat:6 }}</span></div>{% endif %}
+                {% endif %}
+                {% if job.field_of_activity %}<div class='hb-status-meta'><i class='bi bi-briefcase'></i> {{ job.field_of_activity }}</div>{% endif %}
+                {% if job.skills %}<div class='hb-status-meta'><i class='bi bi-tools'></i> {{ job.skills }}</div>{% endif %}
+              </div>
+              <div style='display:flex;flex-direction:column;gap:0.35rem;align-items:flex-end;flex-shrink:0;'>
+                {% if not job.is_unemployed %}
+                <a class='hb-btn hb-btn-dark hb-btn-sm' href="{% url 'core:profile' %}?edit={{ job.id }}#jobs" title='ویرایش این شغل'><i class='bi bi-pencil-square'></i> ویرایش</a>
+                {% endif %}
+                <form method='post' action="{% url 'accounts:job_delete' job.id %}" style='margin:0;' onsubmit="return confirm('این شغل حذف شود؟');">
+                  {% csrf_token %}
+                  <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);' title='حذف این شغل'><i class='bi bi-trash'></i> حذف</button>
+                </form>
+              </div>
+            </div>
+            {% if not job.is_unemployed %}
+            <!-- لوگوی/مستندات این شغل: بلافاصله پس از انتخاب فایل، AJAX آپلود و
+                 پیش‌نمایشش همان‌جا نمایش داده می‌شود (بدون دکمهٔ جداگانه). -->
+            <div style='display:flex;gap:0.9rem;align-items:center;flex-wrap:wrap;margin-top:0.6rem;'>
+              {% with job_logo=job.job_logo_doc %}
+              <span class='hb-job-photo-empty' {% if job_logo %}style='display:none;'{% endif %}><i class='bi bi-file-earmark-image'></i> لوگویی ثبت نشده</span>
+              <img class='hb-job-doc-preview' alt='لوگوی شغل' {% if job_logo %}src='{{ job_logo.file.url }}'{% else %}style='display:none;'{% endif %}>
+              {% if job_logo %}
+              <div style='font-size:0.75rem;color:var(--hb-text-muted);'>{{ job_logo.original_name|default:"لوگوی شغل" }}</div>
+              <form method='post' action="{% url 'accounts:job_document_delete' job_logo.id %}" style='margin:0;'
+                    onsubmit="return confirm('لوگوی/مستندات این شغل حذف شود؟');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);'><i class='bi bi-x-lg'></i> حذف</button>
+              </form>
+              {% endif %}
+              {% endwith %}
+            </div>
+            {% endif %}
+            {% comment %} دکمه‌های «تعویض عکس پروفایل»، «حذف عکس»، «انتخاب عکس استتوس» و
+                 «انتشار استتوس» مطابق درخواست حذف شدند؛ مدیریت لوگو از فرم بالا و
+                 حذف لوگو از همین کارت انجام می‌شود. {% endcomment %}
+          </div>
+{% empty %}        <p style='color:var(--hb-text-muted);font-size:0.85rem;'>
+هنوز هیچ شغلی ثبت نکرده‌اید.</p>
+{% endfor %}
+          {% if can_add_job %}
+          {% if job_edit %}
+          <!-- حالت ویرایش شغل: بنر بالای فرم + لغو بازگشت به حالت افزودن -->
+          <div style='display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.6rem;padding:0.55rem 0.85rem;border:1px solid rgba(184,134,11,0.45);border-radius:10px;background:rgba(184,134,11,0.08);'>
+            <b style='font-size:0.85rem;color:var(--hb-gold-400);'><i class='bi bi-pencil-square'></i> ویرایش شغل: {{ job_edit.title }}</b>
+            <a href="{% url 'core:profile' %}#jobs" class='hb-btn hb-btn-dark hb-btn-sm' style='text-decoration:none;'><i class='bi bi-x-lg'></i> لغو ویرایش</a>
+          </div>
+          {% endif %}
+          {% if job_edit %}{{ job_edit_values|json_script:"hb-job-edit-data" }}{% endif %}
+          <!-- فرم شغل: افزودن → accounts:job_add / ویرایش → accounts:job_edit.
+               id='job-form' برای app.js (آبشار، رادیوها، GPS، عکس) و
+               data-job-edit در حالت ویرایش (پیش‌پرکردن از سکونت غیرفعال شود).
+               enctype برای فیلد عکس پروفایل شغل لازم است. -->
+          <form method='post' action="{% if job_edit %}{% url 'accounts:job_edit' job_edit.id %}{% else %}{% url 'accounts:job_add' %}{% endif %}"
+                enctype='multipart/form-data' id='job-form'
+                {% if job_edit %}data-job-edit='1'{% endif %}>
+          {% csrf_token %}{{ job_residence|json_script:"hb-job-residence" }}{{ job_form.employment_mode }}{{ job_form.keep_chain }}
+          <!-- پیام خطای اعتبارسنجی «داخل همان فریم اطلاعات شغلی»: فیلدهای ستاره‌دار
+               بخش‌های «ب) شغل آزاد» و «ج) شغل وابسته (کارمندی)» الزامی‌اند؛ app.js
+               در صورت خالی بودن هرکدام، همین جعبه را داخل فرم پر می‌کند، فیلد ناقص
+               را قرمز می‌کند و فوکوس را روی نخستین فیلد ناقص می‌برد. -->
+          <div class='hb-job-error-box' id='hb-job-error-box' role='alert' aria-live='assertive' style='display:none;'></div>
+          <!-- انتخاب «نوع ثبت شغل» با دکمه‌های رادیویی: هر بار فقط یکی از سه بخش
+               الف/ب/ج فعال است (مجرا هستند)؛ بخش انتخاب‌شده در فیلد پنهانِ
+               employment_mode اعلام می‌شود تا سمت سرور هم هماهنگ باشد. -->
+          <div class='hb-form-row' style='margin-bottom:0.75rem;'>
+            <div class='hb-form-group' style='grid-column:1/-1;'>
+              <div class='hb-form-label' style='margin-bottom:0.5rem;'>نوع ثبت شغل (هر بار فقط یکی)</div>
+              <!-- چهار فریم جدا برای هر گزینه؛ انتخاب هر رادیو فقط فیلدهای همان بخش را
+                   فعال می‌کند (ب → بخش ب، ج → بخش ج) و بقیه غیرفعال/کم‌رنگ می‌شوند. -->
+              <div class='hb-job-kind-grid'>
+                <label class='hb-job-kind-card' data-job-kind-card='unemployed'>
+                  <span class='hb-job-kind-radio-row'>
+                    <input type='radio' name='employment_kind' value='unemployed' data-job-kind-radio='unemployed'
+                      {% if has_jobs %}disabled title='چون حداقل یک شغل ثبت کرده‌اید، گزینهٔ «بدون شغل» غیرفعال است.'{% endif %}
+                      {% if job_edit and job_edit.is_unemployed %}checked{% elif not has_jobs %}checked{% endif %}>
+                    <b>الف) بدون شغل / بیکار هستم</b>
+                  </span>
+                  <span class='hb-job-kind-hint'>فقط وضعیت اشتغال شما ثبت می‌گردد.{% if has_jobs %} (با وجود شغل ثبت‌شده غیرفعال است){% else %} (پیش‌فرض کاربر جدید){% endif %}</span>
+                </label>
+                <label class='hb-job-kind-card' data-job-kind-card='free'>
+                  <span class='hb-job-kind-radio-row'>
+                    <input type='radio' name='employment_kind' value='free' data-job-kind-radio='free'{% if has_jobs or job_edit and not job_edit.is_unemployed %} checked{% endif %}>
+                    <b>ب) شغل آزاد</b>
+                  </span>
+                  <span class='hb-job-kind-hint'>فهرست سلسله‌مراتبی + عکس پروفایل شغل + آدرس و GPS محل کارِ همین بخش.</span>
+                </label>
+                <label class='hb-job-kind-card' data-job-kind-card='employee'>
+                  <span class='hb-job-kind-radio-row'>
+                    <input type='radio' name='employment_kind' value='employee' data-job-kind-radio='employee'>
+                    <b>ج) شغل وابسته (کارمندی)</b>
+                  </span>
+                  <span class='hb-job-kind-hint'>جزئیات سازمانی + عکس پروفایل شغل + آدرس و GPS محل کارِ سازمان.</span>
+                </label>
+                <label class='hb-job-kind-card' data-job-kind-card='uninitialized'>
+                  <span class='hb-job-kind-radio-row'>
+                    <input type='radio' name='employment_kind' value='uninitialized' data-job-kind-radio='uninitialized' checked>
+                    <b>د) بدون تعریف اطلاعات شغلی</b>
+                  </span>
+                  <span class='hb-job-kind-hint'>هنوز وضعیت شغلی خود را مشخص نکرده اید. (پیش‌فرض کاربر جدید)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <!-- انتخاب شقل از فهرست سلسله‌مراتبی (کاتالوگ دیتابیس): مشترک بین بخش‌های
+               «ب» و «ج» — با جابجایی رادیوها حفظ می‌شود و فقط در «الف» غیرفعال است -->
+          <div class='hb-form-row' data-job-details-fields data-job-cascade-fields>
+            <div class='hb-form-group' style='grid-column:1/-1;'>
+              <label class='hb-form-label'>انتخاب شغل از فهرست سلسله‌مراتبی (حوزه ← صنعت ← دسته ← عنوان ← تخصص‌های مرتبط)</label>
+              <div class='hb-job-cascade' id='hb-job-cascade'>
+                <div class='hb-cascade-search'>
+                  <input type='text' id='hb-job-q' class='hb-form-control' placeholder='جستجوی سریع: مثلاً «برنامه‌نویس» یا «حسابدار»…' autocomplete='off'>
+                  <div class='hb-cascade-qres' id='hb-job-qres' style='display:none'></div>
+                </div>
+                <div class='hb-cascade-cols'>
+                  <div><span class='hb-cc-label'>۱. حوزه</span><select id='hb-job-sector' class='hb-form-control hb-form-select'><option value=''>—</option>{% for s in catalog_sectors %}<option value='{{ s.id }}'>{{ s.name }}</option>{% endfor %}</select></div>
+                  <div><span class='hb-cc-label'>۲. صنعت</span><select id='hb-job-industry' class='hb-form-control hb-form-select' disabled><option value=''>—</option></select></div>
+                  <div><span class='hb-cc-label'>۳. دسته</span><select id='hb-job-category' class='hb-form-control hb-form-select' disabled><option value=''>—</option></select></div>
+                  <div><span class='hb-cc-label'>۴. عنوان</span><select id='hb-job-title' class='hb-form-control hb-form-select' disabled><option value=''>—</option></select></div>
+                  <div><span class='hb-cc-label'>۵. تخصص‌های مرتبط (اختیاری)</span><select id='hb-job-spec' class='hb-form-control hb-form-select' disabled><option value=''>—</option></select></div>
+                </div>
+                <div class='hb-cascade-preview' id='hb-job-preview' style='display:none'>
+                  <div class='hb-cq-desc' id='hb-job-preview-desc'></div>
+                </div>
+                <!-- توضیح کوتاه شغل (فقط خواندنی): فقط به فیلد «توضیحات»
+                     در بخش ۵ «تخصص‌های مرتبط» کاتالوگ متصل است؛ مقدار آن توسط
+                     ادمین در کاتالوگ تعریف می‌شود و کاربر نمی‌تواند ویرایشش کند. -->
+                <div class='hb-form-row' data-job-details-fields data-job-spec-desc-fields style='margin-top:0.7rem;'>
+                  <div class='hb-form-group' style='grid-column:1/-1;'>
+                    <label class='hb-form-label'>توضیح کوتاه شغل (اختیاری)</label>
+                    <div id='hb-job-spec-desc' class='hb-cascade-desc' style='display:none;'>
+                      <i class='bi bi-info-circle'></i>
+                      <span id='hb-job-spec-desc-text'></span>
+                    </div>
+                    <small id='hb-job-spec-desc-empty' style='display:block;margin-top:0.2rem;color:var(--hb-text-muted);font-size:0.72rem;'>برای نمایش توضیح، انتخاب شغل از فهرست الزامی است.</small>
+                  </div>
+                </div>
+                <!-- عکس پروفایل شغلی مخصوصِ شغلِ انتخاب‌شده از کاتالوگ، زیر لایهٔ ۵
+                     «تخصص‌های مرتبط» (فقط در «ب) شغل آزاد»). -->                <div class='hb-job-confirm' id='hb-job-confirm' style='display:none'>
+                  <div class='hb-job-confirm-head'><i class='bi bi-diagram-3'></i> شغل یافت‌شده در سلسله‌مراتب — برای تایید، مسیر کامل را بررسی کنید</div>
+                  <div class='hb-job-confirm-chain' id='hb-job-confirm-chain'></div>
+                  <div class='hb-job-confirm-actions'>
+                    <button type='button' class='hb-btn hb-btn-primary hb-btn-sm' id='hb-job-confirm-yes'><i class='bi bi-check2'></i> تایید انتخاب</button>
+                    <button type='button' class='hb-btn hb-btn-dark hb-btn-sm' id='hb-job-confirm-no'>انصراف</button>
+                  </div>
+                </div>
+                <!-- «شغل مورد نظر خود را در فهرست نیافتید؟»: کشویی (details) — به‌طور
+                     پیش‌فرض بسته است و فقط در صورت نیاز باز می‌شود؛ textarea و دکمهٔ
+                     «ارسال تیکت به مدیر» مثل قبل کار می‌کنند و حتی در حالت بسته هم
+                     مقادیر قبلی همراه فرم ارسال می‌شوند. -->
+                <details class='hb-job-missing' id='job-missing-block'>
+                  <summary class='hb-job-missing-head' title='نمایش/پنهان‌کردن فرم درخواست افزودن شغل به فهرست'>
+                    <i class='bi bi-question-circle'></i>
+                    <span>شغل مورد نظر خود را در فهرست نیافتید؟</span>
+                    <i class='bi bi-chevron-down hb-job-missing-caret'></i>
+                  </summary>
+                  <div class='hb-job-missing-sub'>عنوان شغل مورد نظر و توضیحات تکمیلی خود را بنویسید و با «ارسال تیکت به مدیر» درخواست دهید؛
+                    انتخاب فعلی شما از فهرست (حتی ناقص) نیز همراه درخواست برای مدیر ارسال می‌شود.</div>
+                  <textarea id='hb-job-missing-desc' name='missing_job_description' class='hb-form-control hb-form-textarea' rows='3' placeholder='مثلاً: «مهندس ژئوتکنیک» — عنوان شغل و توضیحات خود را بنویسید…'></textarea>
+                  <div class='hb-job-missing-chain' id='hb-job-missing-chain' style='display:none'></div>
+                  <div style='margin-top:0.55rem;'>
+                    <button type='submit' name='hb_job_action' value='ticket' class='hb-btn hb-btn-outline hb-btn-sm' id='hb-job-ticket-btn'>
+                      <i class='bi bi-send'></i> ارسال تیکت به مدیر
+                    </button>
+                  </div>
+                </details>
+              </div>
+              {{ job_form.sector_id }}{{ job_form.industry_id }}{{ job_form.category_id }}{{ job_form.occupation_title_id }}{{ job_form.specialization_id }}
+            </div>
+          </div>
+          <!-- عکس پروفایل این شغل (فقط یکی) — مشترک بین «ب» و «ج»: در هر دو حالت
+               فعال است و عکسِ همین شغل را (فقط یکی) تعیین می‌کند -->
+          <div class='hb-form-row' data-job-details-fields data-job-free-fields data-job-employee-fields data-job-photo-fields>
+            <div class='hb-form-group' style='grid-column:1/-1;'>
+              <label class='hb-form-label'>عکس پروفایل این شغل (فقط یکی)</label>
+              <div class='hb-job-photo-row'>
+                <span id='hb-job-photo-empty' class='hb-job-photo-empty'><i class='bi bi-person-bounding-box'></i> عکسی انتخاب نشده</span>
+                <img id='hb-job-photo-preview' class='hb-job-photo-preview' alt='پیش‌نمایش عکس شغل' style='display:none;'>
+                {{ job_form.photo }}
+              </div>
+              <small style='display:block;margin-top:0.3rem;color:var(--hb-text-muted);font-size:0.72rem;'>{{ job_form.photo.help_text }}</small>
+            </div>
+          </div>
+          <!-- لوگوی/مستندات شغلی (فقط یکی) — مشترک بین «ب» و «ج»: بلافاصله پس از
+               انتخاب فایل به‌صورت AJAX (accounts:job_document_add) آپلود و پیش‌نمایشش
+               «همان‌جا» نمایش داده می‌شود؛ شناسهٔ شغلِ هدف در فرم پنهانِ پایین صفحه
+               نگه داشته می‌شود و app.js آن را پیش از ارسال به‌روز می‌کند.
+               نشانهٔ data-job-photo-fields یعنی «ردیف مشترکِ ب/ج»: در هر دو حالتِ
+               «ب) شغل آزاد» و «ج) کارمندی» فعال می‌ماند و فقط در «الف» خاموش می‌شود
+               (بدون آن، منطق رادیوها در حالت «ب» این ردیف را غیرفعال می‌کرد). -->
+            <div class='hb-form-row' data-job-free-fields data-job-employee-fields data-job-photo-fields data-job-doc-fields>
+              <div class='hb-form-group' style='grid-column:1/-1;'>
+                <label class='hb-form-label'>لوگوی/مستندات شغلی (فقط یکی)</label>
+                <div class='hb-job-doc-row' style='display:flex;align-items:center;gap:0.9rem;flex-wrap:wrap;'>
+                  <span id='hb-job-doc-empty' class='hb-job-photo-empty'><i class='bi bi-file-earmark-image'></i> فایلی انتخاب نشده</span>
+                  <img id='hb-job-doc-preview' class='hb-job-doc-preview' alt='پیش‌نمایش لوگوی/مستندات شغل' style='display:none;'>
+                  <div id='hb-job-doc-meta' style='font-size:0.75rem;color:var(--hb-text-muted);' hidden></div>
+                  {% if job_doc_logo %}
+                  <form method='post' action="{% url 'accounts:job_document_delete' job_doc_logo.id %}" style='margin:0;'
+                        onsubmit="return confirm('لوگوی/مستندات فعلی حذف شود؟');">
+                    {% csrf_token %}
+                    <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);'><i class='bi bi-x-lg'></i> حذف</button>
+                  </form>
+                  {% endif %}
+                </div>
+                <div class='hb-file-upload' data-hb-doc-target='jobs-photos' style='margin-top:0.55rem;'>
+                  <i class='bi bi-cloud-arrow-up'></i>
+                  <p>انتخاب لوگو/عکس یا مستند فنی شغل — بلافاصله پس از انتخاب، آپلود و همان‌جا نمایش داده می‌شود</p>
+                  <input type='file' name='job_doc' form='hb-job-doc-form' accept='image/jpeg,image/png,image/gif,image/webp,application/pdf'>
+                </div>
+                <small style='display:block;margin-top:0.3rem;color:var(--hb-text-muted);font-size:0.72rem;'>سقف آپلود ~۱۰ مگابایت؛ نام فایلِ خروجی خودکار است.</small>
+              </div>
+            </div>
+          <!-- موقعیت مکلی بخش «ب» (شغل آزاد): آدرس کامل (الزامی) + کشور/استان/شهر-شهرستان؛
+               کاملاً مجزا از موقعیتِ بخش «ج» و مستقل از محل سکونت -->
+          <div class='hb-form-row' data-job-details-fields data-job-free-loc-fields data-job-free-fields>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+کشور محل کار (شغل آزاد)</label>
+              <input type='text' class='hb-form-control hb-loc-country-static' dir='rtl' readonly value='{{ profile.country|default:"ایران" }}' data-loc-fa='{{ profile.country|default:"ایران" }}' data-loc-en='{{ profile.country_en }}' tabindex='-1' data-free-loc-display>
+              {{ job_form.free_country }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+استان محل کار (شغل آزاد) <span class='required'>*</span></label>
+              {{ job_form.free_province }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+شهر / شهرستان محل کار (شغل آزاد) <span class='required'>*</span></label>
+              {{ job_form.free_city }}            </div>
+            <div class='hb-form-group' style='flex:1.6;'>
+              <label class='hb-form-label'>
+آدرس کامل محل کار (شغل آزاد) <span class='required'>*</span></label>
+              {{ job_form.free_address }}            </div>
+          </div>
+          <!-- موقعیت GPS آدرس محل کار (شغل آزاد): فیلد مجزای بخش «ب» — برای محل
+               فعالیتِ شغل آزادِ همین شغل (شغل ۱/۲/۳) به‌صورت مستقل از بخش «ج» ثبت می‌شود -->
+          <div class='hb-form-row' data-job-details-fields data-job-free-fields data-job-free-gps-fields>
+            <div class='hb-form-group' style='grid-column:1/-1;'>
+              <label class='hb-form-label'>
+موقعیت GPS آدرس محل کار (شغل آزاد)</label>
+              <div class='hb-loc-gps-row'>
+                <input type='hidden' name='free_gps_latitude' data-free-gps-lat>
+                <input type='hidden' name='free_gps_longitude' data-free-gps-lng>
+                <input type='hidden' name='free_gps_accuracy' data-free-gps-acc>
+                <input type='text' class='hb-form-control' dir='ltr' readonly placeholder='35.6892, 51.3890' data-free-gps-display>
+                <button type='button' class='hb-btn hb-btn-outline hb-btn-sm' data-free-gps-btn title='دریافت موقعیت دقیق از GPS دستگاه — Send your Current Location'>
+                  <i class='bi bi-crosshair'></i>
+ دریافت GPS
+                </button>
+                <button type='button' class='hb-btn hb-btn-dark hb-btn-sm' data-free-gps-clear title='پاک‌کردن مختصات ثبت‌شده'>
+                  <i class='bi bi-x-lg'></i> پاک کردن
+                </button>
+              </div>
+              <span data-free-gps-status style='font-size:0.75rem;color:var(--hb-text-muted);display:block;margin-top:0.35rem;'>مختصات GPS محل کارِ شغل آزاد، مستقل از بخش «ج» و از محل سکونت، برای همین شغل ذخیره می‌شود.</span>
+            </div>
+          </div>
+          <!-- بخش «ج»: شغل وابسته (کارمندی) — جزئیات سازمانی و محل کار -->
+          <div class='hb-job-subsection' data-job-part='employee'>
+            <div class='hb-job-subsection-head'><i class='bi bi-building'></i> <b>ج) شغل وابسته (کارمندی)</b> <span class='hb-job-subsection-hint'>— سازمان/واحد/نوع استخدام/تاریخ استخدام/حوزه فعالیت/مهارت‌ها + آدرس محل کارِ سازمان</span></div>
+          </div>
+          <div class='hb-form-row' data-job-details-fields data-job-employee-fields>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>سازمان / شرکت</label>
+              {{ job_form.organization }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='department'>
+واحد سازمانی</span>
+</label>
+              {{ job_form.department }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='employment_type'>
+نوع استخدام</span>
+</label>
+              {{ job_form.employment_type }}            </div>
+          </div>
+          <div class='hb-form-row' data-job-details-fields data-job-employee-fields>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+تاریخ استخدام <small style='color:var(--hb-text-muted);font-size:0.7rem;'>(شمسی)</small></label>
+              <!-- تقویم شمسی (مانند تاریخ تولد): ورودی نمایشی readonly + فیلد پنهانِ میلادیِ {{ job_form.hire_date }} -->
+              <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age>
+                <div class='hb-shamsi-field'>
+                  <i class='bi bi-calendar3'></i>
+                  <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۳۸۰/۰۱/۰۱' readonly data-shamsi-input dir='rtl'>
+                  <!-- فیلد پنهانِ میلادی (مقدار ذخیره‌شده + نشانه‌های تقویم شمسی؛
+                       بدون data-shamsi-gregorian انتخابگر شمسی مقدار اولیه را نمی‌خواند) -->
+                  <input type='hidden' name='{{ job_form.hire_date.html_name }}' id='{{ job_form.hire_date.id_for_label }}'
+                         value='{% if job_form.hire_date.value %}{{ job_form.hire_date.value|date:"Y-m-d" }}{% endif %}'
+                         class='hb-chain-field' data-hire-date-gregorian='1' data-shamsi-gregorian>
+                </div>
+                <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+                <div class='hb-shamsi-info' data-shamsi-info></div>
+              </div>
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+حوزه فعالیت</label>
+              {{ job_form.field_of_activity }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+مهارت‌های تخصصی</label>
+              {{ job_form.skills }}            </div>
+          </div>
+          <input type='hidden' name='work_same_as_residence' value='on'>
+          <!-- آدرس و موقعیت GPS محل کار این شغل (به‌صورت مجزا برای هر شغل) — استان و شهر/شهرستان برای ذخیرهٔ شغل الزامی است -->
+          <div class='hb-form-row' data-job-details-fields data-job-loc-fields data-job-employee-fields>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+کشور محل کار</label>
+              <input type='text' class='hb-form-control hb-loc-country-static' dir='rtl' readonly value='{{ profile.country|default:"ایران" }}' data-loc-fa='{{ profile.country|default:"ایران" }}' data-loc-en='{{ profile.country_en }}' tabindex='-1'>
+              {{ job_form.work_country }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+استان محل کار (بخش ج — کارمندی) <span class='required'>*</span></label>
+              {{ job_form.work_province }}            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+شهر / شهرستان محل کار (بخش ج — کارمندی) <span class='required'>*</span></label>
+              {{ job_form.work_city }}            </div>
+            <div class='hb-form-group' style='flex:1.6;'>
+              <label class='hb-form-label'>
+آدرس محل کار (بخش ج — کارمندی) <span class='required'>*</span></label>
+              {{ job_form.work_address }}            </div>
+          </div>
+          <!-- موقعیت GPS محل کار (بخش «ج» — کارمندی): فیلد مجزای این بخش؛ مختصات
+               سنسور دستگاه برای محل سازمان (به‌صورت مجزا برای هر شغل) ثبت می‌شود -->
+          <div class='hb-form-row' data-job-details-fields data-job-employee-fields data-job-gps-fields>
+            <div class='hb-form-group' style='grid-column:1/-1;'>
+              <label class='hb-form-label'>
+موقعیت GPS محل کار (بخش ج — کارمندی)</label>
+              <div class='hb-loc-gps-row'>
+                <!-- فیلدهای پنهان GPS (خارج از ModelForm تا در ویرایش، مقدار قبلی پاک نشود) -->
+                <input type='hidden' name='work_gps_latitude' data-job-gps-lat>
+                <input type='hidden' name='work_gps_longitude' data-job-gps-lng>
+                <input type='hidden' name='work_gps_accuracy' data-job-gps-acc>
+                <input type='text' class='hb-form-control' dir='ltr' readonly placeholder='35.6892, 51.3890' data-job-gps-display>
+                <button type='button' class='hb-btn hb-btn-outline hb-btn-sm' data-job-gps-btn title='دریافت موقعیت دقیق از GPS دستگاه — Send your Current Location'>
+                  <i class='bi bi-crosshair'></i>
+ دریافت GPS
+                </button>
+                <button type='button' class='hb-btn hb-btn-dark hb-btn-sm' data-job-gps-clear title='پاک‌کردن مختصات ثبت‌شده'>
+                  <i class='bi bi-x-lg'></i> پاک کردن
+                </button>
+              </div>
+              <span data-job-gps-status style='font-size:0.75rem;color:var(--hb-text-muted);display:block;margin-top:0.35rem;'>مختصات GPS محل کارِ سازمان (بخش ج)، مستقل از شغل آزاد و از محل سکونت، ذخیره می‌شود.</span>
+            </div>
+          </div>
+          <!-- «شغل فعلی»: چک‌باکس مشترک بخش‌های «ب» و «ج» (data-job-current-fields) —
+               هر سه شغل می‌توانند هم‌زمان شغل فعلی باشند؛ حداقل یکی الزامی است
+               (سمت سرور: _commit_job_form و job_delete). فقط در «الف» خاموش می‌شود. -->
+          <div class='hb-form-row' data-job-current-fields style='margin-top:0.4rem;'>
+            <div class='hb-form-group' style='grid-column:1/-1;display:flex;align-items:flex-end;gap:0.6rem;flex-wrap:wrap;'>
+              <label style='display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer;'>
+{{ job_form.is_current }} شغل فعلی</label>
+              <span style='font-size:0.7rem;color:var(--hb-text-muted);'>هر سه شغل می‌توانند هم‌زمان «شغل فعلی» باشند؛ حداقل یکی الزامی است.</span>
+            </div>
+          </div>
+          <div style='display:flex;gap:0.5rem;margin-top:0.5rem;align-items:center;'>
+            <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' id='job-form-submit'>
+<i class='bi {% if job_edit %}bi-check-lg{% else %}bi-plus-lg{% endif %}'>
+</i>
+ <span id='job-form-submit-label'>{% if job_edit %}ذخیرهٔ تغییرات{% else %}افزودن شغل{% endif %}</span></button>
+          </div>
+        </form>
+        <!-- فرم واقعیِ آپلود مستندات: بیرونِ #job-form (فرم تودرتو مجاز نیست)؛
+             فایل‌اینپوتِ بالا با form='hb-job-doc-form' به همین فرم متصل است و
+             ارسال آن با AJAX (app.js) انجام می‌شود. فقط وقتی فرم شغل رندر می‌شود
+             نیاز است (فایل‌اینپوت هم فقط در همین شاخه رندر می‌شود). -->
+        <form method='post' action="{% url 'accounts:job_document_add' %}" enctype='multipart/form-data' id='hb-job-doc-form' data-loading='1'>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='job_docs'>
+          <!-- شناسهٔ شغلِ هدفِ لوگو: در حالت ویرایش، همان شغل؛ در حالت افزودن،
+               جدیدترین شغل کاربر (app.js آن را پیش از ارسال به‌روز می‌کند). -->
+          <input type='hidden' name='job_id' value='{% if job_edit %}{{ job_edit.id }}{% elif latest_job_id %}{{ latest_job_id }}{% endif %}'>
+        </form>
+        {% else %}        <p style='color:var(--hb-text-muted);font-size:0.82rem;background:rgba(184,134,11,0.08);padding:0.6rem 1rem;border-radius:8px;'>
+حداکثر {{ max_jobs }} شغل ثبت شده است. برای افزودن شغل جدید، ابتدا یکی از موارد بالا را حذف کنید.</p>
+        {% endif %}      </div>
+    </div>
+    <!-- 3. Education -->
+    <div class='hb-section-card' id='education'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-mortarboard'>
+</i>
+ <span data-i18n='education'>
+اطلاعات تحصیلی</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <form method='post' action="{% url 'core:profile' %}" data-education-form novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='education'>
+          {% if education_form.non_field_errors %}<div class='hb-field-error'>{{ education_form.non_field_errors }}</div>{% endif %}
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.degree.label }}</label>
+              {{ education_form.degree }}
+              {% if education_form.degree.errors %}<div class='hb-field-error'>{% for error in education_form.degree.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div class='hb-form-row' id='hb-education-institution-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.education_institution.label }}</label>
+              {{ education_form.education_institution }}
+              {% if education_form.education_institution.errors %}<div class='hb-field-error'>{% for error in education_form.education_institution.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div class='hb-form-row' id='hb-education-field-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.study_group.label }}</label>
+              {{ education_form.study_group }}
+              {% if education_form.study_group.help_text %}<small style='display:block;color:var(--hb-text-muted);font-size:0.72rem;margin-top:0.25rem;'>{{ education_form.study_group.help_text }}</small>{% endif %}
+              {% if education_form.study_group.errors %}<div class='hb-field-error'>{% for error in education_form.study_group.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.study_field.label }}</label>
+              {{ education_form.study_field }}
+              {% if education_form.study_field.errors %}<div class='hb-field-error'>{% for error in education_form.study_field.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div class='hb-form-row' id='hb-education-specialization-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.study_specialization.label }}</label>
+              {{ education_form.study_specialization }}
+              {% if education_form.study_specialization.errors %}<div class='hb-field-error'>{% for error in education_form.study_specialization.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.graduation_year.label }}</label>
+              {{ education_form.graduation_year }}
+              {% if education_form.graduation_year.errors %}<div class='hb-field-error'>{% for error in education_form.graduation_year.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.gpa.label }}</label>
+              {{ education_form.gpa }}
+              {% if education_form.gpa.errors %}<div class='hb-field-error'>{% for error in education_form.gpa.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.courses.label }}</label>
+              {{ education_form.courses }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.languages.label }}</label>
+              {{ education_form.languages }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ education_form.language_levels.label }}</label>
+              {{ education_form.language_levels }}
+            </div>
+          </div>
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره اطلاعات تحصیلی</button>
+            <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>فیلدهای ستاره‌دار الزامی هستند. رشته و گرایش از فهرست‌های مرجع پنل مدیریت انتخاب می‌شوند و به‌صورت سلسله‌مراتبی به هم وابسته‌اند.</small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- مدارک و فایل‌ها -->
+    <div class='hb-section-card' id='documents'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-folder2-open'>
+</i>
+ <span>
+مدارک و فایل‌ها</span>
+ <small style='font-size:0.7rem;color:var(--hb-text-muted);font-weight:400;'>(ذخیرهٔ اختصاصی در پوشهٔ کد ملی شما)</small>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if not has_national_id %}
+        <div class='hb-docs-locked'>
+          <i class='bi bi-shield-lock'></i>
+          <div>
+            این بخش تنها برای کاربرانی فعال است که <b>کد ملی</b> در بخش «اطلاعات شخصی» ثبت کرده‌اند.
+            پس از ثبت کد ملی، پوشهٔ اختصاصی شما (هم‌نامِ کد ملی) در پوشهٔ مدارک نرم‌افزار ساخته شده و بارگذاری فایل‌ها فعال می‌شود.
+          </div>
+        </div>
+        {% else %}
+        <div class='hb-docs-saved' style='margin-top:0;border-top:none;padding-top:0;'>
+          <h4>
+            <i class='bi bi-archive'></i> مدارک ذخیره‌شده
+            <span class='hb-doc-row-meta' style='margin-top:0;'>پوشهٔ اختصاصی: <b dir='ltr' style='font-family:ui-monospace,Consolas,monospace;'>Docs/{{ profile.national_id }}</b></span>
+          </h4>
+          {% if documents %}
+            {% for doc in documents %}
+            <div class='hb-doc-row'>
+              {% if doc.is_image %}
+              <a href="{% url 'accounts:document_download' doc.id %}?inline=1" target='_blank' rel='noopener' title='نمایش'>
+                <img class='hb-doc-row-thumb' src="{% url 'accounts:document_download' doc.id %}?inline=1" alt='{{ doc.get_doc_type_display }}'>
+              </a>
+              {% else %}
+              <span class='hb-doc-row-icon'><i class='bi {{ doc.icon_class }}'></i></span>
+              {% endif %}
+              <div class='hb-doc-row-main'>
+                <div class='hb-doc-row-name' title='{{ doc.original_name }}'>{{ doc.original_name|default:doc.file.name }}</div>
+                <div class='hb-doc-row-meta'>
+                  <span class='hb-doc-type-badge'>{{ doc.get_doc_type_display }}</span>
+                  <span>{% widthratio doc.file.size 1024 1 %} کیلوبایت</span>
+                  <span>{{ doc.uploaded_at|jdate }}</span>
+                </div>
+              </div>
+              <div class='hb-doc-row-actions'>
+                <a href="{% url 'accounts:document_download' doc.id %}" title='دانلود'><i class='bi bi-download'></i></a>
+                <form method='post' action="{% url 'core:profile' %}" style='margin:0;' onsubmit="return confirm('این مدرک حذف شود؟');">
+                  {% csrf_token %}
+                  <input type='hidden' name='action' value='doc_delete'>
+                  <input type='hidden' name='doc_id' value='{{ doc.id }}'>
+                  <button type='submit' title='حذف'><i class='bi bi-trash'></i></button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div style='font-size:0.82rem;color:var(--hb-text-muted);'><i class='bi bi-info-circle'></i> هنوز مدرکی بارگذاری نشده است.</div>
+          {% endif %}
+        </div>
+        {% if docs_form %}
+        <form method='post' action="{% url 'core:profile' %}" enctype='multipart/form-data' novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='docs'>
+          {% if docs_form.non_field_errors %}
+          <div style='margin-bottom:0.9rem;'>
+            {% for error in docs_form.non_field_errors %}
+              <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;background:rgba(192,57,43,0.12);color:#e74c3c;"><i class='bi bi-exclamation-circle'></i> {{ error }}</div>
+            {% endfor %}
+              </div>
+            {% endif %}
+          <div class='hb-docs-grid'>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-person-square'></i> {{ docs_form.personal_photo.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.personal_photo.help_text }}</div>
+              {{ docs_form.personal_photo }}
+              {% if docs_form.personal_photo.errors %}<div class='hb-field-error'>{% for e in docs_form.personal_photo.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-vector-pen'></i> {{ docs_form.signature.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.signature.help_text }}</div>
+              {{ docs_form.signature }}
+              {% if docs_form.signature.errors %}<div class='hb-field-error'>{% for e in docs_form.signature.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-credit-card-2-front'></i> {{ docs_form.national_card.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.national_card.help_text }}</div>
+              {{ docs_form.national_card }}
+              {% if docs_form.national_card.errors %}<div class='hb-field-error'>{% for e in docs_form.national_card.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-airplane'></i> {{ docs_form.passport.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.passport.help_text }}</div>
+              {{ docs_form.passport }}
+              {% if docs_form.passport.errors %}<div class='hb-field-error'>{% for e in docs_form.passport.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-mortarboard'></i> {{ docs_form.education_doc.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.education_doc.help_text }}</div>
+              {{ docs_form.education_doc }}
+              {% if docs_form.education_doc.errors %}<div class='hb-field-error'>{% for e in docs_form.education_doc.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-file-earmark-text'></i> {{ docs_form.resume.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.resume.help_text }}</div>
+              {{ docs_form.resume }}
+              {% if docs_form.resume.errors %}<div class='hb-field-error'>{% for e in docs_form.resume.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-file-earmark-ruled'></i> {{ docs_form.contract.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.contract.help_text }}</div>
+              {{ docs_form.contract }}
+              {% if docs_form.contract.errors %}<div class='hb-field-error'>{% for e in docs_form.contract.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-doc-tile'>
+              <div class='hb-doc-tile-title'><i class='bi bi-paperclip'></i> {{ docs_form.attachment.label }}</div>
+              <div class='hb-doc-hint'>{{ docs_form.attachment.help_text }}</div>
+              {{ docs_form.attachment }}
+              {% if docs_form.attachment.errors %}<div class='hb-field-error'>{% for e in docs_form.attachment.errors %}<i class='bi bi-exclamation-circle'></i> {{ e }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-cloud-arrow-up'></i> ذخیره مدارک و فایل‌ها</button>
+            <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>برای تصویر پرسنلی، امضا، کارت ملی، گذرنامه و مدارک تحصیلی فرمت عکس؛ برای رزومه و قراردادها فرمت Word یا PDF؛ و برای فایل‌های ضمیمه هر فرمتی مجاز است. بارگذاری مجددِ یک مدرک، نسخهٔ قبلی آن را جایگزین می‌کند.</small>
+          </div>
+        </form>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    <!-- 4. Organization -->
+    <div class='hb-section-card' id='organization'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-building'>
+</i>
+ <span data-i18n='organization'>
+اطلاعات سازمانی</span>
+ <small style='font-size:0.7rem;color:var(--hb-text-muted);font-weight:400;'>(همهٔ فیلدها اختیاری)</small>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='organization'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='personnel_id'>
+شماره پرسنلی</span>
+</label>
+              {{ organization_form.personnel_id }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='org_code'>
+کد سازمانی</span>
+</label>
+              {{ organization_form.org_code }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='manager'>
+مدیر مستقیم</span>
+</label>
+              {{ organization_form.manager_name }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+محل خدمت</label>
+              {{ organization_form.workplace }}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='branch'>
+شعبه</span>
+</label>
+              {{ organization_form.branch }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='work_group'>
+گروه کاری</span>
+</label>
+              {{ organization_form.work_group }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+وضعیت همکاری</label>
+              {{ organization_form.cooperation_status }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+تاریخ شروع همکاری <small style='color:var(--hb-text-muted);font-size:0.7rem;'>(شمسی)</small></label>
+              <!-- تقویم شمسی (مانند سایر تاریخ‌ها): ورودی نمایشی readonly + فیلد پنهانِ میلادی -->
+              <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age>
+                <div class='hb-shamsi-field'>
+                  <i class='bi bi-calendar3'></i>
+                  <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۳۸۰/۰۱/۰۱' readonly data-shamsi-input dir='rtl'>
+                  <input type='hidden' name='{{ organization_form.hire_date.html_name }}' id='{{ organization_form.hire_date.id_for_label }}'
+                         value='{% if organization_form.hire_date.value %}{{ organization_form.hire_date.value|date:"Y-m-d" }}{% endif %}'
+                         data-shamsi-gregorian>
+                </div>
+                <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+                <div class='hb-shamsi-info' data-shamsi-info></div>
+              </div>
+            </div>
+          </div>
+          {% if organization_form.hire_date.errors %}
+          <div class='hb-field-error'><i class='bi bi-exclamation-circle'></i> تاریخ شروع همکاری نامعتبر است.</div>
+          {% endif %}
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره اطلاعات سازمانی</button>
+            <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>همهٔ فیلدهای این بخش آزاد و اختیاری هستند؛ فقط موارد موردنیاز را تکمیل کنید.</small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- 5. Financial -->
+    <div class='hb-section-card' id='financial'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-cash-stack'>
+</i>
+ <span data-i18n='financial'>
+اطلاعات مالی</span>
+ <small style='font-size:0.7rem;color:var(--hb-text-muted);font-weight:400;'>(برای دریافت وجه فروش سکه، فقط اعلام یک شماره شبا از بانک‌های ایران کافی است)</small>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if financial_form.non_field_errors %}
+        <div style='margin-bottom:1rem;'>
+          {% for error in financial_form.non_field_errors %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;background:rgba(192,57,43,0.12);color:#e74c3c;"><i class='bi bi-exclamation-circle'></i> {{ error }}</div>
+          {% endfor %}
+            </div>
+          {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='financial'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label' for='{{ financial_form.iban.id_for_label }}'>{{ financial_form.iban.label }}</label>
+              {{ financial_form.iban }}
+              {% if financial_form.iban.help_text %}<small style='color:var(--hb-text-muted);font-size:0.72rem;display:block;margin-top:0.25rem;'>{{ financial_form.iban.help_text }}</small>{% endif %}
+              {% if financial_form.iban.errors %}
+              <div class='hb-field-error'>{% for error in financial_form.iban.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+              {% if profile.iban %}
+              <small style='color:var(--hb-success);font-size:0.78rem;display:block;margin-top:0.4rem;'><i class='bi bi-patch-check'></i> شبأ ثبت‌شده: <b dir='ltr' style='font-family:ui-monospace,Consolas,monospace;letter-spacing:1px;'>{{ profile.iban }}</b> — {{ profile.bank_name|default:'بانک ملی ایران' }}</small>
+              {% endif %}
+              {% if iban_verify %}
+              {% if iban_verify.match == True %}
+              <small style='color:var(--hb-success);font-size:0.78rem;display:block;margin-top:0.4rem;'><i class='bi bi-shield-check'></i> شبا تأیید می‌باشد: {{ iban_verify.message }}</small>
+              {% elif iban_verify.match == False %}
+              <small style='color:#e74c3c;font-size:0.78rem;display:block;margin-top:0.4rem;'><i class='bi bi-shield-x'></i> شبا تأیید نمی‌باشد: {{ iban_verify.message }}</small>
+              {% else %}
+              <small style='color:var(--hb-text-muted);font-size:0.72rem;display:block;margin-top:0.4rem;'><i class='bi bi-shield-exclamation'></i> {{ iban_verify.message }}</small>
+              {% endif %}
+              {% endif %}
+            </div>
+          </div>
+          <div style='margin-top:0.5rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره اطلاعات مالی</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- 6. System Access -->
+    <div class='hb-section-card'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-shield-lock'>
+</i>
+ <span data-i18n='system_access'>
+اطلاعات دسترسی سیستم</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='username'>
+نام کاربری</span>
+</label>
+            <input type='text' class='hb-form-control' dir='ltr' value='habib.m'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+سطح دسترسی</label>
+            <select class='hb-form-control hb-form-select'>
+              <option>
+مدیر سیستم</option>
+              <option>
+مدیر</option>
+              <option>
+کاربر عادی</option>
+              <option>
+مهمان</option>
+            </select>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='role'>
+نقش کاربری</span>
+</label>
+            <input type='text' class='hb-form-control' value='مدیر عامل'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='last_login'>
+آخرین ورود</span>
+</label>
+            <input type='text' class='hb-form-control' value='2026-08-28 14:30' readonly>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تعداد ورود</label>
+            <input type='number' class='hb-form-control' value='142' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+وضعیت حساب</label>
+            <select class='hb-form-control hb-form-select'>
+              <option>
+فعال</option>
+              <option>
+غیرفعال</option>
+              <option>
+معلق</option>
+            </select>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+<span data-i18n='two_factor'>
+احراز هویت دومرحله‌ای</span>
+</label>
+            <select class='hb-form-control hb-form-select'>
+              <option data-i18n='enabled'>
+فعال</option>
+              <option data-i18n='disabled'>
+غیرفعال</option>
+            </select>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+دستگاه‌های مجاز</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 7. Security -->
+    <div class='hb-section-card' id='security'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-shield-shaded'>
+</i>
+ <span data-i18n='security'>
+اطلاعات امنیتی</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <!-- اعتبارنامهٔ مجزای ماژول حسابداری -->
+        <div id='acc-credentials-card' style='background:rgba(201,162,39,0.06);border:1px solid var(--hb-border);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+          {% if acc_credentials_notice %}
+          <div id='acc-credentials-notice' role='alert' aria-live='assertive' tabindex='-1' style='padding:0.7rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;display:flex;align-items:flex-start;gap:0.5rem;{% if acc_credentials_notice.level == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);border:1px solid rgba(46,160,67,0.35);{% else %}background:rgba(192,57,43,0.12);color:#e74c3c;border:1px solid rgba(192,57,43,0.35);{% endif %}'>
+            <i class='bi {% if acc_credentials_notice.level == 'success' %}bi-check-circle{% else %}bi-exclamation-circle{% endif %}'></i>
+            <span>{{ acc_credentials_notice.text }}</span>
+          </div>
+          {% endif %}
+          <div style='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.35rem;'>
+            <i class='bi bi-calculator' style='color:var(--hb-gold-300);'></i>
+            <b style='font-size:0.95rem;'>نام کاربری و کلمه عبور ماژول حسابداری</b>
+            {% if acc_credentials_set %}
+              <span class='hb-badge hb-badge-success'><i class='bi bi-check-circle'></i> تعریف شده</span>
+              {% if acc_password_updated_at %}
+                <span style='font-size:0.75rem;color:var(--hb-text-muted);'>آخرین تغییر: {{ acc_password_updated_at|jdatetime }}</span>
+              {% endif %}
+            {% else %}
+              <span class='hb-badge hb-badge-warning'><i class='bi bi-exclamation-triangle'></i> هنوز تعریف نشده</span>
+            {% endif %}
+          </div>
+          <p style='font-size:0.8rem;color:var(--hb-text-muted);margin:0 0 0.75rem;'>
+            این نام کاربری و کلمه عبور <b>فقط برای ورود به ماژول حسابداری</b> استفاده می‌شود و
+            هیچ ارتباطی با ورود اصلی سایت (شماره موبایل) ندارد. نام کاربری فقط می‌تواند ترکیبی از
+            <b>حروف انگلیسی و اعداد</b> باشد (بدون فاصله و کاراکترهای خاص؛ تفاوتی بین حروف بزرگ و
+            کوچک انگلیسی نیست). کلمه عبور به‌صورت رمزنگاری‌شدهٔ استاندارد (PBKDF2) ذخیره می‌شود و
+            حداقل ۸ کاراکتر با ترکیب حروف و اعداد لازم است.
+          </p>
+          <form method='post' action='{% url "core:profile" %}'>
+            {% csrf_token %}
+            <input type='hidden' name='action' value='acc_credentials'>
+            <div class='hb-form-row'>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ acc_credentials_form.username.label }}</label>
+                {{ acc_credentials_form.username }}
+                {% for e in acc_credentials_form.username.errors %}<div style="font-size:0.78rem;color:#e74c3c;margin-top:0.25rem;">{{ e }}</div>{% endfor %}
+              </div>
+              {% if acc_credentials_set %}
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ acc_credentials_form.current_password.label }}</label>
+                {{ acc_credentials_form.current_password }}
+                {% for e in acc_credentials_form.current_password.errors %}<div style="font-size:0.78rem;color:#e74c3c;margin-top:0.25rem;">{{ e }}</div>{% endfor %}
+              </div>
+              {% endif %}
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ acc_credentials_form.password.label }}</label>
+                {{ acc_credentials_form.password }}
+                {% for e in acc_credentials_form.password.errors %}<div style="font-size:0.78rem;color:#e74c3c;margin-top:0.25rem;">{{ e }}</div>{% endfor %}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ acc_credentials_form.confirm_password.label }}</label>
+                {{ acc_credentials_form.confirm_password }}
+                {% for e in acc_credentials_form.confirm_password.errors %}<div style="font-size:0.78rem;color:#e74c3c;margin-top:0.25rem;">{{ e }}</div>{% endfor %}
+              </div>
+            </div>
+            <div style='font-size:0.75rem;color:var(--hb-text-muted);margin-bottom:0.6rem;'>{{ acc_credentials_form.username.help_text }}</div>
+            <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+              <i class='bi bi-shield-check'></i>
+              {% if acc_credentials_set %}به‌روزرسانی اعتبارنامهٔ حسابداری{% else %}ذخیرهٔ اعتبارنامهٔ حسابداری{% endif %}
+            </button>
+          </form>
+          {% if acc_credentials_set %}
+          <!-- ریست کلمهٔ عبور حسابداری (فراموش‌شده) — بدون نیاز به کلمهٔ عبور فعلی -->
+          <div id='acc-recover-wrap' style='margin-top:0.75rem;padding-top:0.75rem;border-top:1px dashed var(--hb-border);'>
+            <details id='acc-reset-details'>
+              <summary style='cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--hb-gold-300);'>
+                <i class='bi bi-key'></i> کلمهٔ عبورم را فراموش کرده‌ام — ریست کلمهٔ عبور
+              </summary>
+              <form method='post' action='{% url "core:profile" %}' id='acc-reset-form' style='margin-top:0.6rem;'
+                    onsubmit="return confirm('کلمهٔ عبور قبلی حسابداری برای همیشه باطل شود و کلمهٔ عبور جدید ثبت گردد؟');">
+                {% csrf_token %}
+                <input type='hidden' name='action' value='acc_reset_password'>
+                <div class='hb-form-row'>
+                  <div class='hb-form-group'>
+                    <label class='hb-form-label'>نام کاربری حسابداری</label>
+                    <input type='text' class='hb-form-control' dir='ltr' readonly value='{{ request.user.acc_username }}'>
+                  </div>
+                  <div class='hb-form-group'>
+                    <label class='hb-form-label'>{{ acc_reset_form.password.label }}</label>
+                    {{ acc_reset_form.password }}
+                    {% for e in acc_reset_form.password.errors %}<div style="font-size:0.78rem;color:#e74c3c;margin-top:0.25rem;">{{ e }}</div>{% endfor %}
+                  </div>
+                  <div class='hb-form-group'>
+                    <label class='hb-form-label'>{{ acc_reset_form.confirm_password.label }}</label>
+                    {{ acc_reset_form.confirm_password }}
+                    {% for e in acc_reset_form.confirm_password.errors %}<div style="font-size:0.78rem;color:#e74c3c;margin-top:0.25rem;">{{ e }}</div>{% endfor %}
+                  </div>
+                </div>
+                <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' id='acc-reset-btn'>
+                  <i class='bi bi-arrow-repeat'></i> ریست کلمهٔ عبور
+                </button>
+              </form>
+              <p style='font-size:0.75rem;color:var(--hb-text-muted);margin:0.5rem 0 0;'>
+                کلمهٔ عبور فعلی لازم نیست؛ کلمهٔ عبور قبلی باطل و کلمهٔ عبور جدید ثبت می‌شود.
+                نام کاربری تغییر نمی‌کند و همان قبلی باقی می‌ماند.
+              </p>
+            </details>
+          </div>
+          {% endif %}
+          {% if acc_credentials_notice %}
+          <script>
+            (function () {
+              var card = document.getElementById('acc-credentials-card');
+              var notice = document.getElementById('acc-credentials-notice');
+              if (!notice) return;
+              // فوکوس روی اعلان تا توسط صفحه‌خوان خوانده شده و نقطهٔ تمرکز کاربر شود
+              try { notice.focus({ preventScroll: false }); } catch (e) { notice.focus(); }
+              if (card && card.scrollIntoView) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+              // هایلایت موقت کارت برای جلب توجه
+              if (card) {
+                card.style.transition = 'box-shadow 0.4s ease';
+                card.style.boxShadow = '0 0 0 3px rgba(201,162,39,0.45)';
+                setTimeout(function () { card.style.boxShadow = ''; }, 2500);
+              }
+              // در حالت خطا، فوکوس روی فیلد مقصر (مثلاً تکرار کلمه عبور)
+              {% if acc_credentials_notice.field %}
+              var field = document.querySelector('input[name="{{ acc_credentials_notice.field }}"]');
+              if (field) { try { field.focus(); } catch (e) {} }
+              {% endif %}
+            })();
+          </script>
+          {% endif %}
+        </div>
+
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+سوالات امنیتی</label>
+            <input type='text' class='hb-form-control' placeholder='نام اولین معلم شما؟'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تاریخ تغییر رمز</label>
+            <input type='date' class='hb-form-control' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+وضعیت امنیت حساب</label>
+            <select class='hb-form-control hb-form-select'>
+              <option>
+ایمن</option>
+              <option>
+نیاز به بررسی</option>
+              <option>
+مشکوک</option>
+            </select>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+IPهای اخیر</label>
+            <input type='text' class='hb-form-control' value='192.168.1.1, 10.0.0.5' readonly>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 8. Skills -->
+    <div class='hb-section-card' id='skills'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-stars'>
+</i>
+ <span data-i18n='skills'>
+مهارت‌ها</span>
+ <small style='font-size:0.7rem;color:var(--hb-text-muted);font-weight:400;'>(همهٔ فیلدها اختیاری)</small>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='skills'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+مهارت‌های فنی</label>
+              {{ skills_form.technical_skills }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+مهارت‌های نرم</label>
+              {{ skills_form.soft_skills }}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+نرم‌افزارهای مسلط</label>
+              {{ skills_form.software }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+زبان‌های برنامه‌نویسی</label>
+              {{ skills_form.programming_languages }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+سطح مهارت</label>
+              {{ skills_form.skill_level }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+علایق شغلی</label>
+              {{ skills_form.career_interests }}
+            </div>
+          </div>
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره مهارت‌ها</button>
+            <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>همهٔ فیلدهای این بخش آزاد و اختیاری هستند؛ فقط موارد موردنیاز را تکمیل کنید.</small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- 9. Projects -->
+    <div class='hb-section-card'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-kanban'>
+</i>
+ <span data-i18n='projects_info'>
+پروژه‌ها</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+پروژه‌های جاری</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+پروژه‌های قبلی</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+نقش در پروژه</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+ساعات کاری</label>
+            <input type='number' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+وضعیت پروژه</label>
+            <select class='hb-form-control hb-form-select'>
+              <option>
+در حال انجام</option>
+              <option>
+تکمیل شده</option>
+              <option>
+معلق</option>
+              <option>
+لغو شده</option>
+            </select>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+درصد پیشرفت</label>
+            <input type='number' class='hb-form-control' min='0' max='100'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+ارزیابی عملکرد</label>
+            <select class='hb-form-control hb-form-select'>
+              <option>
+عالی</option>
+              <option>
+خوب</option>
+              <option>
+متوسط</option>
+              <option>
+ضعیف</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 10. Health -->
+    <div class='hb-section-card' id='health'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-heart-pulse'>
+</i>
+ <span data-i18n='health'>
+اطلاعات سلامت</span>
+ <small style='font-size:0.7rem;color:var(--hb-text-muted);font-weight:400;'>(فقط گروه خونی اجباری است؛ بقیهٔ فیلدها اختیاری)</small>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='health'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+گروه خونی <span class='required'>
+*</span>
+</label>
+              {{ health_form.blood_group }}
+              {% if health_form.blood_group.errors %}
+              <div class='hb-field-error'>
+                {% for error in health_form.blood_group.errors %}
+                  <i class='bi bi-exclamation-circle'>
+</i> {{ error }}
+                {% endfor %}
+</div>
+                {% endif %}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+حساسیت‌ها</label>
+              {{ health_form.allergies }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+وضعیت بیمه درمان</label>
+              {{ health_form.insurance_status }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+پزشک معتمد</label>
+              {{ health_form.trusted_doctor }}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+شرایط اضطراری</label>
+              {{ health_form.emergency_conditions }}
+            </div>
+          </div>
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'>
+<i class='bi bi-check-lg'>
+</i>
+ ذخیره اطلاعات سلامت</button>
+            <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>فقط گروه خونی الزامی است؛ سایر فیلدها اختیاری‌اند و هر مورد را خواستید تکمیل کنید.</small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class='hb-section-card'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-geo-alt'>
+</i>
+ <span data-i18n='location'>
+اطلاعات مکانی</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <div style='display:flex;align-items:flex-start;gap:0.6rem;padding:0.7rem 1rem;border-radius:10px;margin-bottom:1rem;background:rgba(201,162,39,0.1);border:1px solid rgba(201,162,39,0.35);font-size:0.85rem;color:var(--hb-text-secondary);line-height:1.8;'>
+          <i class='bi bi-house-check' style='color:var(--hb-gold-300);font-size:1.1rem;flex-shrink:0;margin-top:0.15rem;'></i>
+          <span><strong>آدرس «محل سکونت» شما:</strong> آدرس و موقعیت مکانی که در این بخش ثبت می‌کنید، محل سکونت شماست و کشور/استان/شهرِ آن از فهرست مرجعِ «اطلاعات مکانی» انتخاب می‌شود؛ همین اطلاعات برای یافتن کاربرانِ هم‌شهری و ارسال‌های هدفمند استفاده می‌شود. موقعیتِ «محل کار» از این بخش حذف شده و برای هر شغل به‌صورت مجزا در بخش «اطلاعات شغلی» ثبت می‌شود (پیش‌فرض آن: همان محل سکونت شما).</span>
+        </div>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if pending_location %}
+        <div style='display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;border-radius:10px;margin-bottom:1rem;background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.35);font-size:0.85rem;color:var(--hb-info);'>
+          <i class='bi bi-crosshair'></i>
+          <span>
+            موقعیت پیشنهادی هنگام ثبت‌نام شناسایی شد
+            {% if pending_location.city %}({{ pending_location.city }}{% if pending_location.province %}، {{ pending_location.province }}{% endif %}){% endif %}؛
+            صحت آن را بررسی و در صورت درستی با «تأیید و ذخیره موقعیت» ثبت کنید.
+          </span>
+        </div>
+        {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" data-location-form>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='location'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+موقعیت GPS</label>
+              <div class='hb-loc-gps-row'>
+                <input type='text' class='hb-form-control' dir='ltr' readonly placeholder='35.6892, 51.3890' data-loc-coords value='{% if profile.has_coordinates %}{{ profile.latitude }}, {{ profile.longitude }}{% endif %}'>
+                <button type='button' class='hb-btn hb-btn-outline hb-btn-sm' data-locate-btn title='دریافت موقعیت دقیق از GPS دستگاه'>
+                  <i class='bi bi-crosshair'></i>
+ دریافت GPS
+                </button>
+              </div>
+              {{ location_form.latitude }}
+              {{ location_form.longitude }}
+              <input type='hidden' name='gps_accuracy' data-gps-accuracy-input value='{{ gps_accuracy }}'>
+              <span data-gps-accuracy style='font-size:0.75rem;color:var(--hb-text-muted);display:block;margin-top:0.35rem;'></span>
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+کشور</label>
+              <input type='text' class='hb-form-control hb-loc-country-static' dir='rtl' readonly value='{{ profile.country|default:"ایران" }}' data-loc-fa='{{ profile.country|default:"ایران" }}' data-loc-en='{{ profile.country_en }}' tabindex='-1'>
+              {{ location_form.country }}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='province'>
+استان</span>
+ <span class='required'>*</span>
+</label>
+              {{ location_form.province }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+شهر / شهرستان <span class='required'>*</span></label>
+              {{ location_form.city }}
+            </div>
+            <div class='hb-form-group' style='flex:1.6;'>
+              <label class='hb-form-label'>
+<span data-i18n='address'>
+آدرس</span>
+ <span class='required'>*</span>
+</label>
+              {{ location_form.address }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+<span data-i18n='postal_code'>
+کد پستی (اختیاری)</span>
+</label>
+              {{ location_form.postal_code }}
+            </div>
+          </div>
+          <div style='margin-top:0.9rem;'><span style='font-size:0.84rem;color:var(--hb-text-muted);line-height:1.9;' data-locate-status>
+مختصات فقط از GPS دستگاه دریافت می‌شود؛ سپس استان و شهر/شهرستان را از فهرست انتخاب و آدرس را کامل کنید.
+          </span></div>
+          <div style='margin-top:1rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;'>
+            <button type='submit' class='hb-btn hb-btn-primary'>
+<i class='bi bi-check-lg'>
+</i>
+ تأیید و ذخیره موقعیت
+            </button>
+          </div>
+          {% if location_form.errors %}
+          <div class='hb-field-error' style='margin-top:0.75rem;'>
+            <div style='display:flex;align-items:flex-start;gap:0.4rem;'>
+              <i class='bi bi-exclamation-circle' style='margin-top:0.12rem;'></i>
+              <span>لطفاً موارد زیر را اصلاح کنید:</span>
+            </div>
+            <ul style='margin:0.4rem 1.4rem 0 0;padding:0;list-style:disc;'>
+              {% for field, errs in location_form.errors.items %}
+                {% for err in errs %}
+                <li style='margin-bottom:0.2rem;'>{{ err }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+    <!-- 13. System Settings -->
+    <div class='hb-section-card' id='ui_settings'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-gear'>
+</i>
+ <span data-i18n='system_settings'>
+تنظیمات شخصی سیستم</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='ui_settings'>
+          {% if ui_settings_form.non_field_errors %}
+          <div class='hb-field-error' style='margin-bottom:1rem;'>
+            {% for error in ui_settings_form.non_field_errors %}
+              <i class='bi bi-exclamation-circle'></i> {{ error }}
+            {% endfor %}
+              </div>
+            {% endif %}
+          <p style="font-size:0.8rem;color:var(--hb-text-muted);margin:0 0 0.75rem;">
+            <i class="bi bi-info-circle"></i>
+            فقط «تم نرم‌افزار» و «رنگ رابط کاربری» قابل تغییرند؛ سایر موارد (زبان،
+            تقویم، منطقه زمانی، فونت و اعلان‌ها) پیش‌فرض و ثابت سیستم هستند.
+          </p>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>تم نرم‌افزار</label>
+              {{ ui_settings_form.ui_theme }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>رنگ رابط کاربری</label>
+              {{ ui_settings_form.ui_accent }}
+              <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'>رنگ تأکیدی رابط (جایگزین طلایی پیش‌فرض)</small>
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>زبان</label>
+              <input class='hb-form-control' value='فارسی' disabled>
+              <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'>تغییر زبان از منوی بالای صفحه (موقتی) و ثابت روی فارسی</small>
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>تقویم / منطقه زمانی / فونت / اعلان‌ها</label>
+              <input class='hb-form-control' value='پیش‌فرض و ثابت سیستم' disabled>
+            </div>
+          </div>
+          <button type='submit' class='hb-btn hb-btn-primary'>
+            <i class='bi bi-check-lg'></i> ذخیره تنظیمات شخصی
+          </button>
+        </form>
+      </div>
+    </div>
+<!-- 14. Communication -->
+    <div class='hb-section-card' id='communication'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-chat-dots'>
+</i>
+ <span data-i18n='communication'>
+اطلاعات ارتباطی</span>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if contact_form.non_field_errors %}
+        <div style='margin-bottom:1rem;'>
+          {% for error in contact_form.non_field_errors %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;background:rgba(192,57,43,0.12);color:#e74c3c;"><i class='bi bi-exclamation-circle'></i> {{ error }}</div>
+          {% endfor %}
+            </div>
+          {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='contact'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>شماره موبایل <span class='required'>*</span></label>
+              {{ contact_form.mobile_number }}
+              {% if contact_form.mobile_number.errors %}
+              <div class='hb-field-error'>{% for error in contact_form.mobile_number.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+              <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'>شماره موبایل، شناسهٔ ورود شماست و الزامی است؛ قابل ویرایش نیست.</small>
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ contact_form.personal_phone.label }}</label>
+              {{ contact_form.personal_phone }}
+              {% if contact_form.personal_phone.errors %}
+              <div class='hb-field-error'>{% for error in contact_form.personal_phone.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ contact_form.phone.label }}</label>
+              {{ contact_form.phone }}
+              {% if contact_form.phone.errors %}
+              <div class='hb-field-error'>{% for error in contact_form.phone.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>{{ contact_form.email.label }}</label>
+              {{ contact_form.email }}
+              {% if contact_form.email.errors %}
+              <div class='hb-field-error'>{% for error in contact_form.email.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group' style='grid-column:1/-1;'>
+              <label class='hb-form-label'>{{ contact_form.website.label }}</label>
+              {{ contact_form.website }}
+              {% if contact_form.website.errors %}
+              <div class='hb-field-error'>{% for error in contact_form.website.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+            </div>
+          </div>
+          <div style='margin-top:0.75rem;border-top:1px dashed var(--hb-navy-500);padding-top:0.75rem;'>
+            <div style='font-size:0.85rem;font-weight:600;color:var(--hb-gold-400);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;'><i class='bi bi-globe2'></i> شبکه‌های اجتماعی ایرانی</div>
+            <div class='hb-form-row'>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_bale.label }}</label>
+                {{ contact_form.social_bale }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_eitaa.label }}</label>
+                {{ contact_form.social_eitaa }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_rubika.label }}</label>
+                {{ contact_form.social_rubika }}
+              </div>
+            </div>
+            <div style='font-size:0.85rem;font-weight:600;color:var(--hb-gold-400);margin:0.75rem 0 0.5rem;display:flex;align-items:center;gap:0.4rem;'><i class='bi bi-globe'></i> شبکه‌های اجتماعی بین‌المللی</div>
+            <div class='hb-form-row'>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_telegram.label }}</label>
+                {{ contact_form.social_telegram }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_whatsapp.label }}</label>
+                {{ contact_form.social_whatsapp }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_instagram.label }}</label>
+                {{ contact_form.social_instagram }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_facebook.label }}</label>
+                {{ contact_form.social_facebook }}
+              </div>
+            </div>
+            <div class='hb-form-row'>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_x.label }}</label>
+                {{ contact_form.social_x }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_youtube.label }}</label>
+                {{ contact_form.social_youtube }}
+              </div>
+              <div class='hb-form-group'>
+                <label class='hb-form-label'>{{ contact_form.social_linkedin.label }}</label>
+                {{ contact_form.social_linkedin }}
+              </div>
+            </div>
+          </div>
+          <div class='hb-form-row' style='margin-top:0.75rem;border-top:1px dashed var(--hb-navy-500);padding-top:0.75rem;'>
+            <div class='hb-form-group' style='flex:1 1 100%;'>
+              <label class='hb-form-label'>کد ملی معرف (شخصی که شما را معرفی کرده است)</label>
+              {{ contact_form.referrer_national_id }}
+              {% if contact_form.referrer_national_id.errors %}
+              <div class='hb-field-error'>{% for error in contact_form.referrer_national_id.errors %}<i class='bi bi-exclamation-circle'></i> {{ error }}{% endfor %}</div>{% endif %}
+              {% if request.user.referrer %}
+              <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'><i class='bi bi-person-check'></i> معرف فعلی: {{ request.user.referrer.profile.full_name }} ({{ request.user.referrer.mobile_number }})</small>
+              {% endif %}
+              <small style='display:block;margin-top:0.3rem;font-size:0.72rem;color:var(--hb-text-muted);'>کد ملیِ عضوی که هنگام ورود شما را معرفی کرده است؛ برخلاف بخش اطلاعات شخصی، اینجا قابل تغییر است. کد باید متعلق به عضوی باشد که قبلاً ثبت‌نام کرده و کد ملی‌اش را در پروفایل ثبت کرده است.</small>
+            </div>
+          </div>
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره اطلاعات ارتباطی</button>
+          </div>
+        </form>
+      </div>
+    </div>    <!-- 15. Training -->
+    <div class='hb-section-card' id='training'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-journal-bookmark'>
+</i>
+ <span data-i18n='training'>
+سوابق آموزشی</span>
+ <small style='font-size:0.7rem;color:var(--hb-text-muted);font-weight:400;'>(همهٔ فیلدها اختیاری)</small>
+</h3>
+        <i class='bi bi-chevron-down hb-section-toggle'>
+</i>
+      </div>
+      <div class='hb-section-body'>
+        {% if messages %}
+        <div style='margin-bottom:1rem;'>
+          {% for message in messages %}
+            <div style="padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}">
+              <i class="bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}"></i>
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <form method='post' action="{% url 'core:profile' %}" novalidate>
+          {% csrf_token %}
+          <input type='hidden' name='action' value='training'>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+کلاس‌ها</label>
+              {{ training_form.classes }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+وبینارها</label>
+              {{ training_form.webinars }}
+            </div>
+          </div>
+          <div class='hb-form-row'>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+گواهینامه‌ها</label>
+              {{ training_form.certificates }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+امتیازات آموزشی</label>
+              {{ training_form.training_score }}
+            </div>
+            <div class='hb-form-group'>
+              <label class='hb-form-label'>
+آزمون‌ها</label>
+              {{ training_form.exams }}
+            </div>
+          </div>
+          {% if training_form.training_score.errors %}
+          <div class='hb-field-error'><i class='bi bi-exclamation-circle'></i> امتیازات آموزشی باید عدد باشد.</div>
+          {% endif %}
+          <div style='margin-top:1rem;'>
+            <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیره سوابق آموزشی</button>
+            <small style='display:block;margin-top:0.5rem;color:var(--hb-text-muted);'>همهٔ فیلدهای این بخش آزاد و اختیاری هستند؛ فقط موارد موردنیاز را تکمیل کنید.</small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- 16. Work History -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-clock-history'>
+</i>
+ <span data-i18n='work_history'>
+سوابق کاری</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+شرکت‌های قبلی</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+سمت‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تاریخ شروع و پایان</label>
+            <input type='text' class='hb-form-control' placeholder='1400-01-01 تا 1402-12-29'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+علت ترک کار</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+دستاوردها</label>
+            <textarea class='hb-form-control hb-form-textarea'>
+</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 17. Interests -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-heart'>
+</i>
+ <span data-i18n='interests'>
+علایق و ترجیحات</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+حوزه‌های مورد علاقه</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+کتاب‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+ورزش</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+سرگرمی‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+سبک یادگیری</label>
+            <select class='hb-form-control hb-form-select'>
+              <option>
+تصویری</option>
+              <option>
+شنیداری</option>
+              <option>
+عملی</option>
+              <option>
+ترکیبی</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 18. Vehicle -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-car-front'>
+</i>
+ <span data-i18n='vehicle'>
+اطلاعات خودرو</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+نوع خودرو</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+پلاک</label>
+            <input type='text' class='hb-form-control' dir='ltr'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+بیمه خودرو</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+گواهینامه</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+محل پارک</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 19. Equipment -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-laptop'>
+</i>
+ <span data-i18n='equipment'>
+اطلاعات تجهیزات</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+لپ‌تاپ</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+موبایل</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تجهیزات تحویلی</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+شماره سریال</label>
+            <input type='text' class='hb-form-control' dir='ltr'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تاریخ تحویل</label>
+            <input type='date' class='hb-form-control'>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 21. Scoring -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-trophy'>
+</i>
+ <span data-i18n='scoring'>
+امتیازدهی و عملکرد</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+امتیاز کلی</label>
+            <input type='number' class='hb-form-control' min='0' max='100'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+KPI</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+پاداش‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تذکرات</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+رتبه سازمانی</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+میزان فعالیت</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 22. Workflow -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-arrow-repeat'>
+</i>
+ <span data-i18n='workflow'>
+گردش کار</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+درخواست‌های ثبت‌شده</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+مأموریت‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+مرخصی‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+اضافه‌کاری</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تأییدیه‌ها</label>
+            <textarea class='hb-form-control hb-form-textarea'>
+</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 23. AI Info -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-cpu'>
+</i>
+ <span data-i18n='ai_info'>
+اطلاعات هوش مصنوعی</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+علایق استخراج‌شده</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+الگوی کاری</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+ساعات فعالیت</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+پیشنهادهای هوشمند</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+رفتار کاربران</label>
+            <textarea class='hb-form-control hb-form-textarea' readonly>
+</textarea>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+سطح بهره‌وری</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 24. Activity History -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-clock-history'>
+</i>
+ <span data-i18n='activity_history'>
+تاریخچه فعالیت</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+ورودها</label>
+            <input type='text' class='hb-form-control' value='142 بار' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+تغییرات اطلاعات</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+عملیات انجام‌شده</label>
+            <input type='text' class='hb-form-control' readonly>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+دستگاه‌های استفاده‌شده</label>
+            <input type='text' class='hb-form-control' value='Chrome/Windows, Safari/iOS' readonly>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 25. Custom Fields -->
+    <div class='hb-section-card hb-section-disabled' data-section-disabled='true'>
+      <div class='hb-section-header'>
+        <h3>
+<i class='bi bi-sliders'>
+</i>
+ <span data-i18n='custom_fields'>
+اطلاعات سفارشی</span>
+</h3>
+        <span class='hb-section-soon'>غیرفعال — به‌زودی</span>
+      </div>
+      <div class='hb-section-body'>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+فیلدهای تعریف‌شده توسط مدیر</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+دسته‌بندی دلخواه</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+برچسب‌ها (Tags)</label>
+            <input type='text' class='hb-form-control' placeholder='با کاما جدا کنید'>
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+یادداشت‌ها</label>
+            <input type='text' class='hb-form-control'>
+          </div>
+        </div>
+        <div class='hb-form-row'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>
+توضیحات آزاد</label>
+            <textarea class='hb-form-control hb-form-textarea'>
+</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Preview Profile Button -->
+    <div style='padding:1rem 0 3rem;text-align:center;'>
+      <a href="{% url 'core:profile_preview' %}" class='hb-btn hb-btn-primary hb-btn-lg' style='min-width:280px;display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;text-decoration:none;'>
+        <i class='bi bi-eye'>
+</i>
+ <span>پیش‌نمایش اطلاعات من</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+</main> <script src='{% static "core/js/app.js" %}?v=50'>
+</script>
+<script>
+// بخش‌های موقتاً غیرفعال پروفایل (data-section-disabled) همیشه بسته می‌مانند:
+// کلیک روی سرتیتر هیچ اثری ندارد تا محتوای «به‌زودی» در دسترس قرار نگیرد.
+// رهگیری در فاز capture روی document انجام می‌شود تا هندلر accordion عمومی
+// (app.js) هرگز برای این بخش‌ها اجرا نشود.
+(function () {
+  function shutDisabled() {
+    document.querySelectorAll('.hb-section-card[data-section-disabled="true"]').forEach(function (card) {
+      card.classList.remove('active');
+      var icon = card.querySelector('.hb-section-toggle');
+      if (icon) icon.style.transform = 'rotate(0deg)';
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var header = e.target && e.target.closest ? e.target.closest('.hb-section-card[data-section-disabled="true"] > .hb-section-header') : null;
+    if (!header) return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    shutDisabled();
+  }, true);
+  shutDisabled();
+})();
+// وقتی از کیف پول یا هر جای دیگری با لنگر (مثلاً #financial) به پروفایل می‌آییم،
+// همان بخش باز و نمایان می‌شود تا کاربر «فوکوس» بگیرد و پیام را ببیند.
+// بخش‌های غیرفعال فقط اسکرول می‌شوند و باز/فوکوس نمی‌شوند.
+(function () {
+  var hash = window.location.hash;
+  if (!hash) return;
+  var target = document.getElementById(hash.slice(1));
+  if (!target) return;
+  var card = target.closest('.hb-section-card');
+  var disabled = !!(card && card.classList.contains('hb-section-disabled'));
+  if (card && !disabled) card.classList.add('active');
+  setTimeout(function () {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (disabled) return;
+    target.style.transition = 'box-shadow .3s ease';
+    target.style.boxShadow = '0 0 0 2px var(--hb-gold-400), 0 0 28px rgba(201,162,39,.4)';
+    setTimeout(function () { target.style.boxShadow = ''; }, 2800);
+    var first = target.querySelector('input, select');
+    if (first && !first.value) first.focus({ preventScroll: true });
+  }, 120);
+})();
+</script>
+{% include "core/_sidebar_nav_script.html" %}
+</body>
+</html>

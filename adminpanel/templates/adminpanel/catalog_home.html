@@ -1,0 +1,64 @@
+{% extends "adminpanel/base.html" %}
+{% load adminpanel_extras %}
+{% block title %}کاتالوگ مشاغل — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-diagram-3'></i> کاتالوگ مشاغل</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>فهرست سلسله‌مراتبی مشاغل: حوزه ← صنعت ← دسته ← عنوان ← تخصص‌های مرتبط — از این‌جا می‌توانید هر لایه را تکمیل، ویرایش یا غیرفعال کنید.</p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <!-- جستجو در تمام لایه‌ها -->
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-search'></i> جستجوی سریع در کل کاتالوگ</div>
+    </div>
+    <form method='get' action="{% url 'adminpanel:catalog_home' %}" style='display:flex;gap:0.5rem;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' placeholder='نام یا کد: مثلاً «عمران» یا «S-01»…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      {% if q %}<a href="{% url 'adminpanel:catalog_home' %}" class='hb-btn hb-btn-dark hb-btn-sm'>پاک‌کردن</a>{% endif %}
+    </form>
+    {% if q %}
+      {% if not found_any %}
+        <p style='color:var(--hb-text-muted);margin-top:1rem;'>نتیجه‌ای برای «{{ q }}» یافت نشد.</p>
+      {% else %}
+        {% for key, items in results.items %}
+          {% if items %}
+          <div style='margin-top:1.25rem;'>
+            <div style='display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;'>
+              <i class='bi {{ layers|get_item:key }}' style='color:var(--hb-gold-300);'></i>
+              <strong>{{ layers|get_item:key|get_item:"plural" }}</strong>
+              <span style='color:var(--hb-text-muted);font-size:0.8rem;'>{{ items|length }} مورد</span>
+              <a href="{% url 'adminpanel:layer_list' key %}?q={{ q|urlencode }}" style='margin-inline-start:auto;font-size:0.8rem;'>مشاهدهٔ همه ←</a>
+            </div>
+            {% for it in items %}
+              <div style='display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+                <span style='font-family:ui-monospace,Consolas,monospace;font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ it.code }}</span>
+                <strong>{{ it.name }}</strong>
+                {% if not it.is_active %}<span class='hb-badge hb-badge-danger'>غیرفعال</span>{% endif %}
+                <a href="{% url 'adminpanel:layer_edit' key it.pk %}" style='margin-inline-start:auto;font-size:0.8rem;'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <!-- دسترسی سریع به پنج لایه -->
+  <h2 style='font-size:1.15rem;margin:1.5rem 0 1rem;display:flex;align-items:center;gap:0.5rem;'>
+    <i class='bi bi-collection' style='color:var(--hb-gold-300);'></i>
+    مدیریت لایه‌های سلسله‌مراتب
+  </h2>
+  <div class='hb-modules-grid'>
+    {% for key, cfg in layers.items %}
+    <div class='hb-module-card' data-href="{% url 'adminpanel:layer_list' key %}">
+      <div class='hb-module-icon'><i class='bi {{ cfg.icon }}'></i></div>
+      <div class='hb-module-title'>{{ cfg.plural }} <span style='color:var(--hb-text-muted);font-size:0.8rem;'>{{ counts|get_item:key }} مورد</span></div>
+      <div class='hb-module-desc'>افزودن، ویرایش، حذف و فعال/غیرفعال‌کردن {{ cfg.label|lower }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

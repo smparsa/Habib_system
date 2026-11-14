@@ -1,0 +1,57 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}دفتر ممیزی فضای ابری — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-journal-text'></i> دفتر ممیزی (تاریخچهٔ تغییرات و رویدادها)</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    همهٔ تغییرات حساس تنظیمات با شناسهٔ مدیر، زمان و مقادیر قبل/بعد؛ به‌همراه رویدادهای مالی و امنیتی.
+    اطلاعات حساس (محتوای فایل/هش کامل) ثبت نمی‌شود.
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;'>
+  <div class='hb-card'>
+    <form method='get' style='display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:0.75rem;'>
+      <label style='font-size:0.78rem;'>نوع اقدام
+        <select name='action' class='hb-form-control' style='margin-top:0.25rem;min-width:220px;' onchange='this.form.submit()'>
+          <option value=''>همه</option>
+          {% for a in actions %}<option value='{{ a }}' {% if action == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+        </select>
+      </label>
+    </form>
+    <div style='overflow-x:auto;'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.76rem;min-width:820px;'>
+      <thead><tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+        <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>زمان</th>
+        <th style='padding:0.5rem;text-align:right;'>مدیر/کاربر</th>
+        <th style='padding:0.5rem;text-align:right;'>اقدام</th>
+        <th style='padding:0.5rem;text-align:right;'>شیء</th>
+        <th style='padding:0.5rem;text-align:right;'>جزئیات</th>
+        <th style='padding:0.5rem;text-align:right;'>IP</th>
+      </tr></thead>
+      <tbody>
+      {% for log in page_obj %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.5rem;white-space:nowrap;direction:ltr;text-align:right;'>{{ log.created_at|date:'Y-m-d H:i:s' }}</td>
+          <td style='padding:0.5rem;' dir='ltr'>{{ log.actor.mobile_number|default:"—" }}</td>
+          <td style='padding:0.5rem;'><code>{{ log.action }}</code></td>
+          <td style='padding:0.5rem;'>{{ log.object_type }}{% if log.object_id %} #{{ log.object_id }}{% endif %}</td>
+          <td style='padding:0.5rem;font-family:monospace;font-size:0.72rem;max-width:420px;word-break:break-all;' dir='ltr'>{{ log.meta }}</td>
+          <td style='padding:0.5rem;direction:ltr;text-align:right;'>{{ log.ip|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan='6' style='padding:1rem;text-align:center;color:var(--hb-text-muted);'>رویدادی ثبت نشده است.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div style='display:flex;gap:0.5rem;justify-content:center;margin-top:0.75rem;'>
+      {% if page_obj.has_previous %}<a class='hb-btn hb-btn-sm hb-btn-outline' href='?page={{ page_obj.previous_page_number }}&action={{ action }}' style='text-decoration:none;'>قبلی</a>{% endif %}
+      <span style='font-size:0.78rem;align-self:center;'>صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class='hb-btn hb-btn-sm hb-btn-outline' href='?page={{ page_obj.next_page_number }}&action={{ action }}' style='text-decoration:none;'>بعدی</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

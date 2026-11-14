@@ -1,0 +1,21 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}صورت سود و زیان{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📈 صورت سود و زیان <span class="sub">سال مالی {{ fy.name }}</span></h1>
+
+  <div class="acc-card" style="max-width:560px;">
+    <table class="acc">
+      <tbody>
+        <tr><td>درآمدها</td><td class="num">{{ revenue|rial }}</td></tr>
+        <tr><td>بهای تمام‌شده کالای فروش‌رفته</td><td class="num">{{ cogs|rial }}</td></tr>
+        <tr><td><b>سود ناخالص</b></td><td class="num {{ gross_profit|amount_class }}"><b>{{ gross_profit|rial }}</b></td></tr>
+        <tr><td>هزینه‌های فروش، اداری و عمومی</td><td class="num">{{ expense|rial }}</td></tr>
+        <tr><td><b>سود (زیان) خالص</b></td><td class="num {{ net_profit|amount_class }}"><b>{{ net_profit|rial }}</b></td></tr>
+      </tbody>
+    </table>
+    <p class="acc-modal-note">مبالغ به ریال است. ماندهٔ منفی به معنای زیان است.</p>
+  </div>
+{% endblock %}

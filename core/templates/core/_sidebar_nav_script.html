@@ -1,0 +1,21 @@
+<script>
+// زیرمنوی «داشبورد» در سایدبار: کلیک روی فلش => باز/بسته شدن گروه
+(function () {
+  document.querySelectorAll('.hb-nav-group').forEach(function (group) {
+    var toggle = group.querySelector('.hb-nav-group-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', function (e) {
+      var caret = group.querySelector('.hb-nav-caret');
+      if (caret && caret.contains(e.target)) {
+        e.preventDefault();
+        group.classList.toggle('open');
+      }
+    });
+  });
+  // اگر صفحهٔ فعلی یکی از زیرآیتم‌هاست، گروه به‌صورت خودکار باز شود
+  if (document.querySelector('.hb-nav-sublink.active')) {
+    var g = document.querySelector('.hb-nav-sublink.active').closest('.hb-nav-group');
+    if (g) g.classList.add('open');
+  }
+})();
+</script>

@@ -1,0 +1,229 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}صورتحساب{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">🧾 صورتحساب
+    <span class="sub">ابتدا موضوع را از «نام حساب» یا «اشخاص» انتخاب کنید — سپس ریز صورتحساب از تاریخ تا تاریخ</span>
+  </h1>
+
+  <!-- ================================================================ -->
+  <!-- مرحله ۱: انتخاب موضوع — دو بخش مجزا: نام حساب (آبشاری) و اشخاص (لیست) -->
+  <!-- ================================================================ -->
+  <div class="acc-card" id="stmtPickers">
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;margin-bottom:.75rem;">
+      <div class="acc-field" style="margin:0;">
+        <label for="id_date_from">از تاریخ (شمسی)</label>
+        <input class="acc-input" type="text" id="id_date_from" name="date_from" dir="ltr"
+               value="{{ date_from_fa|fa_digits }}" placeholder="۱۴۰۵/۰۱/۰۱" autocomplete="off">
+      </div>
+      <div class="acc-field" style="margin:0;">
+        <label for="id_date_to">تا تاریخ (شمسی)</label>
+        <input class="acc-input" type="text" id="id_date_to" name="date_to" dir="ltr"
+               value="{{ date_to_fa|fa_digits }}" placeholder="۱۴۰۵/۱۲/۲۹" autocomplete="off">
+      </div>
+      <span class="sub" style="color:var(--acc-muted);">بازه را قبل یا بعد از انتخاب موضوع می‌توانید تغییر دهید؛ لینک هر موضوع بازه را همراه می‌برد.</span>
+    </div>
+
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;">
+      <!-- بخش ۱: نام حساب — درخت آبشاری (آکاردئونی) -->
+      <div style="flex:1;min-width:320px;">
+        <b style="display:block;margin-bottom:.5rem;">🏦 نام حساب <span class="sub">(آبشاری: گروه ← کل ← معین ← تفصیلی)</span></b>
+        <div style="border:1px solid var(--acc-line);border-radius:var(--acc-radius);max-height:340px;overflow-y:auto;background:var(--acc-panel);">
+          {% for row in account_tree %}
+            {% if row.acc.is_leaf %}
+              <div class="stmt-node stmt-branch-node" data-ancestors="{{ row.ancestors }}"
+                   style="margin-inline-start:{% widthratio row.depth 1 14 %}px;">
+                <a class="stmt-link" href="?{% if date_from_fa %}date_from={{ date_from_fa }}&{% endif %}date_to={{ date_to_fa }}&account={{ row.acc.pk }}#stmtResult">
+                  <span class="stmt-label">{{ row.acc.name }} <span class="code">{{ row.acc.code|fa_digits }}</span></span>
+                  <span class="code {{ row.balance|amount_class }}">{{ row.balance|rial }}</span>
+                </a>
+              </div>
+            {% else %}
+              <div class="stmt-node stmt-branch-node" data-ancestors="{{ row.ancestors }}"
+                   style="margin-inline-start:{% widthratio row.depth 1 14 %}px;">
+                <button type="button" class="stmt-branch" data-node="{{ row.acc.pk }}"
+                        aria-expanded="false">
+                  <span class="stmt-toggle">▸</span>
+                  <span class="stmt-label">{{ row.acc.name }} <span class="code">{{ row.acc.code|fa_digits }}</span></span>
+                  <span class="code {{ row.balance|amount_class }}">مانده: {{ row.balance|rial }}</span>
+                </button>
+              </div>
+            {% endif %}
+          {% empty %}
+            <div class="acc-combo-empty">حسابی در این سال مالی نیست.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- بخش ۲: اشخاص — فهرست لیست‌شده -->
+      <div style="flex:1;min-width:300px;">
+        <b style="display:block;margin-bottom:.5rem;">👤 اشخاص <span class="sub">(لیست کاربران دارای کد ملی)</span></b>
+        <input class="acc-input" type="text" id="personFilter" placeholder="فیلتر: نام، فامیل یا کد ملی..." autocomplete="off" style="margin-bottom:.5rem;">
+        <div style="border:1px solid var(--acc-line);border-radius:var(--acc-radius);max-height:340px;overflow-y:auto;background:var(--acc-panel);">
+          {% for p in persons_list %}
+            <a class="stmt-person-row" href="?{% if date_from_fa %}date_from={{ date_from_fa }}&{% endif %}date_to={{ date_to_fa }}&person={{ p.id }}#stmtResult"
+               data-search="{{ p.name }} {{ p.family }} {{ p.nid }}">
+              <span>👤 {{ p.name }}</span>
+              <span style="display:flex;gap:.6rem;align-items:center;">
+                <span class="code {{ p.balance|amount_class }}">{{ p.balance|rial }}</span>
+                <span class="code">{{ p.nid|fa_digits }}</span>
+              </span>
+            </a>
+          {% empty %}
+            <div class="acc-combo-empty">شخصی با ماندهٔ باز وجود ندارد.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- مرحله ۲: ریز صورتحساب موضوع انتخاب‌شده -->
+  <!-- ================================================================ -->
+  {% if in_subject %}
+    <div class="acc-card" id="stmtResult">
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+        <b>
+          {% if subject_kind == 'account' %}🏦 حساب:{% else %}👤 شخص:{% endif %}
+          {{ subject_name }}
+        </b>
+        <span style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+          <span class="sub">بازه: {{ date_from_fa|fa_digits }} تا {{ date_to_fa|fa_digits }}</span>
+          <button class="acc-btn outline sm" type="button" onclick="printStatement()">🖨 چاپ</button>
+          <a class="acc-btn outline sm" href="{% url 'accounting:report_statement' %}">✕ بستن</a>
+        </span>
+      </div>
+      <div class="acc-table-wrap" id="stmtPrintArea">
+        <table class="acc">
+          <thead>
+            <tr>
+              <th style="width:90px;">تاریخ</th>
+              <th style="width:80px;">سند</th>
+              <th>شرح</th>
+              {% if subject_kind == 'person' %}<th>حساب</th>{% endif %}
+              <th style="width:130px;">بدهکار (ریال)</th>
+              <th style="width:130px;">بستانکار (ریال)</th>
+              <th style="width:130px;">مانده (ریال)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:rgba(15,76,129,0.06);font-weight:700;">
+              <td colspan="{% if subject_kind == 'person' %}4{% else %}3{% endif %}">ماندهٔ ابتدای دوره</td>
+              <td class="num">—</td>
+              <td class="num">—</td>
+              <td class="num {{ opening|amount_class }}">{{ opening|rial }}</td>
+            </tr>
+            {% for r in rows %}
+              <tr>
+                <td class="num">{{ r.date_fa|fa_digits }}</td>
+                <td class="num">{{ r.number|fa_digits }}</td>
+                <td style="white-space:normal;">{{ r.description }}</td>
+                {% if subject_kind == 'person' %}<td>{{ r.account.name }}</td>{% endif %}
+                <td class="num">{% if r.debit %}{{ r.debit|rial }}{% else %}—{% endif %}</td>
+                <td class="num">{% if r.credit %}{{ r.credit|rial }}{% else %}—{% endif %}</td>
+                <td class="num {{ r.balance|amount_class }}">{{ r.balance|rial }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="{% if subject_kind == 'person' %}7{% else %}6{% endif %}">در این بازه گردشی ثبت نشده است.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if rows %}
+            <tfoot>
+              <tr>
+                <td colspan="{% if subject_kind == 'person' %}4{% else %}3{% endif %}">جمع دوره</td>
+                <td class="num">{{ total_debit|rial }}</td>
+                <td class="num">{{ total_credit|rial }}</td>
+                <td class="num {{ period_balance|amount_class }}">{{ period_balance|rial }}</td>
+              </tr>
+              <tr>
+                <td colspan="{% if subject_kind == 'person' %}4{% else %}3{% endif %}">ماندهٔ پایان دوره</td>
+                <td class="num" colspan="2">—</td>
+                <td class="num {{ closing|amount_class }}">{{ closing|rial }}</td>
+              </tr>
+            </tfoot>
+          {% endif %}
+        </table>
+      </div>
+      <p style="font-size:.78rem;color:var(--acc-muted);margin:.6rem 0 0;">
+        مانده = بدهکار − بستانکار؛ عدد مثبت یعنی طلب از شخص / ماندهٔ بدهکار حساب، عدد منفی یعنی بدهی به شخص / ماندهٔ بستانکار حساب.
+      </p>
+    </div>
+  {% endif %}
+
+  <!-- دکمهٔ چاپ شناور: در هر مرحله (حتی قبل از انتخاب موضوع) کل صفحه قابل چاپ است -->
+  <div class="stmt-printbar" style="position:fixed;bottom:1rem;inset-inline-start:1rem;z-index:40;">
+    <button class="acc-btn outline" type="button" onclick="printStatement()">🖨 ارسال به چاپگر</button>
+  </div>
+
+  <script>
+    // ---------- چاپ: در هر مرحله ----------
+    // با موضوع انتخاب‌شده: فقط کارت ریز صورتحساب؛ بدون موضوع: کل صفحهٔ انتخاب
+    function printStatement() {
+      document.body.classList.add('stmt-printing');
+      const result = document.getElementById('stmtResult');
+      if (result) document.body.classList.add('stmt-print-result-only');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('stmt-printing');
+        document.body.classList.remove('stmt-print-result-only');
+      }, 400);
+    }
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove('stmt-printing');
+      document.body.classList.remove('stmt-print-result-only');
+    });
+
+    // ---------- فیلتر زندهٔ فهرست اشخاص ----------
+    (function () {
+      const inp = document.getElementById('personFilter');
+      if (!inp) return;
+      inp.addEventListener('input', () => {
+        const q = inp.trim ? inp.value.trim() : '';
+        const nq = q.replace(/[ىيﻱﻲ]/g, 'ی').replace(/ك/g, 'ک').replace(/[أإآ]/g, 'ا').toLowerCase();
+        document.querySelectorAll('.stmt-person-row').forEach(a => {
+          const hay = (a.dataset.search || '').replace(/[ىيﻱﻲ]/g, 'ی').replace(/ك/g, 'ک').replace(/[أإآ]/g, 'ا').toLowerCase();
+          a.style.display = (!nq || hay.includes(nq)) ? '' : 'none';
+        });
+      });
+    })();
+
+    // ---------- درخت آبشاری حساب‌ها (آکاردئون) ----------
+    (function () {
+      const nodes = Array.from(document.querySelectorAll('.stmt-branch-node'));
+      if (!nodes.length) return;
+      // همه پنهان؛ فقط گروه‌های سطح اول (بدون پدر) نمایان
+      nodes.forEach(n => { if (n.dataset.ancestors) n.style.display = 'none'; });
+      function setExpanded(btn, open) {
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.querySelector('.stmt-toggle').textContent = open ? '▾' : '▸';
+        const pk = btn.dataset.node;
+        nodes.forEach(n => {
+          const anc = (n.dataset.ancestors || '').split(',');
+          if (anc.includes(pk)) {
+            // نمایش فقط اگر همهٔ پدرانِ واسط هم باز باشند
+            const parentOpen = anc.every(pid => {
+              const pb = document.querySelector('.stmt-branch[data-node="' + pid + '"]');
+              return !pb || pb.getAttribute('aria-expanded') === 'true';
+            });
+            n.style.display = parentOpen ? '' : 'none';
+          }
+        });
+      }
+      document.querySelectorAll('.stmt-branch[data-node]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setExpanded(btn, btn.getAttribute('aria-expanded') !== 'true');
+        });
+      });
+    })();
+
+    // ---------- باز کردن خودکار زنجیرهٔ والدِ موضوع انتخاب‌شده ----------
+    (function () {
+      if (!document.getElementById('stmtResult')) return;
+      document.querySelectorAll('.stmt-branch[data-node]').forEach(btn => {
+        if (btn.getAttribute('aria-expanded') === 'false') btn.click();
+      });
+    })();
+  </script>
+{% endblock %}

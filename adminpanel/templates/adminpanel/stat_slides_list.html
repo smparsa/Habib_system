@@ -1,0 +1,230 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}اسلایدشوی آمار داشبورد — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <div style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;'>
+    <h1 style='margin:0;'><i class='bi bi-collection-play'></i> اسلایدشوی آمار داشبورد</h1>
+    <a href="{% url 'adminpanel:stat_slide_add' %}" class='hb-btn hb-btn-primary hb-btn-sm' style='text-decoration:none;margin-inline-start:auto;'>
+      <i class='bi bi-plus-lg'></i> اسلاید جدید
+    </a>
+  </div>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    اسلایدهای «اسلایدشو A» بالای «ماژول‌های کسب‌وکار» داشبورد.
+    مدیریت تصویر، بازهٔ نمایش، ترتیب، توقف و «هزینهٔ دریافتی» مشابه ماژول «تبلیغات» است؛
+    اسلایدها درجا (بدون حرکت روان) و پس از زمان مشخص عوض می‌شوند.
+  </p>
+</div>
+
+<div style='padding:0 2rem 2rem;'>
+
+  <!-- خلاصهٔ مالی: جمع هزینه‌های دریافتی -->
+  <div class='hb-card' style='margin-bottom:1rem;padding:1rem 1.25rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;'>
+    <div style='display:flex;align-items:center;gap:0.6rem;'>
+      <div style='width:42px;height:42px;border-radius:10px;background:rgba(201,162,39,0.12);display:flex;align-items:center;justify-content:center;color:var(--hb-gold-300);font-size:1.2rem;'><i class='bi bi-coin'></i></div>
+      <div>
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);'>جمع هزینه‌های دریافتی (سکه)</div>
+        <div style='font-weight:800;font-size:1.05rem;'>{{ coins_total|floatformat }}</div>
+      </div>
+    </div>
+    <div style='display:flex;align-items:center;gap:0.6rem;'>
+      <div style='width:42px;height:42px;border-radius:10px;background:rgba(52,152,219,0.12);display:flex;align-items:center;justify-content:center;color:var(--hb-info);font-size:1.2rem;'><i class='bi bi-collection-play'></i></div>
+      <div>
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);'>جمع اسلایدها</div>
+        <div style='font-weight:800;font-size:1.05rem;'>{{ items|length }}</div>
+      </div>
+    </div>
+    <div style='display:flex;align-items:center;gap:0.6rem;'>
+      <div style='width:42px;height:42px;border-radius:10px;background:rgba(243,156,18,0.12);display:flex;align-items:center;justify-content:center;color:#f39c12;font-size:1.2rem;'><i class='bi bi-hourglass-split'></i></div>
+      <div>
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);'>در انتظار تأیید (اسلاید کاربران)</div>
+        <div style='font-weight:800;font-size:1.05rem;'>{{ pending_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- فیلتر -->
+  <div class='hb-card' style='margin-bottom:1rem;padding:1rem 1.25rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;'>
+    <form method='get' style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin:0;'>
+      <input type='text' name='q' value='{{ q }}' placeholder='جستجو؛ عنوان/توضیح/لینک' class='hb-form-control' style='max-width:220px;'>
+      <select name='active' class='hb-form-control' style='max-width:160px;'>
+        <option value=''>همهٔ پخش‌ها</option>
+        <option value='1' {% if active == '1' %}selected{% endif %}>فعال</option>
+        <option value='0' {% if active == '0' %}selected{% endif %}>متوقف</option>
+      </select>
+      <select name='status' class='hb-form-control' style='max-width:180px;'>
+        <option value=''>همهٔ تأییدها</option>
+        <option value='pending' {% if status == 'pending' %}selected{% endif %}>در انتظار تأیید</option>
+        <option value='approved' {% if status == 'approved' %}selected{% endif %}>تأییدشده</option>
+        <option value='rejected' {% if status == 'rejected' %}selected{% endif %}>ردشده</option>
+      </select>
+      <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='text-decoration:none;'>اعمال فیلتر</button>
+      <a href="{% url 'adminpanel:stat_slides_list' %}" class='hb-btn hb-btn-outline hb-btn-sm' style='text-decoration:none;'>حذف فیلترها</a>
+    </form>
+  </div>
+
+  <div class='hb-card'>
+    <div style='overflow-x:auto;'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.8rem;min-width:900px;'>
+      <thead>
+        <tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+          <th style='padding:0.6rem;text-align:right;'>تصویر</th>
+          <th style='padding:0.6rem;text-align:right;'>عنوان / توضیح</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>هزینه (سکه)</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>بازهٔ نمایش</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>ترتیب (بالا/پایین)</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>شمارندهٔ نمایش</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>تأیید</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>وضعیت</th>
+          <th style='padding:0.6rem;text-align:left;white-space:nowrap;'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in items %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.7rem;'>
+            {% if row.obj.image %}
+              <img src='{{ row.obj.image.url }}' alt='اسلاید' style='width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--hb-border);'>
+            {% endif %}
+          </td>
+          <td style='padding:0.7rem;line-height:1.8;'>
+            <b>{{ row.obj.title }}</b>
+            {% if row.obj.description %}<div style='font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.obj.description|truncatechars:90 }}</div>{% endif %}
+            {% if row.obj.link_url %}<div style='font-size:0.72rem;direction:ltr;text-align:right;color:var(--hb-info);'>{{ row.obj.link_url|truncatechars:50 }}</div>{% endif %}
+          </td>
+          <td style='padding:0.5rem 0.4rem;text-align:center;'>{{ row.obj.coins_paid|floatformat }}</td>
+          <td style='padding:0.5rem 0.4rem;direction:ltr;text-align:right;font-size:0.74rem;color:var(--hb-text-secondary);line-height:1.5;'>
+            {{ row.obj.show_from|jdatetime }} → {{ row.obj.show_until|jdatetime }}
+          </td>
+          <td style='padding:0.7rem 0.5rem;white-space:nowrap;'>
+            <span dir='ltr' style='font-size:0.8rem;color:var(--hb-text-secondary);'>{{ row.obj.sort_order }}</span>
+            <form method='post' action="{% url 'adminpanel:stat_slide_move' row.obj.pk 'up' %}" style='display:inline;margin:0 0.15rem;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='padding:0.15rem 0.45rem;font-size:0.7rem;' title='جابه‌جایی به بالا (اولویت بیشتر)'><i class='bi bi-arrow-up'></i></button>
+            </form>
+            <form method='post' action="{% url 'adminpanel:stat_slide_move' row.obj.pk 'down' %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='padding:0.15rem 0.45rem;font-size:0.7rem;' title='جابه‌جایی به پایین (اولویت کمتر)'><i class='bi bi-arrow-down'></i></button>
+            </form>
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            <span dir='ltr' style='font-size:0.85rem;color:var(--hb-text-secondary);'><i class='bi bi-eye' style='color:var(--hb-gold-300);'></i> {{ row.obj.views|floatformat }}</span>
+            {% if row.obj.views_updated_at %}
+              <div style='font-size:0.68rem;color:var(--hb-text-muted);direction:ltr;text-align:right;'>{{ row.obj.views_updated_at|jdatetime }}</div>
+            {% endif %}
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            {% if row.obj.status == 'pending' %}<span class='hb-badge hb-badge-warning'><i class='bi bi-hourglass-split'></i> در انتظار تأیید</span>
+            {% elif row.obj.status == 'rejected' %}<span class='hb-badge hb-badge-danger'><i class='bi bi-x-circle'></i> ردشده</span>
+            {% else %}<span class='hb-badge hb-badge-success'><i class='bi bi-check-circle'></i> تأییدشده</span>{% endif %}
+            {% if row.obj.advertiser %}<div style='font-size:0.68rem;color:var(--hb-text-muted);'>کاربر: {{ row.obj.advertiser.mobile_number }}</div>{% endif %}
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            {% if row.state == 'live' %}<span class='hb-badge hb-badge-success'><i class='bi bi-broadcast'></i> {{ row.state_label }}</span>
+            {% elif row.state == 'scheduled' %}<span class='hb-badge hb-badge-info'><i class='bi bi-clock'></i> {{ row.state_label }}</span>
+            {% elif row.state == 'paused' %}<span class='hb-badge hb-badge-warning'><i class='bi bi-pause-circle'></i> {{ row.state_label }}</span>
+            {% else %}<span class='hb-badge hb-badge-danger'><i class='bi bi-hourglass-bottom'></i> {{ row.state_label }}</span>{% endif %}
+          </td>
+          <td style='padding:0.7rem;text-align:left;white-space:nowrap;'>
+            {% if row.obj.status != 'pending' %}{% else %}
+            <form method='post' action="{% url 'adminpanel:stat_slide_approve' row.obj.pk %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' title='تأیید و پخش'><i class='bi bi-check2-circle'></i> تأیید</button>
+            </form>
+            {% endif %}
+            {% if row.obj.status != 'rejected' %}
+            <form method='post' action="{% url 'adminpanel:stat_slide_reject' row.obj.pk %}" style='display:inline;margin:0;'
+                  onsubmit="return confirm('این اسلاید رد شود؟');">
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);' title='رد اسلاید'><i class='bi bi-x-circle'></i></button>
+            </form>
+            {% endif %}
+            <a href="{% url 'adminpanel:stat_slide_edit' row.obj.pk %}" class='hb-btn hb-btn-dark hb-btn-sm' style='text-decoration:none;' title='ویرایش'><i class='bi bi-pencil-square'></i></a>
+            <form method='post' action="{% url 'adminpanel:stat_slide_toggle' row.obj.pk %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' title='{% if row.obj.is_active %}توقف پخش{% else %}ادامهٔ پخش{% endif %}'>
+                <i class='bi {% if row.obj.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}'></i>
+              </button>
+            </form>
+            <form method='post' action="{% url 'adminpanel:stat_slide_delete' row.obj.pk %}" style='display:inline;margin:0;'
+                  onsubmit="return confirm('این اسلاید حذف شود؟');">
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);' title='حذف'>
+                <i class='bi bi-trash'></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan='9' style='padding:1.2rem;color:var(--hb-text-muted);'>هنوز اسلایدی ثبت نشده است؛ تصویر پیش‌فرض نمایش داده می‌شود.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- تنظیمات سراسری + باکس‌ها -->
+  <div class='hb-card' style='margin-top:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-sliders'></i> تنظیمات اسلایدشوی آمار</div>
+    </div>
+    <div style='padding:1rem 0;'>
+      <form method='post' action="{% url 'adminpanel:stat_slides_settings' %}" style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;padding:0 1.25rem;'>
+        {% csrf_token %}
+        <div class='hb-form-group' style='margin:0;'>
+          <label class='hb-form-label' for='id_switch_seconds'>زمان هر اسلاید (ثانیه) — پیش‌فرض سراسری</label>
+          <input type='number' name='switch_seconds' id='id_switch_seconds' min='3' max='120' step='1' inputmode='numeric'
+                 class='hb-form-control' dir='ltr' style='max-width:140px;' value='{{ slide_setting.switch_seconds }}'>
+        </div>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' style='margin-top:1.3rem;'>
+          <i class='bi bi-check-lg'></i> ذخیره
+        </button>
+        <small style='color:var(--hb-text-muted);font-size:0.75rem;flex-basis:100%;'>
+          هر اسلاید این‌قدر ثانیه می‌ماند و بعد درجا (بدون حرکت روان) عوض می‌شود (۳ تا ۱۲۰ ثانیه)؛
+          زمانِ اختصاصیِ اسلایدشو A (زیر) این مقدار را بازنویسی می‌کند.
+        </small>
+      </form>
+    </div>
+    <div style='border-top:1px solid var(--hb-border);padding:1rem 1.25rem;'>
+      <div style='font-weight:600;font-size:0.85rem;margin-bottom:0.5rem;'><i class='bi bi-grid-3x3-gap'></i> اسلایدشو A — تنظیمات</div>
+      <table style='width:100%;border-collapse:collapse;font-size:0.8rem;'>
+        <thead>
+          <tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+            <th style='padding:0.5rem;text-align:right;'>باکس</th>
+            <th style='padding:0.5rem;text-align:right;'>توضیح</th>
+            <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>زمان هر اسلاید (ثانیه)</th>
+            <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>تعداد اسلاید</th>
+            <th style='padding:0.5rem;text-align:left;white-space:nowrap;'>عملیات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in boxes %}
+          <tr style='border-bottom:1px solid var(--hb-border);'>
+            <td style='padding:0.6rem;'><b>{{ b.title }}</b> <small style='color:var(--hb-text-muted);'>({{ b.code }})</small></td>
+            <td style='padding:0.6rem;font-size:0.75rem;color:var(--hb-text-muted);'>{{ b.description|default:'—' }}</td>
+            <td style='padding:0.6rem;'>
+              <form method='post' action="{% url 'adminpanel:stat_box_update' b.pk %}" style='display:flex;align-items:center;gap:0.4rem;margin:0;'>
+                {% csrf_token %}
+                <input type='number' name='switch_seconds' min='0' max='120' step='1' dir='ltr' class='hb-form-control' style='max-width:90px;padding:0.3rem 0.5rem;font-size:0.78rem;' value='{{ b.switch_seconds }}'>
+                <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='padding:0.3rem 0.6rem;font-size:0.72rem;'>ذخیره</button>
+              </form>
+              <small style='color:var(--hb-text-muted);font-size:0.68rem;'>۰ = پیش‌فرض سراسری</small>
+            </td>
+            <td style='padding:0.6rem;white-space:nowrap;'>{{ b.slides.count }}</td>
+            <td style='padding:0.6rem;text-align:left;'>
+              <form method='post' action="{% url 'adminpanel:stat_box_toggle' b.pk %}" style='display:inline;margin:0;'>
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' title='{% if b.is_active %}غیرفعال‌کردن پخش{% else %}فعال‌کردن پخش{% endif %}'>
+                  <i class='bi {% if b.is_active %}bi-toggle-on{% else %}bi-toggle-off{% endif %}'></i>
+                  {% if b.is_active %}فعال{% else %}غیرفعال{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

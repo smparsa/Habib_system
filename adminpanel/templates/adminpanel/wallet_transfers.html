@@ -1,0 +1,97 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}انتقال‌های سکه — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-send'></i> انتقال‌های سکه بین کاربران</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    هر انتقال سکه به‌صورت فوری اعمال و با تیکت برای فرستنده و گیرنده اطلاع‌رسانی می‌شود.
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card' style='margin-bottom:1.25rem;border-inline-start:3px solid var(--hb-gold-400);'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-send-plus' style='color:var(--hb-gold-300);'></i> ثبت انتقال سکه بین دو کاربر (فقط با کد ملی)</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:wallet_transfers' %}">
+      {% csrf_token %}<input type='hidden' name='action' value='create_transfer'>
+      <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;margin-bottom:0.75rem;'>
+        <div class='hb-form-group'>
+          <label class='hb-form-label' for='sender_national_id'>کد ملی فرستنده</label>
+          <input type='text' id='sender_national_id' name='sender_national_id' class='hb-form-control' dir='ltr' inputmode='numeric' maxlength='10' placeholder='مثال: 0013542419' autocomplete='off'>
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label' for='receiver_national_id'>کد ملی گیرنده</label>
+          <input type='text' id='receiver_national_id' name='receiver_national_id' class='hb-form-control' dir='ltr' inputmode='numeric' maxlength='10' placeholder='مثال: 0084575948' autocomplete='off'>
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label' for='transfer_coins'>تعداد سکه</label>
+          <input type='number' id='transfer_coins' name='coins' class='hb-form-control' dir='ltr' step='0.01' min='0.01' placeholder='مثال: 10' required>
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label' for='transfer_note'>توضیح (اختیاری)</label>
+          <input type='text' id='transfer_note' name='note' class='hb-form-control' maxlength='300' placeholder='مثال: تسویه بین اعضا' autocomplete='off'>
+        </div>
+      </div>
+      <div style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-send'></i> ثبت انتقال</button>
+        <small style='color:var(--hb-text-muted);font-size:0.75rem;'>برای انتقال سکه بین دو کاربر فقط «کد ملی معتبر» هر دو لازم است؛ ارقام فارسی/عربی نیز پذیرفته می‌شود. انتقال فوری است و تیکت اطلاع‌رسانی برای هر دو طرف ارسال می‌گردد.</small>
+      </div>
+    </form>
+  </div>
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست انتقال‌ها ({{ total }} مورد)</div>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:wallet_transfers' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:280px;' placeholder='کد / موبایل / کد ملی فرستنده یا گیرنده…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      {% if q %}<a href="{% url 'adminpanel:wallet_transfers' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلتر</a>{% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>فرستنده</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>گیرنده</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>سکه</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>توضیح</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+      </tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'><code>{{ row.code }}</code></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <strong>{{ row.sender_label }}</strong><div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ row.sender_mobile }} • {{ row.sender_nid }}</div>
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <strong>{{ row.receiver_label }}</strong><div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ row.receiver_mobile }} • {{ row.receiver_nid }}</div>
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><b style='color:var(--hb-gold-300);'>{{ row.coins }}</b></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-secondary);font-size:0.8rem;'>{{ row.note|default:'—' }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.created_at|jdatetime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>انتقالی یافت نشد.</p>
+    {% endif %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+    <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+    <div style='display:flex;gap:0.35rem;'>
+      {% if page_obj.has_previous %}<a href="{% url 'adminpanel:wallet_transfers' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>{% endif %}
+      {% if page_obj.has_next %}<a href="{% url 'adminpanel:wallet_transfers' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

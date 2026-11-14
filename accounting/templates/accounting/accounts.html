@@ -1,0 +1,89 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}پلان حساب‌ها{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📘 پلان حساب‌ها
+    <span class="sub">سال مالی {{ fy.name }} · {{ accounts|length|fa_digits }} حساب</span>
+  </h1>
+
+  <div class="acc-grid" style="grid-template-columns: 2fr 1fr; align-items:start;">
+    <div class="acc-card">
+      <form method="get" style="display:flex;gap:.5rem;margin-bottom:.75rem;">
+        <input class="acc-input" type="text" name="q" value="{{ q }}" placeholder="جستجو بر اساس کد یا نام حساب...">
+        <button class="acc-btn" type="submit">🔍 جستجو</button>
+        {% if q %}<a class="acc-btn outline" href="{% url 'accounting:accounts' %}">همه</a>{% endif %}
+      </form>
+
+      <div class="acc-table-wrap">
+        <table class="acc">
+          <thead>
+            <tr>
+              <th style="width:80px;">کد</th>
+              <th>نام</th>
+              <th style="width:90px;">گروه</th>
+              <th style="width:90px;">سطح</th>
+              <th style="width:110px;">وضعیت</th>
+              <th style="width:170px;">عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for acc in accounts %}
+              <tr>
+                <td class="num">{{ acc.code|fa_digits }}</td>
+                <td class="ind-{{ acc.level }}">{{ acc.name }}</td>
+                <td>{{ acc.get_group_display }}</td>
+                <td>{{ acc.get_level_display }}</td>
+                <td>
+                  {% if acc.is_active %}
+                    <span class="acc-badge ok">فعال</span>
+                  {% else %}
+                    <span class="acc-badge err">غیرفعال</span>
+                  {% endif %}
+                  {% if acc.is_leaf %}<span class="acc-badge info">تفصیلی</span>{% endif %}
+                </td>
+                <td>
+                  <a class="acc-btn sm outline" href="{% url 'accounting:account_ledger' acc.id %}">دفتر حساب</a>
+                  {% if can_write and not acc.has_transactions %}
+                    <form method="post" action="{% url 'accounting:account_toggle' acc.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button class="acc-btn sm danger" type="submit">{{ acc.is_active|yesno:'غیرفعال,فعال' }}</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6">حسابی یافت نشد.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="acc-card">
+      <h3>➕ حساب جدید</h3>
+      {% if can_write %}
+        <form method="post" action="{% url 'accounting:account_create' %}">
+          {% csrf_token %}
+          <div class="acc-field">
+            <label>{{ form.parent.label }}</label>
+            {{ form.parent }}
+            <div style="font-size:.78rem;color:var(--acc-muted);margin-top:.25rem;">{{ form.parent.help_text }}</div>
+          </div>
+          <div class="acc-field">
+            <label>{{ form.name.label }}</label>
+            {{ form.name }}
+          </div>
+          <button class="acc-btn" type="submit">ایجاد حساب</button>
+          <p style="font-size:.8rem;color:var(--acc-muted);">
+            کد حساب به‌طور خودکار به دنبالهٔ والد اضافه می‌شود؛
+            سطح‌ها: گروه (۱ رقم)، کل (۲ رقم)، معین (۴ رقم)، تفصیلی (بیشتر).
+          </p>
+        </form>
+      {% else %}
+        <p class="acc-msg info">نقش شما فقط مشاهده است.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

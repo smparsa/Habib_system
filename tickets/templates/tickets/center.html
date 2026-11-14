@@ -1,0 +1,126 @@
+{% load core_extras %}
+{% include "tickets/_top.html" with page_title="تیکت‌های من" %}
+<div class='tkt-wrap'>
+  {% if messages %}
+    {% for message in messages %}
+      <div class='tkt-server-msg {{ message.tags }}'><i class='bi bi-info-circle'></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class='tkt-head'>
+    <div>
+      <h1><i class='bi bi-chat-left-dots'></i> مرکز تیکت</h1>
+      <p>ارسال، پیگیری و مدیریت ارتباطات سازمانی در یک‌جا.</p>
+    </div>
+  </div>
+
+  <div class='tkt-stats'>
+    {% if box != "magazine" %}
+    <div class='tkt-stat'><b>{{ counts.total }}</b><span>کل</span></div>
+    <div class='tkt-stat warn'><b>{{ counts.unread }}</b><span>خوانده‌نشده</span></div>
+    <div class='tkt-stat blue'><b>{{ counts.waiting }}</b><span>در جریان</span></div>
+    <div class='tkt-stat gold'><b>{{ counts.important }}</b><span>مهم</span></div>
+    <div class='tkt-stat ok'><b>{{ counts.resolved }}</b><span>حل‌شده</span></div>
+    <div class='tkt-stat mute'><b>{{ counts.closed }}</b><span>بسته</span></div>
+    {% else %}
+    <div class='tkt-stat'><b>{{ counts.mag_total }}</b><span>کل</span></div>
+    <div class='tkt-stat warn'><b>{{ counts.mag_unread }}</b><span>خوانده‌نشده</span></div>
+    {% endif %}
+  </div>
+
+  <div class='tkt-tabs'>
+    <a href="{% url 'tickets:center' %}?box=inbox" class='{% if box == "inbox" %}on{% endif %}'>صندوق ورودی</a>
+    <a href="{% url 'tickets:center' %}?box=sent" class='{% if box == "sent" %}on{% endif %}'>فرستاده</a>
+    {% if is_staff %}
+      <a href="{% url 'tickets:center' %}?box=assigned" class='{% if box == "assigned" %}on{% endif %}'>ارجاع به من</a>
+      <a href="{% url 'tickets:center' %}?box=waiting_me" class='{% if box == "waiting_me" %}on{% endif %}'>در انتظار من</a>
+    {% endif %}
+    <a href="{% url 'tickets:center' %}?box=important" class='{% if box == "important" %}on{% endif %}'>مهم</a>
+    <a href="{% url 'tickets:center' %}?box=unread" class='{% if box == "unread" %}on{% endif %}'>خوانده‌نشده</a>
+    <a href="{% url 'tickets:center' %}?box=resolved" class='{% if box == "resolved" %}on{% endif %}'>حل‌شده</a>
+    <a href="{% url 'tickets:center' %}?box=closed" class='{% if box == "closed" %}on{% endif %}'>بسته</a>
+    <a href="{% url 'tickets:center' %}?box=archived" class='{% if box == "archived" %}on{% endif %}'>بایگانی</a>
+    <a href="{% url 'tickets:center' %}?box=magazine" class='{% if box == "magazine" %}on{% endif %}'>
+      <i class='bi bi-newspaper'></i>مجله<br><small>{{ counts.mag_unread }} unread</small></a>
+  </div>
+
+  <form method='get' class='tkt-filters'>
+    <input type='hidden' name='box' value='{{ box }}'>
+    <input type='text' name='q' value='{{ q }}' placeholder='جستجو: شماره یا موضوع…'>
+    <select name='status'>
+      <option value=''>همهٔ وضعیت‌ها</option>
+      {% for value, label in status_choices %}<option value='{{ value }}' {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name='priority'>
+      <option value=''>همهٔ اولویت‌ها</option>
+      {% for value, label in priority_choices %}<option value='{{ value }}' {% if priority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>فیلتر</button>
+  </form>
+
+  {% if entries %}
+    <div class='tkt-list'>
+      {% for e in entries %}
+        {% if e.mag %}
+          <a class='tkt-row mag-row {% if e.my_state == "unread" %}unread{% endif %}' href="{% url 'magazine:ticket_open' e.mag_id %}">
+            <div class='tkt-row-main'>
+              <div class='tkt-row-top'>
+                <i class='bi bi-newspaper tkt-mag-icon'></i>
+                <span class='tkt-subject'>{{ e.sender_name }} — فوروارد مطلب</span>
+                <span class='tkt-mag-kind'>{{ e.kind_label }}</span>
+                {% if e.my_state == 'unread' %}<span class='tkt-new'>جدید</span>{% endif %}
+              </div>
+              <div class='tkt-row-sub'>
+                <span>{{ e.snippet }}</span>
+              </div>
+            </div>
+            <div class='tkt-row-time'>
+              <span>{{ e.created_at|jdatetime }}</span>
+              <i class='bi bi-chevron-left'></i>
+            </div>
+          </a>
+        {% else %}
+        <a class='tkt-row' href="{% url 'tickets:detail' e.ticket.number %}">
+          <div class='tkt-row-main'>
+            <div class='tkt-row-top'>
+              <span class='tkt-number' dir='ltr'>{{ e.ticket.number }}</span>
+              {% if e.ticket.priority == 'urgent' %}<span class='tkt-pip prio-urgent'></span>
+              {% elif e.ticket.priority == 'critical' %}<span class='tkt-pip prio-critical'></span>{% endif %}
+              <span class='tkt-subject'>{{ e.ticket.subject }}</span>
+              {% if e.my_state == 'unread' %}<span class='tkt-new'>جدید</span>{% endif %}
+            </div>
+            <div class='tkt-row-sub'>
+              <span class='tkt-status st-{{ e.ticket.status }}'>{{ e.status_label }}</span>
+              {% if e.category_label %}<span>{{ e.category_label }}</span>{% endif %}
+              {% if box == 'sent' and e.recipient_count %}
+                <span class='tkt-dlv' title='وضعیت ارسال: تیک = ارسال شده، دو تیک = دیده‌شده'>
+                  {% if e.read_count >= e.recipient_count %}
+                    <i class='bi bi-check2-all tkt-tick-seen'></i>
+                  {% else %}
+                    <i class='bi bi-check2 tkt-tick-sent'></i>
+                  {% endif %}
+                  <b>{{ e.read_count }}</b> از {{ e.recipient_count }} دیده‌شده
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          <div class='tkt-row-time'>
+            <span>{{ e.ticket.created_at|jdatetime }}</span>
+            <i class='bi bi-chevron-left'></i>
+          </div>
+        </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% if pages > 1 %}
+      <div class='tkt-pager'>
+        {% if page > 1 %}<a href="?box={{ box }}&amp;page={{ page|add:-1 }}">قبلی</a>{% endif %}
+        <span>صفحهٔ {{ page }} از {{ pages }}</span>
+        {% if page < pages %}<a href="?box={{ box }}&amp;page={{ page|add:1 }}">بعدی</a>{% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class='tkt-empty'><i class='bi bi-inbox'></i><p>تیکتی در این بخش نیست.</p></div>
+  {% endif %}
+</div>
+{% include "tickets/_bottom.html" %}

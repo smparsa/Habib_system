@@ -1,0 +1,132 @@
+{% load static %}
+{% load wallet_extras %}
+{% load core_extras %}
+<!DOCTYPE html><html lang='fa'><head>  <meta charset='UTF-8'>  <meta name='viewport' content='width=device-width, initial-scale=1.0'>  <title data-page-title='wallet-history'>تاریخچهٔ تراکنش‌ها — HabibHub</title>  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'></head><body><!-- Sidebar --><aside class='hb-sidebar' id='sidebar'>  <button class='hb-sidebar-toggle'><i class='bi bi-chevron-left'></i></button>  <div class='hb-sidebar-header'>    <img src='{% static "core/assets/logo.png" %}' alt='Logo' class='hb-sidebar-logo'>    <div>      <div class='hb-sidebar-brand'>Habib<span>Hub</span></div>      <small style='color:var(--hb-text-muted);font-size:0.7rem;'>سکه و کیف پول</small>    </div>  </div>  {% include "core/_sidebar_nav.html" with nav_active="wallet_history" %}  <div class='hb-sidebar-footer'>    <div style='display:flex;align-items:center;gap:0.75rem;'>      {% if profile.avatar %}<img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;object-fit:cover;'>{% else %}<img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;'>{% endif %}      <div class='user-info'>        <div style='font-weight:600;font-size:0.85rem;'>{{ profile.full_name }}</div>        <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ request.user.mobile_number }}</div>      </div>      <form method='post' action="{% url 'accounts:logout' %}" style='margin-inline-start:auto;'>{% csrf_token %}<button type='submit' title='خروج' style='background:none;border:none;color:var(--hb-text-muted);cursor:pointer;font-size:1.1rem;'><i class='bi bi-box-arrow-right'></i></button></form>    </div>  </div></aside><!-- Overlay --><div class='hb-overlay'></div><!-- Header --><header class='hb-header'>  <div style='display:flex;align-items:center;gap:1rem;'>
+  {% include "core/_breaking_news_bar.html" %}    <button class='hb-mobile-toggle'><i class='bi bi-list'></i></button>    <div style='display:flex;align-items:center;gap:0.5rem;color:var(--hb-text-muted);font-size:0.85rem;'>      <i class='bi bi-clock-history' style='color:var(--hb-gold-300);'></i>      <span>تاریخچهٔ کامل تراکنش‌های سکه</span>    </div>  </div>  <div class='hb-header-actions'>    <a class='hb-header-btn' href="{% url 'wallet:dashboard' %}" title='بازگشت به کیف پول' style='text-decoration:none;'><i class='bi bi-wallet2'></i></a>  </div></header><!-- Main Content --><main class='hb-main'>  <div class='hb-page-header'>    <h1><i class='bi bi-clock-history'></i> تاریخچهٔ تراکنش‌ها</h1>    <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>موجودی فعلی: <b style='color:var(--hb-gold-300);'>{{ wallet.balance|fa_num }}</b> سکه (ارزش {{ wallet.value_rial|fa_num }} ریال)</p>  </div>
+
+  <div style='padding:0 2rem;'>
+    <div style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;'>
+      <a href="{% url 'wallet:history' %}?tab=ledger" class='hb-btn {% if tab == 'ledger' %}hb-btn-primary{% else %}hb-btn-dark{% endif %} hb-btn-sm'>دفتر کل</a>
+      <a href="{% url 'wallet:history' %}?tab=orders" class='hb-btn {% if tab == 'orders' %}hb-btn-primary{% else %}hb-btn-dark{% endif %} hb-btn-sm'>سفارش‌های خرید/فروش</a>
+      <a href="{% url 'wallet:history' %}?tab=transfers" class='hb-btn {% if tab == 'transfers' %}hb-btn-primary{% else %}hb-btn-dark{% endif %} hb-btn-sm'>انتقال‌ها</a>
+    </div>
+
+    <div class='hb-card'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'>
+          {% if tab == 'ledger' %}<i class='bi bi-list-ul'></i> دفتر کل سکه{% elif tab == 'orders' %}<i class='bi bi-bag'></i> سفارش‌های خرید/فروش{% else %}<i class='bi bi-send'></i> انتقال‌های سکه{% endif %}
+        </div>
+      </div>
+
+      {% if tab == 'ledger' %}
+      <form method='get' action="{% url 'wallet:history' %}" style='display:flex;gap:0.5rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;'>
+        <input type='hidden' name='tab' value='ledger'>
+        <select name='kind' class='hb-form-control hb-form-select' style='max-width:220px;' onchange='this.form.submit()'>
+          <option value=''>همهٔ انواع تراکنش</option>
+          {% for value, label in ledger_kinds %}
+          <option value='{{ value }}' {% if kind == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% if kind %}<a href="{% url 'wallet:history' %}?tab=ledger" class='hb-btn hb-btn-sm hb-btn-dark'><i class='bi bi-x-lg'></i> حذف فیلتر</a>{% endif %}
+      </form>
+      <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+        <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نوع</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مبلغ (سکه)</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مانده</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد مرجع</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>توضیح</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+        </tr></thead>
+        <tbody>
+          {% for row in object_list %}
+          <tr>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.get_kind_display }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);{% if row.amount > 0 %}color:var(--hb-success);{% else %}color:#e74c3c;{% endif %}'>{% if row.amount > 0 %}+{% endif %}{{ row.amount|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.balance_after|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{{ row.ref_code|default:'—' }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.8rem;color:var(--hb-text-secondary);'>{{ row.note|default:'—' }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.created_at|jdatetime }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan='6' style='padding:1rem;color:var(--hb-text-muted);font-size:0.85rem;'>رکوردی در دفتر کل یافت نشد.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% elif tab == 'orders' %}
+      <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+        <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نوع</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>سکه</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نرخ (ریال)</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مبلغ کل (ریال)</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+        </tr></thead>
+        <tbody>
+          {% for row in object_list %}
+          <tr>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{{ row.code }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.get_kind_display }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.coins|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.unit_price_rial|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.total_rial|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+              {% if row.status == 'approved' %}<span class='hb-badge hb-badge-success'>تأییدشده</span>
+              {% elif row.status == 'rejected' %}<span class='hb-badge hb-badge-danger'>ابطال‌شده</span>
+              {% else %}<span class='hb-badge hb-badge-warning'>در انتظار</span>{% endif %}
+            </td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.created_at|jdatetime }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan='7' style='padding:1rem;color:var(--hb-text-muted);font-size:0.85rem;'>سفارشی ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% else %}
+      <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+        <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>جهت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>طرف مقابل</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>سکه</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>توضیح</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+        </tr></thead>
+        <tbody>
+          {% for row in object_list %}
+          <tr>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{{ row.code }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+              {% if row.sender_id == request.user.id %}<span style='color:#e74c3c;'><i class='bi bi-arrow-up-right'></i> ارسال</span>{% else %}<span style='color:var(--hb-success);'><i class='bi bi-arrow-down-left'></i> دریافت</span>{% endif %}
+            </td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{% if row.sender_id == request.user.id %}{{ row.receiver.mobile_number }}{% else %}{{ row.sender.mobile_number }}{% endif %}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.coins|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.8rem;color:var(--hb-text-secondary);'>{{ row.note|default:'—' }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.created_at|jdatetime }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan='6' style='padding:1rem;color:var(--hb-text-muted);font-size:0.85rem;'>انتقالی ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+        <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+        <div style='display:flex;gap:0.35rem;'>
+          {% if page_obj.has_previous %}<a href="{% url 'wallet:history' %}?tab={{ tab }}&page={{ page_obj.previous_page_number }}{% if kind %}&kind={{ kind }}{% endif %}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>{% endif %}
+          {% if page_obj.has_next %}<a href="{% url 'wallet:history' %}?tab={{ tab }}&page={{ page_obj.next_page_number }}{% if kind %}&kind={{ kind }}{% endif %}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+</main><script src='{% static "core/js/app.js" %}?v=49'></script>{% include "core/_sidebar_nav_script.html" %}</body></html>

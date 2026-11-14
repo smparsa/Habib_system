@@ -1,0 +1,265 @@
+{% load static %}
+{% load wallet_extras %}
+{% load core_extras %}
+<!DOCTYPE html><html lang='fa'><head>  <meta charset='UTF-8'>  <meta name='viewport' content='width=device-width, initial-scale=1.0'>  <title data-page-title='wallet-buy-pay'>پرداخت و بارگذاری فیش — HabibHub</title>  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'></head><body><!-- Sidebar --><aside class='hb-sidebar' id='sidebar'>  <button class='hb-sidebar-toggle'><i class='bi bi-chevron-left'></i></button>  <div class='hb-sidebar-header'>    <img src='{% static "core/assets/logo.png" %}' alt='Logo' class='hb-sidebar-logo'>    <div>      <div class='hb-sidebar-brand'>Habib<span>Hub</span></div>      <small style='color:var(--hb-text-muted);font-size:0.7rem;'>سکه و کیف پول</small>    </div>  </div>  {% include "core/_sidebar_nav.html" with nav_active="wallet" %}  <div class='hb-sidebar-footer'>    <div style='display:flex;align-items:center;gap:0.75rem;'>      {% if profile.avatar %}<img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;object-fit:cover;'>{% else %}<img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;'>{% endif %}      <div class='user-info'>        <div style='font-weight:600;font-size:0.85rem;'>{{ profile.full_name }}</div>        <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ request.user.mobile_number }}</div>      </div>      <form method='post' action="{% url 'accounts:logout' %}" style='margin-inline-start:auto;'>{% csrf_token %}<button type='submit' title='خروج' style='background:none;border:none;color:var(--hb-text-muted);cursor:pointer;font-size:1.1rem;'><i class='bi bi-box-arrow-right'></i></button></form>    </div>  </div></aside><!-- Overlay --><div class='hb-overlay'></div><!-- Header --><header class='hb-header'>  <div style='display:flex;align-items:center;gap:1rem;'>
+  {% include "core/_breaking_news_bar.html" %}    <button class='hb-mobile-toggle'><i class='bi bi-list'></i></button>    <div style='display:flex;align-items:center;gap:0.5rem;color:var(--hb-text-muted);font-size:0.85rem;'>      <i class='bi bi-credit-card' style='color:var(--hb-gold-300);'></i>      <span>پرداخت سفارش خرید سکه و ارسال فیش واریز</span>    </div>  </div>  <div class='hb-header-actions'>    <a class='hb-header-btn' href="{% url 'wallet:dashboard' %}" title='بازگشت به کیف پول' style='text-decoration:none;'><i class='bi bi-arrow-right'></i></a>  </div></header><!-- Main Content --><main class='hb-main'>  <div class='hb-page-header'>    <h1><i class='bi bi-credit-card'></i> پرداخت کارت به کارت</h1>    <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>مبلغ سفارش را به شماره کارت/شبا زیر واریز کنید، سپس تصویر رسید را بارگذاری و ثبت نمایید؛ فیش برای تأیید به مدیر سایت ارسال می‌شود.</p>  </div>
+
+  {% if messages %}
+  <div style='padding:0 2rem;'>
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style='padding:0 2rem;max-width:1000px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem;'>
+
+    <!-- ستون ۱: اطلاعات سفارش و حساب مقصد -->
+    <div class='hb-card'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-receipt' style='color:var(--hb-gold-300);'></i> اطلاعات سفارش و حساب مقصد</div>
+        <span class='hb-badge hb-badge-warning'><i class='bi bi-hourglass-split'></i> {% if order.payment_receipt %}فیش ثبت شد — در انتظار تأیید{% else %}در انتظار پرداخت{% endif %}</span>
+      </div>
+
+      <!-- مبلغ قابل پرداخت + تصویر سکه -->
+      <div style='margin:1rem;padding:1rem 1.2rem;border-radius:12px;background:linear-gradient(135deg,rgba(212,175,55,0.12),rgba(212,175,55,0.05));border:1px solid rgba(212,175,55,0.35);'>
+        <div style='display:flex;align-items:center;gap:1rem;'>
+          {% if setting.coin_image %}
+          <img src='{{ setting.coin_image.url }}' alt='سکهٔ هاب' style='width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--hb-gold-400);box-shadow:0 0 18px rgba(201,162,39,0.35);flex:0 0 auto;'>
+          {% else %}
+          <img src="{% static 'core/assets/coin.jpg' %}" alt='سکهٔ هاب' style='width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid var(--hb-gold-400);box-shadow:0 0 18px rgba(201,162,39,0.35);flex:0 0 auto;'>
+          {% endif %}
+          <div style='flex:1;min-width:0;'>
+            <div style='font-size:0.75rem;color:var(--hb-text-muted);margin-bottom:0.35rem;'>مبلغ قابل پرداخت</div>
+            <div style='display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;'>
+              <b style='font-size:1.7rem;color:var(--hb-gold-300);'>{{ order.total_rial|fa_num }}</b>
+              <span style='font-size:0.85rem;color:var(--hb-text-muted);'>ریال</span>
+            </div>
+            <div style='font-size:0.75rem;color:var(--hb-text-muted);margin-top:0.35rem;'>
+              خرید {{ order.coins|fa_num }} سکه × {{ order.unit_price_rial|fa_num }} ریال — نرخِ لحظهٔ ثبت سفارش
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- شماره کارت مقصد (گروه‌های ۴ رقمی + کپی) -->
+      {% if setting.receiving_card_number %}
+      <div style='margin:0 1rem 1rem;padding:1rem;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);'>
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);margin-bottom:0.7rem;'>شماره کارت مقصد</div>
+        <div id='cardnum' dir='ltr' style='display:flex;gap:0.4rem;justify-content:center;flex-wrap:nowrap;'>
+          {% for g in card_groups %}<span style='flex:1 1 0;min-width:0;text-align:center;padding:0.5rem 0.15rem;border-radius:9px;background:rgba(255,255,255,0.055);border:1px solid var(--hb-border);font-weight:700;font-size:1.05rem;letter-spacing:1.5px;color:var(--hb-text-primary);user-select:all;'>{{ g }}</span>{% endfor %}
+        </div>
+        <button type='button' id='copy-card' class='hb-btn hb-btn-outline hb-btn-sm' style='width:100%;margin-top:0.7rem;justify-content:center;'>
+          <i class='bi bi-clipboard'></i> <span id='copy-card-text'>کپی شماره کارت</span>
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- اطلاعات حساب -->
+      <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin:0 1rem 1rem;'>
+        <div style='padding:0.7rem 0.9rem;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);'>
+          <div style='font-size:0.68rem;color:var(--hb-text-muted);margin-bottom:0.25rem;'>بانک</div>
+          <b style='font-size:0.85rem;'>{{ setting.bank_name }}</b>
+        </div>
+        <div style='padding:0.7rem 0.9rem;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);'>
+          <div style='font-size:0.68rem;color:var(--hb-text-muted);margin-bottom:0.25rem;'>شبا</div>
+          <b style='font-size:0.78rem;direction:ltr;display:inline-block;word-break:break-all;'>{{ setting.receiving_iban|default:'—' }}</b>
+        </div>
+        <div style='padding:0.7rem 0.9rem;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);'>
+          <div style='font-size:0.68rem;color:var(--hb-text-muted);margin-bottom:0.25rem;'>کد پیگیری سفارش</div>
+          <b style='font-size:0.85rem;direction:ltr;display:inline-block;'>{{ order.code }}</b>
+        </div>
+        <div style='padding:0.7rem 0.9rem;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);'>
+          <div style='font-size:0.68rem;color:var(--hb-text-muted);margin-bottom:0.25rem;'>زمان ثبت</div>
+          <b style='font-size:0.85rem;'>{{ order.created_at|jdatetime }}</b>
+        </div>
+      </div>
+
+      <div style='margin:0 1rem 1rem;padding:0.8rem 1rem;border-radius:10px;background:rgba(255,255,255,0.026);border:1px solid var(--hb-border);font-size:0.75rem;line-height:1.9;color:var(--hb-text-muted);display:flex;gap:0.5rem;'>
+        <i class='bi bi-info-circle' style='color:var(--hb-gold-300);flex:0 0 auto;margin-top:0.15rem;'></i>
+        <span>لطفاً پیش از واریز، از صحت شماره کارت و مبلغ اطمینان حاصل کنید. پس از ثبت فیش، سفارش شما توسط مدیر بررسی و تأیید می‌شود.</span>
+      </div>
+    </div>
+
+    <!-- ستون ۲: بارگذاری فیش واریز -->
+    <div class='hb-card'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-cloud-arrow-up' style='color:var(--hb-success);'></i> بارگذاری تصویر رسید</div>
+        <span class='hb-badge'>JPG · PNG · WEBP · PDF</span>
+      </div>
+
+      {% if order.payment_receipt %}
+      <!-- فیش قبلاً ثبت شده -->
+      <div style='margin:1rem;'>
+        <div style='display:flex;align-items:center;gap:0.5rem;padding:0.8rem 1rem;border-radius:10px;background:rgba(46,160,67,0.1);border:1px solid rgba(46,160,67,0.35);color:var(--hb-success);font-size:0.85rem;font-weight:600;'>
+          <i class='bi bi-check-circle'></i> فیش واریز ثبت شده است
+        </div>
+        {% if order.receipt_uploaded_at %}
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);margin-top:0.4rem;'>زمان ثبت: {{ order.receipt_uploaded_at|jdatetime }}</div>
+        {% endif %}
+        {% if order.payment_receipt.url|lower|slice:'-4:' == '.pdf' %}
+        <a href='{{ order.payment_receipt.url }}' target='_blank' class='hb-btn hb-btn-outline hb-btn-sm' style='margin-top:0.6rem;'><i class='bi bi-file-pdf'></i> مشاهدهٔ فیش (PDF)</a>
+        {% else %}
+        <div style='margin-top:0.7rem;border:1px solid var(--hb-border);border-radius:10px;overflow:hidden;background:rgba(0,0,0,0.25);'>
+          <img src='{{ order.payment_receipt.url }}' alt='فیش واریز' style='width:100%;max-height:260px;object-fit:contain;display:block;'>
+        </div>
+        {% endif %}
+        <div style='margin-top:0.8rem;padding:0.8rem 1rem;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);font-size:0.78rem;color:var(--hb-text-muted);line-height:1.9;'>
+          <i class='bi bi-chat-left-dots' style='color:var(--hb-gold-300);'></i>
+          تیکت درخواست خرید همراه با فیش واریز برای مدیر سایت ارسال شده است. پس از بررسی و تأیید مدیر، سکه به کیف پول شما افزوده می‌شود و نتیجه از طریق تیکت اعلام می‌گردد.
+        </div>
+      </div>
+      {% else %}
+      <!-- فرم بارگذاری فیش -->
+      <form method='post' action="{% url 'wallet:buy_payment' order.code %}" enctype='multipart/form-data' id='receipt-form' style='margin:1rem;'>
+        {% csrf_token %}
+        <div class='hb-form-group' id='dropzone' style='border:1.5px dashed var(--hb-border);border-radius:12px;padding:1.6rem 1rem;text-align:center;cursor:pointer;transition:border-color 0.25s,background 0.25s;'>
+          <i class='bi bi-cloud-arrow-up' style='font-size:2rem;color:var(--hb-gold-300);'></i>
+          <div style='font-size:0.85rem;font-weight:700;margin-top:0.4rem;'>تصویر رسید را اینجا رها کنید</div>
+          <div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.25rem;line-height:1.8;'>یا برای انتخاب از گالری کلیک کنید<br>حداکثر حجم ۵ مگابایت</div>
+          <input type='file' name='receipt' id='receipt-input' accept='image/*,.pdf' hidden required>
+        </div>
+        <!-- پیش‌نمایش فایل انتخاب‌شده -->
+        <div id='preview' hidden style='margin-top:0.8rem;border:1px solid var(--hb-border);border-radius:10px;overflow:hidden;background:rgba(0,0,0,0.25);'>
+          <img id='preview-img' alt='پیش‌نمایش فیش' style='width:100%;max-height:250px;object-fit:contain;display:block;'>
+          <div style='display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.03);'>
+            <div style='min-width:0;'>
+              <div id='file-name' dir='ltr' style='font-size:0.75rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;'></div>
+              <div id='file-size' dir='ltr' style='font-size:0.68rem;color:var(--hb-text-muted);text-align:right;'></div>
+            </div>
+            <button type='button' id='remove-btn' class='hb-btn hb-btn-outline hb-btn-sm' title='حذف'><i class='bi bi-x-lg'></i></button>
+          </div>
+        </div>
+        <div id='pdf-chosen' hidden style='margin-top:0.8rem;display:flex;align-items:center;gap:0.5rem;padding:0.7rem 0.9rem;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid var(--hb-border);font-size:0.8rem;'>
+          <i class='bi bi-file-pdf' style='color:#e74c3c;'></i> <span id='pdf-name' dir='ltr' style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'></span>
+        </div>
+        <button type='submit' id='submit-btn' class='hb-btn hb-btn-primary' disabled style='width:100%;margin-top:0.9rem;justify-content:center;'>
+          <i class='bi bi-send'></i> ارسال و ثبت رسید
+        </button>
+        <button type='submit' name='cancel' value='1' class='hb-btn hb-btn-outline hb-btn-sm' style='width:100%;margin-top:0.5rem;justify-content:center;'>فعلاً بعداً پرداخت می‌کنم</button>
+        <p style='font-size:0.72rem;color:var(--hb-text-muted);text-align:center;margin-top:0.6rem;line-height:1.9;'>پس از ثبت، فیش شما همراه با مشخصات سفارش در قالب تیکت برای مدیر سایت ارسال و بررسی می‌شود.</p>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+</main>
+<script src='{% static "core/js/app.js" %}?v=49'></script>{% include "core/_sidebar_nav_script.html" %}
+<script>
+(function () {
+  'use strict';
+  var cardRaw = '{{ setting.receiving_card_number|default:"" }}';
+
+  // کپی شماره کارت
+  var copyBtn = document.getElementById('copy-card');
+  if (copyBtn && cardRaw) {
+    var copyText = document.getElementById('copy-card-text');
+    copyBtn.addEventListener('click', function () {
+      function done() {
+        copyBtn.classList.add('hb-btn-success');
+        copyText.textContent = 'کپی شد!';
+        setTimeout(function () {
+          copyBtn.classList.remove('hb-btn-success');
+          copyText.textContent = 'کپی شماره کارت';
+        }, 2200);
+      }
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(cardRaw).then(done, function () { fallback(); });
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = cardRaw;
+        ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        document.body.removeChild(ta);
+        if (ok) { done(); }
+      }
+    });
+  }
+
+  // آپلود فیش: پیش‌نمایش + drag&drop + فعال‌سازی دکمهٔ ارسال
+  var dropzone = document.getElementById('dropzone');
+  if (!dropzone) return;
+  var input = document.getElementById('receipt-input');
+  var preview = document.getElementById('preview');
+  var previewImg = document.getElementById('preview-img');
+  var fileName = document.getElementById('file-name');
+  var fileSize = document.getElementById('file-size');
+  var removeBtn = document.getElementById('remove-btn');
+  var pdfChosen = document.getElementById('pdf-chosen');
+  var pdfName = document.getElementById('pdf-name');
+  var submitBtn = document.getElementById('submit-btn');
+  var MAX_MB = 5;
+
+  function humanSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+  function handleFile(file) {
+    if (!file) return;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      alert('حجم فایل نباید بیشتر از ' + MAX_MB + ' مگابایت باشد.');
+      input.value = ''; return;
+    }
+    var isPdf = /\.pdf$/i.test(file.name || '');
+    var isImage = (file.type && file.type.indexOf('image/') === 0) || /\.(jpe?g|png|webp|gif)$/i.test(file.name || '');
+    if (!isPdf && !isImage) {
+      alert('فقط تصویر (JPG، PNG، WEBP) یا PDF مجاز است.');
+      input.value = ''; return;
+    }
+    if (isPdf) {
+      pdfChosen.hidden = false; preview.hidden = true; pdfName.textContent = file.name + ' (' + humanSize(file.size) + ')';
+    } else {
+      pdfChosen.hidden = true; preview.hidden = false;
+      if (previewImg.src) URL.revokeObjectURL(previewImg.src);
+      previewImg.src = URL.createObjectURL(file);
+      fileName.textContent = file.name; fileSize.textContent = humanSize(file.size);
+    }
+    submitBtn.disabled = false;
+  }
+  dropzone.addEventListener('click', function () { input.click(); });
+  dropzone.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+  input.addEventListener('change', function () {
+    if (input.files && input.files[0]) handleFile(input.files[0]);
+  });
+  ['dragenter', 'dragover'].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.style.borderColor = 'var(--hb-gold-300)';
+      dropzone.style.background = 'rgba(212,175,55,0.07)';
+    });
+  });
+  ['dragleave', 'dragend', 'drop'].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.style.borderColor = ''; dropzone.style.background = '';
+    });
+  });
+  dropzone.addEventListener('drop', function (e) {
+    var dt = e.dataTransfer;
+    if (dt && dt.files && dt.files[0]) {
+      try { input.files = dt.files; } catch (err) { /* برخی مرورگرها اجازهٔ ست مستقیم نمی‌دهند */ }
+      handleFile(dt.files[0]);
+    }
+  });
+  removeBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    input.value = '';
+    preview.hidden = true; pdfChosen.hidden = true;
+    if (previewImg.src) URL.revokeObjectURL(previewImg.src);
+    submitBtn.disabled = true;
+  });
+})();
+</script>
+</body></html>

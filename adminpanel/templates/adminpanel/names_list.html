@@ -1,0 +1,116 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{{ cfg.plural }} — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi {{ cfg.icon }}'></i> اسامی مرجع — {{ cfg.plural }}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    کاربران هنگام ثبت پروفایل، «نام»، «نام پدر» و «نام مادر» را از جدول نام‌ها،
+    «نام خانوادگی» را از جدول نام‌های خانوادگی و فیلد اختیاریِ «شهرت» را از جدول
+    شهرت‌ها انتخاب می‌کنند؛ این ماژول همان دیتابیس را تکمیل می‌کند تا فهرست
+    انتخابیِ کاربران کامل باشد. {{ cfg.usage }}.
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div style='display:flex;gap:0.5rem;align-items:center;'>
+        <a href="{% url 'adminpanel:names_list' %}?kind=first"
+           style='padding:0.4rem 1rem;border-radius:8px;font-size:0.85rem;text-decoration:none;{% if kind == "first" %}background:rgba(201,162,39,0.15);color:var(--hb-gold-300);border:1px solid rgba(201,162,39,0.4);{% else %}color:var(--hb-text-muted);border:1px solid var(--hb-navy-500);{% endif %}'>
+          <i class='bi bi-person-vcard'></i> نام‌ها ({{ counts.first }})
+        </a>
+        <a href="{% url 'adminpanel:names_list' %}?kind=family"
+           style='padding:0.4rem 1rem;border-radius:8px;font-size:0.85rem;text-decoration:none;{% if kind == "family" %}background:rgba(201,162,39,0.15);color:var(--hb-gold-300);border:1px solid rgba(201,162,39,0.4);{% else %}color:var(--hb-text-muted);border:1px solid var(--hb-navy-500);{% endif %}'>
+          <i class='bi bi-people'></i> نام‌های خانوادگی ({{ counts.family }})
+        </a>
+        <a href="{% url 'adminpanel:names_list' %}?kind=fame"
+           style='padding:0.4rem 1rem;border-radius:8px;font-size:0.85rem;text-decoration:none;{% if kind == "fame" %}background:rgba(201,162,39,0.15);color:var(--hb-gold-300);border:1px solid rgba(201,162,39,0.4);{% else %}color:var(--hb-text-muted);border:1px solid var(--hb-navy-500);{% endif %}'>
+          <i class='bi bi-star'></i> شهرت‌ها ({{ counts.fame }})
+        </a>
+      </div>
+      <a href="{% url 'adminpanel:name_add' kind %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-plus-lg'></i> افزودن {{ cfg.label }}</a>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:names_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='hidden' name='kind' value='{{ kind }}'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:280px;' placeholder='جستجو در فارسی / انگلیسی…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      {% if q %}
+      <a href="{% url 'adminpanel:names_list' %}?kind={{ kind }}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلتر</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>#</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{% if kind == "first" %}نام (فارسی){% elif kind == "fame" %}شهرت (فارسی){% else %}نام خانوادگی (فارسی){% endif %}</th>
+          {% if kind == "first" %}<th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>جنسیت</th>{% endif %}
+          {% if kind == "fame" %}<th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>توضیحات</th>{% endif %}
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>انگلیسی</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>استفاده در پروفایل‌ها</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);'>{{ row.pk }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.fa }}</strong></td>
+          {% if kind == "first" %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.gender == "male" %}<span class='hb-badge hb-badge-info'><i class='bi bi-gender-male'></i> مردانه</span>
+            {% elif row.gender == "female" %}<span class='hb-badge hb-badge-success'><i class='bi bi-gender-female'></i> زنانه</span>
+            {% else %}<span style='color:var(--hb-text-muted);font-size:0.78rem;'>نامشخص</span>{% endif %}
+          </td>
+          {% endif %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.en %}<span dir='ltr' style='color:var(--hb-text-secondary);'>{{ row.en }}</span>{% else %}<span style='color:var(--hb-text-muted);'>—</span>{% endif %}
+          </td>
+          {% if kind == "fame" %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);max-width:320px;'>
+            {% if row.description %}<span style='color:var(--hb-text-secondary);white-space:pre-line;'>{{ row.description|truncatechars:140 }}</span>{% else %}<span style='color:var(--hb-text-muted);'>—</span>{% endif %}
+          </td>
+          {% endif %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.used %}
+              <span class='hb-badge hb-badge-warning'><i class='bi bi-person-check'></i> {{ row.used }} پروفایل</span>
+              {% if row.usage_parts %}<small style='color:var(--hb-text-muted);font-size:0.72rem;display:block;margin-top:0.2rem;'>{{ row.usage_parts|join:' · ' }}</small>{% endif %}
+            {% else %}
+              <span style='color:var(--hb-text-muted);font-size:0.8rem;'>استفاده نشده</span>
+            {% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              <a href="{% url 'adminpanel:name_edit' kind row.pk %}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              <form method='post' action="{% url 'adminpanel:name_delete' kind row.pk %}" style='margin:0;' onsubmit="return confirm('{% if row.used %}این {{ cfg.label }} توسط {{ row.used }} پروفایل استفاده شده و قابل حذف نیست.{% else %}{{ cfg.label }} «{{ row.fa }}» برای همیشه حذف شود؟{% endif %}');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title='حذف' {% if row.used %}disabled style='opacity:0.4;cursor:not-allowed;'{% endif %}><i class='bi bi-trash' style='color:#c0392b;'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div style='display:flex;gap:0.4rem;justify-content:center;margin-top:1rem;align-items:center;'>
+      {% if page_obj.has_previous %}
+      <a href="{{ next_url }}&page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-sm hb-btn-dark'>قبلی</a>
+      {% endif %}
+      <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+      <a href="{{ next_url }}&page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-sm hb-btn-dark'>بعدی</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>
+      {% if q %}موردی مطابق «{{ q }}» یافت نشد.{% else %}هنوز هیچ {{ cfg.label }}ی در این جدول ثبت نشده است؛ با دکمهٔ «افزودن {{ cfg.label }}» فهرست را تکمیل کنید.{% endif %}
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

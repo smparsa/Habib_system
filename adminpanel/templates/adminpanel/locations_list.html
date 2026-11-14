@@ -1,0 +1,116 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{{ cfg.plural }} — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi {{ cfg.icon }}'></i> اطلاعات مکانی مرجع — {{ cfg.plural }}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    کاربران در بخش «اطلاعات مکانی» پروفایل (محل سکونت)، «کشور»، «استان» و «شهر» را از همین
+    جدول‌های مرجع انتخاب می‌کنند؛ این ماژول همان دیتابیس را تکمیل می‌کند تا فهرست انتخابیِ
+    کاربران کامل باشد. هم‌اکنون دیتابیس مربوط به کشور ایران است. {{ cfg.usage }}.
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div style='display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;'>
+        <a href="{% url 'adminpanel:locations_list' %}?kind=country"
+           style='padding:0.4rem 1rem;border-radius:8px;font-size:0.85rem;text-decoration:none;{% if kind == "country" %}background:rgba(201,162,39,0.15);color:var(--hb-gold-300);border:1px solid rgba(201,162,39,0.4);{% else %}color:var(--hb-text-muted);border:1px solid var(--hb-navy-500);{% endif %}'>
+          <i class='bi bi-globe2'></i> کشورها ({{ counts.country }})
+        </a>
+        <a href="{% url 'adminpanel:locations_list' %}?kind=province"
+           style='padding:0.4rem 1rem;border-radius:8px;font-size:0.85rem;text-decoration:none;{% if kind == "province" %}background:rgba(201,162,39,0.15);color:var(--hb-gold-300);border:1px solid rgba(201,162,39,0.4);{% else %}color:var(--hb-text-muted);border:1px solid var(--hb-navy-500);{% endif %}'>
+          <i class='bi bi-map'></i> استان‌ها ({{ counts.province }})
+        </a>
+        <a href="{% url 'adminpanel:locations_list' %}?kind=city"
+           style='padding:0.4rem 1rem;border-radius:8px;font-size:0.85rem;text-decoration:none;{% if kind == "city" %}background:rgba(201,162,39,0.15);color:var(--hb-gold-300);border:1px solid rgba(201,162,39,0.4);{% else %}color:var(--hb-text-muted);border:1px solid var(--hb-navy-500);{% endif %}'>
+          <i class='bi bi-buildings'></i> شهرستان‌ها ({{ counts.city }})
+        </a>
+      </div>
+      <a href="{% url 'adminpanel:location_add' kind %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-plus-lg'></i> افزودن {{ cfg.label }}</a>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:locations_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='hidden' name='kind' value='{{ kind }}'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:280px;' placeholder='جستجو در فارسی / انگلیسی…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      {% if q %}
+      <a href="{% url 'adminpanel:locations_list' %}?kind={{ kind }}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلتر</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>#</th>
+          {% if kind == "city" or kind == "province" %}<th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مسیر (والد)</th>{% endif %}
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{% if kind == "country" %}کشور (فارسی){% elif kind == "province" %}استان (فارسی){% else %}شهرستان (فارسی){% endif %}</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>انگلیسی</th>
+          {% if kind == "country" or kind == "province" %}<th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زیرمجموعه</th>{% endif %}
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>استفاده در پروفایل‌ها</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);'>{{ row.pk }}</td>
+          {% if kind == "city" or kind == "province" %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);font-size:0.78rem;'>
+            {% if row.parent %}{{ row.parent }}{% else %}<span style='color:var(--hb-text-muted);'>—</span>{% endif %}
+          </td>
+          {% endif %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.fa }}</strong></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.en %}<span dir='ltr' style='color:var(--hb-text-secondary);'>{{ row.en }}</span>{% else %}<span style='color:var(--hb-text-muted);'>—</span>{% endif %}
+          </td>
+          {% if kind == "country" or kind == "province" %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.children %}
+              <span class='hb-badge hb-badge-info'><i class='bi bi-diagram-3'></i> {{ row.children }} {{ row.children_label }}</span>
+            {% else %}
+              <span style='color:var(--hb-text-muted);font-size:0.8rem;'>بدون زیرمجموعه</span>
+            {% endif %}
+          </td>
+          {% endif %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.used %}
+              <span class='hb-badge hb-badge-warning'><i class='bi bi-person-check'></i> {{ row.used }} پروفایل</span>
+            {% else %}
+              <span style='color:var(--hb-text-muted);font-size:0.8rem;'>استفاده نشده</span>
+            {% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              <a href="{% url 'adminpanel:location_edit' kind row.pk %}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              <form method='post' action="{% url 'adminpanel:location_delete' kind row.pk %}" style='margin:0;' onsubmit="return confirm('{% if row.used %}این {{ cfg.label }} توسط {{ row.used }} پروفایل به‌عنوان محل سکونت استفاده شده و قابل حذف نیست.{% elif row.children %}این {{ cfg.label }} دارای {{ row.children }} {{ row.children_label }} است و قابل حذف نیست.{% else %}{{ cfg.label }} «{{ row.fa }}» برای همیشه حذف شود؟{% endif %}');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title='حذف' {% if row.used or row.children %}disabled style='opacity:0.4;cursor:not-allowed;'{% endif %}><i class='bi bi-trash' style='color:#c0392b;'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div style='display:flex;gap:0.4rem;justify-content:center;margin-top:1rem;align-items:center;'>
+      {% if page_obj.has_previous %}
+      <a href="{{ next_url }}&page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-sm hb-btn-dark'>قبلی</a>
+      {% endif %}
+      <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+      <a href="{{ next_url }}&page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-sm hb-btn-dark'>بعدی</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>
+      {% if q %}موردی مطابق «{{ q }}» یافت نشد.{% else %}هنوز هیچ {{ cfg.label }}ی در این جدول ثبت نشده است؛ با دکمهٔ «افزودن {{ cfg.label }}» فهرست را تکمیل کنید.{% endif %}
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

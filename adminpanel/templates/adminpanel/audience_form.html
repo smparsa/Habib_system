@@ -1,0 +1,184 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{% if mode == "add" %}افزودن{% else %}ویرایش{% endif %} جامعهٔ هدف — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-crosshair'></i> {% if mode == "add" %}افزودن جامعهٔ هدف{% else %}ویرایش «{{ form.instance.name }}»{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:audiences_list' %}" style='color:var(--hb-gold-300);'>مخاطبین هدف تیکت</a>
+    › {% if mode == "add" %}افزودن{% else %}ویرایش{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:820px;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li><b>همهٔ کاربران:</b> ارسال به تمام اعضای فعال.</li>
+      <li><b>کشور/استان/شهر:</b> بر اساس فیلدهای مکانیِ پروفایل کاربران؛ نام‌ها از فهرست مرجعِ «اطلاعات مکانی» انتخاب می‌شوند (می‌توانید چند نام اضافه کنید).</li>
+      <li><b>شعاع جغرافیایی (GPS):</b> مختصات مرکز + شعاع به متر یا کیلومتر؛ کاربرانی که مختصات ذخیره‌شده دارند و در شعاع قرار می‌گیرند (محاسبهٔ haversine).</li>
+      <li><b>رده‌های شغلی:</b> لایهٔ موردنظر از پنج‌لایهٔ کاتالوگ (حوزه ← صنعت ← دسته ← عنوان ← تخصص‌های مرتبط) را انتخاب و نام رده‌ها را وارد کنید.</li>
+      <li><b>کاربران مشخص:</b> کد ملی هر کاربر در یک خط؛ هنگام ذخیره به حساب‌های کاربری تبدیل می‌شود.</li>
+      <li><b>شروع شماره موبایل:</b> پیشوندها را با کاما جدا کنید (مثال: 0912, 0935).</li>
+      <li><b>بازهٔ سنی:</b> بر اساس تاریخ تولد پروفایل محاسبه می‌شود؛ حداقل یا حداکثر کافی است.</li>
+    </ul>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' novalidate id='audience-form'>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.name.id_for_label }}'>{{ form.name.label }} *</label>
+        {{ form.name }}
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.kind.id_for_label }}'>{{ form.kind.label }} *</label>
+        {{ form.kind }}
+        {% if form.kind.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.kind.help_text }}</small>{% endif %}
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.description.id_for_label }}'>{{ form.description.label }}</label>
+        {{ form.description }}
+      </div>
+
+      <!-- فیلدهای وابسته به نوع مخاطب -->
+      <div data-aud-block='country,province,city' style='display:none;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+        <label class='hb-form-label'>{{ form.aud_geo.label }}</label>
+        <div data-hb-geo-pick data-hb-geo-kind='{% if form.kind.value %}{{ form.kind.value }}{% else %}country{% endif %}'>
+          {{ form.aud_geo }}
+        </div>
+        {% if form.aud_geo.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_geo.errors }}</div>{% endif %}
+        <small style='color:var(--hb-text-muted);font-size:0.75rem;'>با تایپ، نام را از فهرست مرجع «اطلاعات مکانی» انتخاب کنید؛ برای افزودن نام جدید همین‌طور ادامه دهید.</small>
+      </div>
+
+      <div data-aud-block='radius' style='display:none;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+        <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>{{ form.aud_lat.label }}</label>
+            {{ form.aud_lat }}
+            {% if form.aud_lat.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_lat.errors }}</div>{% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>{{ form.aud_lng.label }}</label>
+            {{ form.aud_lng }}
+            {% if form.aud_lng.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_lng.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>{{ form.aud_radius.label }}</label>
+            {{ form.aud_radius }}
+            {% if form.aud_radius.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_radius.errors }}</div>{% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>{{ form.aud_radius_unit.label }}</label>
+            {{ form.aud_radius_unit }}
+          </div>
+        </div>
+        <small style='color:var(--hb-text-muted);font-size:0.75rem;'>شعاع را می‌توانید به متر (مثلاً ۱۰۰) یا کیلومتر (مثلاً ۵) وارد کنید؛ در هر دو حالت به کیلومتر تبدیل و با haversine اعمال می‌شود.</small>
+      </div>
+
+      <div data-aud-block='job_sector,job_industry,job_category,job_title,job_spec' style='display:none;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.aud_job_layer.label }}</label>
+          {{ form.aud_job_layer }}
+          {% if form.aud_job_layer.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_job_layer.errors }}</div>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.aud_job_names.label }}</label>
+          {{ form.aud_job_names }}
+          {% if form.aud_job_names.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_job_names.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div data-aud-block='specific_users' style='display:none;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+        <label class='hb-form-label'>{{ form.aud_nids.label }}</label>
+        {{ form.aud_nids }}
+        {% if form.aud_nids.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_nids.errors }}</div>{% endif %}
+      </div>
+
+      <div data-aud-block='mobile_prefix' style='display:none;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+        <label class='hb-form-label'>{{ form.aud_mobile_prefixes.label }}</label>
+        {{ form.aud_mobile_prefixes }}
+        {% if form.aud_mobile_prefixes.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_mobile_prefixes.errors }}</div>{% endif %}
+      </div>
+
+      <div data-aud-block='age' style='display:none;border:1px dashed var(--hb-navy-500);border-radius:10px;padding:1rem;margin-bottom:1rem;'>
+        <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;'>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>{{ form.aud_age_min.label }}</label>
+            {{ form.aud_age_min }}
+            {% if form.aud_age_min.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_age_min.errors }}</div>{% endif %}
+          </div>
+          <div class='hb-form-group'>
+            <label class='hb-form-label'>{{ form.aud_age_max.label }}</label>
+            {{ form.aud_age_max }}
+            {% if form.aud_age_max.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.aud_age_max.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label style='display:flex;align-items:center;gap:0.4rem;font-size:0.88rem;cursor:pointer;'>
+          {{ form.is_active }} {{ form.is_active.label }}
+        </label>
+      </div>
+
+      {% if form.errors %}
+      <div style='color:#e74c3c;font-size:0.82rem;margin-bottom:0.75rem;'>لطفاً خطاهای فرم را برطرف کنید.</div>
+      {% endif %}
+
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+          <i class='bi {% if mode == "add" %}bi-plus-lg{% else %}bi-check-lg{% endif %}'></i>
+          {% if mode == "add" %}ثبت جامعهٔ هدف{% else %}ذخیره تغییرات{% endif %}
+        </button>
+        <a href="{% url 'adminpanel:audiences_list' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var kind = document.getElementById('{{ form.kind.id_for_label }}');
+  var blocks = document.querySelectorAll('[data-aud-block]');
+  function sync() {
+    var val = kind ? kind.value : '';
+    blocks.forEach(function (b) {
+      var keys = b.getAttribute('data-aud-block').split(',');
+      b.style.display = keys.indexOf(val) >= 0 ? '' : 'none';
+    });
+    // نوع جغرافیایی → سطح انتخاب‌گر مرجع و پاک‌کردن انتخاب قبلی (با تغییر نوع)
+    if (window.HbGeoPick) {
+      var gp = document.querySelector('[data-hb-geo-pick]');
+      if (gp && val) window.HbGeoPick.setKind(gp, val);
+    }
+  }
+  if (kind) kind.addEventListener('change', sync);
+  sync();
+})();
+</script>
+
+{% load static %}
+<script src='{% static "core/js/geo_pick.js" %}?v=1'></script>
+<script>
+(function () {
+  // بعد از بارگذاری انتخاب‌گر مرجع، اگر نوعِ جغرافیایی از قبل انتخاب شده بود مقدارش را
+  // به انتخاب‌گر بده تا چیپ‌ها (مثلاً هنگام ویرایش) درست ساخته شوند.
+  var kind = document.getElementById('{{ form.kind.id_for_label }}');
+  if (kind && window.HbGeoPick) {
+    var gp = document.querySelector('[data-hb-geo-pick]');
+    if (gp && kind.value) window.HbGeoPick.setKind(gp, kind.value);
+    window.HbGeoPick.initAll(document);
+  }
+})();
+</script>
+{% endblock %}

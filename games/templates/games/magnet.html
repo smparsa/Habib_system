@@ -1,0 +1,65 @@
+{% load static %}<!DOCTYPE html>
+<html lang='fa' dir='rtl'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>بازی مگنت - HabibHub</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "games/css/games.css" %}?v=1' rel='stylesheet'>
+  <link href='{% static "games/css/magnet.css" %}?v=1' rel='stylesheet'>
+</head>
+<body class='g-body'>
+  <a class='g-back' href="{% url 'games:home' %}"><i class='bi bi-arrow-right'></i> منو</a>
+
+  <div class='g-page'>
+    <header style='text-align:center;'>
+      <h1 class='g-page-title t-purple'>🧲 بازی مگنت</h1>
+      <p class='g-page-sub'>قطب‌های مخالف جذب می‌شوند • قطب‌های یکسان دفع می‌شوند</p>
+    </header>
+
+    <div class='g-panel-row'>
+      <div class='g-stat' style='border-color:rgba(96,165,250,0.4);'>
+        <div class='g-stat-label'>شما</div>
+        <div class='g-stat-value c-blue' id='g-magnet-player'>۰</div>
+      </div>
+      <div class='m-turn' id='g-magnet-turn'>برای شروع دکمهٔ شروع را بزنید</div>
+      <div class='g-stat' style='border-color:rgba(248,113,113,0.4);'>
+        <div class='g-stat-label'>هوش مصنوعی</div>
+        <div class='g-stat-value c-red' id='g-magnet-ai'>۰</div>
+      </div>
+      <div class='g-stat'><div class='g-stat-label'>رکورد</div><div class='g-stat-value c-yellow' id='g-magnet-best'>۰</div></div>
+    </div>
+
+    <div style='position:relative;'>
+      <div class='m-board' id='g-magnet-board'></div>
+      <div class='g-overlay' id='g-magnet-overlay' hidden>
+        <div class='g-overlay-emoji'>🧲</div>
+        <h2 class='g-overlay-title' id='g-magnet-overlay-title'></h2>
+        <p class='g-overlay-result' id='g-magnet-overlay-result'></p>
+        <button class='g-btn g-btn-purple' id='g-magnet-start'>شروع بازی</button>
+      </div>
+    </div>
+
+    <div class='g-panel-row'>
+      <div>
+        <select class='g-select' id='g-magnet-difficulty' aria-label='سطح دشواری'>
+          <option value='easy'>آسان</option>
+          <option value='medium' selected>متوسط</option>
+          <option value='hard'>سخت</option>
+        </select>
+      </div>
+      <button class='g-btn g-btn-blue' id='g-magnet-flip'>🧲 تغییر قطب</button>
+      <button class='g-btn g-btn-purple' id='g-magnet-start'>شروع / بازی مجدد</button>
+    </div>
+
+    <p class='g-page-sub'>روی یکی از مگنت‌های آبی کلیک کنید تا حرکات مجاز سبز شوند؛ برای گرفتن مگنت حریف، قطب‌ها باید مخالف باشند.</p>
+  </div>
+
+  <script src='{% static "games/js/magnet.js" %}?v=1'></script>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+{% include "core/_please_wait.html" %}
+</body>
+</html>

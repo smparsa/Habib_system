@@ -1,0 +1,140 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{% if is_edit %}ویرایش{% else %}افزودن{% endif %} خبر فوری — پنل مدیریت{% endblock %}
+{% block content %}
+<!-- استایل تقویم شمسی — همان انتخابگرِ «تاریخ تولد» در پروفایل؛ فعال‌سازی با
+     initSolarDatepicker در app.js که base.html پنل مدیریت آن را بارگذاری می‌کند. -->
+<style>
+  .hb-shamsi-picker{position:relative;}
+  .hb-shamsi-field{position:relative;}
+  .hb-shamsi-field>i{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--hb-text-muted);pointer-events:none;}
+  .hb-shamsi-field .hb-shamsi-input{padding-right:2.3rem;}
+  .hb-shamsi-popup{position:absolute;top:calc(100% + 4px);right:0;width:264px;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:12px;padding:0.75rem;box-shadow:0 12px 32px rgba(0,0,0,.45);z-index:60;}
+  .hb-shamsi-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;}
+  .hb-shamsi-nav button{background:none;border:none;color:var(--hb-gold-400);font-size:1.2rem;cursor:pointer;line-height:1;padding:0 0.4rem;}
+  .hb-shamsi-quick{display:flex;gap:0.35rem;margin-bottom:0.55rem;}
+  .hb-shamsi-quick select{flex:1;min-width:0;background:var(--hb-navy-800);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.3rem 0.45rem;font-size:0.8rem;cursor:pointer;}
+  .hb-shamsi-quick select:hover{border-color:var(--hb-gold-400);}
+  .hb-shamsi-quick select:focus{outline:none;border-color:var(--hb-gold-400);box-shadow:0 0 0 2px rgba(201,162,39,0.18);}
+  .hb-shamsi-title{font-size:0.85rem;color:var(--hb-text-primary);font-weight:600;}
+  .hb-shamsi-dow,.hb-shamsi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+  .hb-shamsi-dow span{font-size:0.7rem;color:var(--hb-text-muted);padding:0.2rem 0;}
+  .hb-shamsi-grid span{padding:0.35rem 0;border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--hb-text-secondary);}
+  .hb-shamsi-grid span:hover{background:rgba(201,162,39,0.15);}
+  .hb-shamsi-grid span.off{visibility:hidden;cursor:default;}
+  .hb-shamsi-grid span.day.sel{background:var(--hb-gold-400);color:#0b101d;font-weight:700;}
+  .hb-shamsi-grid span.day.today{outline:1px solid var(--hb-gold-400);}
+  .hb-shamsi-info{margin-top:0.4rem;font-size:0.8rem;color:var(--hb-text-secondary);padding:0.35rem 0.7rem;background:rgba(201,162,39,0.08);border-radius:8px;display:none;}
+</style>
+
+<div class='hb-page-header'>
+  <h1><i class='bi bi-broadcast-pin'></i> {% if is_edit %}ویرایش خبر فوری{% else %}افزودن خبر فوری{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:breaking_news_list' %}" style='color:var(--hb-gold-300);'>اخبار فوری</a>
+    › {% if is_edit %}ویرایش{% else %}افزودن{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:760px;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li>متن خبر حداکثر <b>۵۰۰ کاراکتر</b> و یک جملهٔ روان است؛ در هدر همهٔ کاربران، کنار فیلد جستجو به‌صورت فقط‌خواندنی می‌چرخد (حرکت از چپ به راست).</li>
+      <li><b>بازهٔ نمایش:</b> خبر فقط از «شروع نمایش» تا «پایان نمایش» دیده می‌شود؛ پس از پایان به‌طور خودکار از هدر حذف می‌شود. تاریخ‌ها با <b>تقویم شمسی</b> (مشابه تقویم تاریخ تولد) انتخاب می‌شوند و ساعت به‌صورت جداگانه تعیین می‌شود.</li>
+      <li><b>سرعت:</b> مدت یک دور کامل حرکت متن بر حسب ثانیه (کمتر = سریع‌تر). بازهٔ مجاز ۵ تا ۱۲۰ ثانیه.</li>
+      <li>می‌توانید <b>چند خبر</b> ثبت کنید؛ خبرهای فعالِ هم‌زمان به‌ترتیب «ترتیب پخش» پشت‌سرهم نمایش داده می‌شوند.</li>
+    </ul>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        {% if field.name == 'show_from' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if form.show_from_date.errors or form.show_from_time.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ form.show_from_date.errors }}{{ form.show_from_time.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label'>شروع نمایش (تاریخ شمسی و ساعت) *</label>
+          <div style='display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-start;'>
+            <!-- تقویم شمسی (مشابه تقویم تاریخ تولد): ورودی نمایشی readonly +
+                 فیلد پنهانِ میلادی که توسط app.js پر می‌شود؛ بدون کنترل سن. -->
+            <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='flex:1 1 240px;min-width:220px;'>
+              <div class='hb-shamsi-field'>
+                <i class='bi bi-calendar3'></i>
+                <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl'>
+                <input type='hidden' name='show_from_date' data-shamsi-gregorian value='{{ form.show_from_date.value|default_if_none:"" }}'>
+              </div>
+              <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+              <div class='hb-shamsi-info' data-shamsi-info></div>
+            </div>
+            <div style='flex:0 0 150px;'>{{ form.show_from_time }}</div>
+          </div>
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>
+            تاریخ را با تقویم شمسی و ساعت شروع نمایش را در کنار آن انتخاب کنید. {{ field.help_text }}
+          </small>
+        </div>
+        {% elif field.name == 'show_until' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if form.show_until_date.errors or form.show_until_time.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ form.show_until_date.errors }}{{ form.show_until_time.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label'>پایان نمایش (تاریخ شمسی و ساعت) *</label>
+          <div style='display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-start;'>
+            <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='flex:1 1 240px;min-width:220px;'>
+              <div class='hb-shamsi-field'>
+                <i class='bi bi-calendar3'></i>
+                <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl'>
+                <input type='hidden' name='show_until_date' data-shamsi-gregorian value='{{ form.show_until_date.value|default_if_none:"" }}'>
+              </div>
+              <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+              <div class='hb-shamsi-info' data-shamsi-info></div>
+            </div>
+            <div style='flex:0 0 150px;'>{{ form.show_until_time }}</div>
+          </div>
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>
+            تاریخ را با تقویم شمسی و ساعت پایان نمایش را در کنار آن انتخاب کنید. {{ field.help_text }}
+          </small>
+        </div>
+        {% elif field.name == 'show_from_date' or field.name == 'show_until_date' or field.name == 'show_from_time' or field.name == 'show_until_time' %}
+          {# فیلدهای کمکیِ تقویم شمسی؛ در بلوک‌های بالا به‌صورت سفارشی رندر شده‌اند. #}
+        {% else %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>
+            {% if field.name == 'text' %}<span data-news-count>۰</span> / ۵۰۰ کاراکتر{% endif %}
+            {{ field.help_text }}
+          </small>
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+          <i class='bi {% if is_edit %}bi-check-lg{% else %}bi-plus-lg{% endif %}'></i>
+          {% if is_edit %}ذخیرهٔ تغییرات{% else %}ثبت خبر{% endif %}
+        </button>
+        <a href="{% url 'adminpanel:breaking_news_list' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  var ta = document.querySelector('[name="text"]');
+  var counter = document.querySelector('[data-news-count]');
+  if (!ta || !counter) return;
+  var toFa = function (x) { return String(x).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[+d]; }); };
+  var update = function () { counter.textContent = toFa(ta.value.length); };
+  ta.addEventListener('input', update);
+  update();
+})();
+</script>
+{% endblock %}

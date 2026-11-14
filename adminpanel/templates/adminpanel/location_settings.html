@@ -1,0 +1,74 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}سرویس موقعیت مکانی (نقشه و GPS) — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-map'></i> سرویس موقعیت مکانی (نقشه و GPS)</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    تعیین نقشهٔ تعاملیِ نمایشی کاربران و منبع مختصاتِ «دریافت خودکار موقعیت». این تنظیمات سراسری است و روی همهٔ کاربران اثر می‌گذارد.
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:920px;'>
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-sliders'></i> تنظیمات سرویس موقعیت</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:location_settings' %}">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>{% endif %}
+
+      <div class='hb-ls-radio-group'>
+        <div class='hb-ls-title'><i class='bi bi-pin-map'></i> ارائه‌دهندهٔ نقشه (Map Provider)</div>
+        {{ form.map_provider }}
+        <div class='hb-ls-note'>
+          <i class='bi bi-info-circle'></i>
+          «نشان» و «گوگل» به کلیدِ سرور (NESHAN_API_KEY / GOOGLE_MAPS_API_KEY) نیاز دارند و
+          OpenStreetMap بدون کلید کار می‌کند. اگر کلیدِ انتخابِ شما روی سرور نباشد،
+          برنامه به‌ترتیب به نشان/گوگلِ در دسترس و در نهایت OpenStreetMap می‌افتد تا
+          کاربر همیشه نقشه‌ای تعاملی ببیند. جستجوی آدرس و تبدیل مختصات به آدرس از این
+          انتخاب مستقل‌اند و همچنان زنجیرهٔ سرور (نشان ← گوگل ← رایگان) را دنبال می‌کنند.
+        </div>
+      </div>
+
+      <div class='hb-ls-radio-group'>
+        <div class='hb-ls-title'><i class='bi bi-crosshair'></i> منبع موقعیت (Location Provider)</div>
+        {{ form.location_provider }}
+        <div class='hb-ls-note'>
+          <i class='bi bi-info-circle'></i>
+          <b>همه:</b> GPS مرورگر/دستگاه و در نبودش موقعیت تقریبی IP (رفتارِ پیش‌فرضِ فعلی)؛
+          <b>فقط GPS مرورگر:</b> صرفاً navigator.geolocation و بدون جایگزین IP؛
+          <b>موبایل:</b> ابتدا از پلِ اپلیکیشن بومی (window.HabibNative.getLocation) و اگر موجود نبود مثل «همه».
+        </div>
+      </div>
+
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-save'></i> ذخیره تنظیمات</button>
+    </form>
+  </div>
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-activity'></i> وضعیت فعلی سرور</div>
+    </div>
+    <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0.75rem;font-size:0.88rem;'>
+      <div>
+        <div style='font-size:0.78rem;color:var(--hb-text-muted);margin-bottom:0.3rem;'>کلید «نشان» (NESHAN_API_KEY)</div>
+        {% if neshan_key_set %}<span class='hb-badge hb-badge-success'><i class='bi bi-check-circle'></i> تنظیم شده</span>{% else %}<span class='hb-badge hb-badge-warning'><i class='bi bi-exclamation-triangle'></i> تنظیم نشده</span>{% endif %}
+      </div>
+      <div>
+        <div style='font-size:0.78rem;color:var(--hb-text-muted);margin-bottom:0.3rem;'>کلید گوگل (GOOGLE_MAPS_API_KEY)</div>
+        {% if google_key_set %}<span class='hb-badge hb-badge-success'><i class='bi bi-check-circle'></i> تنظیم شده</span>{% else %}<span class='hb-badge hb-badge-warning'><i class='bi bi-exclamation-triangle'></i> تنظیم نشده</span>{% endif %}
+      </div>
+      <div>
+        <div style='font-size:0.78rem;color:var(--hb-text-muted);margin-bottom:0.3rem;'>نقشه‌ای که کاربران هم‌اکنون می‌بینند</div>
+        <span class='hb-badge hb-badge-info'><i class='bi bi-map'></i> {{ map_provider_label }}</span>
+        {% if chosen_map_provider_label != map_provider_label %}
+        <div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.35rem;line-height:1.8;'>
+          انتخاب شما «{{ chosen_map_provider_label }}» کلیدِ لازم را روی سرور ندارد؛
+          فعلاً «{{ map_provider_label }}» نمایش داده می‌شود.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

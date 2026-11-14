@@ -1,0 +1,25 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{{ title }} — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-mortarboard'></i> {{ title }}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>فهرست مرجع قابل توسعه و ویرایش توسط ادمین</p>
+</div>
+<div style='padding:0 2rem;max-width:760px;'>
+  <div class='hb-card'>
+    <form method='post' novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class='hb-field-error'>{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        {% if field.errors %}<div class='hb-field-error'>{{ field.errors }}</div>{% endif %}
+        <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<small style='display:block;color:var(--hb-text-muted);font-size:.75rem;margin-top:.25rem;'>{{ field.help_text }}</small>{% endif %}
+      </div>
+      {% endfor %}
+      <button class='hb-btn hb-btn-primary hb-btn-sm' type='submit'><i class='bi bi-check-lg'></i> ذخیره</button>
+      <a class='hb-btn hb-btn-dark hb-btn-sm' href='{{ back_url }}'>انصراف</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

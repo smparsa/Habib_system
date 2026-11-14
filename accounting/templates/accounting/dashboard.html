@@ -1,0 +1,95 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}داشبورد حسابداری{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">🧾 اطلاعات چک
+    <span class="sub">تاریخ جاری: {{ today_fa|fa_digits }}</span>
+  </h1>
+
+  <div class="acc-grid cols-2">
+    <div class="acc-card acc-stat">
+      <div class="t">چک های دریافتی امروز:</div>
+      <div class="v">
+        تعداد {{ received_today.count|fa_digits }} فقره چک به مبلغ {{ received_today.amount|rial_fa }} ریال
+      </div>
+    </div>
+    <div class="acc-card acc-stat">
+      <div class="t">چک های پرداختی امروز:</div>
+      <div class="v">
+        تعداد {{ paid_today.count|fa_digits }} فقره چک به مبلغ {{ paid_today.amount|rial_fa }} ریال
+      </div>
+    </div>
+    <div class="acc-card acc-stat">
+      <div class="t">چک های دریافتی تا امروز:</div>
+      <div class="v blue">
+        تعداد {{ received_total.count|fa_digits }} فقره چک به مبلغ {{ received_total.amount|rial_fa }} ریال
+      </div>
+    </div>
+    <div class="acc-card acc-stat">
+      <div class="t">چک های پرداختی تا امروز:</div>
+      <div class="v blue">
+        تعداد {{ paid_total.count|fa_digits }} فقره چک به مبلغ {{ paid_total.amount|rial_fa }} ریال
+      </div>
+    </div>
+  </div>
+
+  {% if upcoming_cheques %}
+    <div class="acc-card" style="margin-top:1rem;border-inline-start:4px solid var(--acc-warning, #d97706);">
+      <h3>⚠️ هشدار چک‌های نزدیک سررسید (۱۰ روز آینده و معوقه)</h3>
+      <div class="acc-table-wrap">
+        <table class="acc">
+          <thead>
+            <tr>
+              <th>شماره</th>
+              <th>نوع</th>
+              <th>مبلغ (ریال)</th>
+              <th>سررسید</th>
+              <th>وضعیت زمانی</th>
+              <th>صاحب چک</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for it in upcoming_cheques %}
+              <tr>
+                <td class="num">{{ it.cheque.number|fa_digits }}</td>
+                <td>{{ it.cheque.get_direction_display }}</td>
+                <td class="num">{{ it.cheque.amount|rial }}</td>
+                <td class="num">{{ it.due_fa|fa_digits }}</td>
+                <td>
+                  {% if it.urgency == 'overdue' %}<span class="acc-badge err">معوقه — {{ it.days_left|fa_digits }} روز گذشته</span>
+                  {% elif it.urgency == 'soon' %}<span class="acc-badge warn">{{ it.days_left|fa_digits }} روز مانده</span>
+                  {% else %}<span class="acc-badge">{{ it.days_left|fa_digits }} روز مانده</span>{% endif %}
+                </td>
+                <td>{{ it.cheque.party_name|default:'—' }}</td>
+                <td><a class="acc-btn sm outline" href="{% url 'accounting:cheques' %}">مدیریت</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="acc-grid cols-2" style="margin-top:1rem;">
+    <div class="acc-card">
+      <h3>⚙️ تنظیمات داشبورد</h3>
+      <div>تعداد روز تأخیر در وصول: <b>{{ delay_days|fa_digits }}</b></div>
+      <div style="margin-top:.4rem;color:var(--acc-muted);">
+        نمایش در شروع برنامه: <span class="acc-badge ok">فعال</span>
+      </div>
+    </div>
+    <div class="acc-card">
+      <h3>📑 وضعیت اسناد</h3>
+      <div>اسناد ثبت‌شده: <b>{{ posted_count|fa_digits }}</b></div>
+      <div>پیش‌نویس‌ها: <b>{{ draft_count|fa_digits }}</b></div>
+      <div style="margin-top:.6rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a class="acc-btn sm" href="{% url 'accounting:entry_create' %}">➕ سند جدید</a>
+        <a class="acc-btn sm outline" href="{% url 'accounting:cheques' %}">🧾 چک‌ها</a>
+        <a class="acc-btn sm outline" href="{% url 'accounting:accounts' %}">📘 پلان حساب‌ها</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

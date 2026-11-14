@@ -1,0 +1,223 @@
+{% load static %}
+{% load core_extras %}
+<!DOCTYPE html>
+<html lang='fa' dir='rtl'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>پیش‌نمایش اطلاعات من — HabibHub</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'>
+  <style>
+    /* ---------- صفحهٔ پیش‌نمایش (نمایش روی صفحه) ---------- */
+    body {
+      background: #0b1626;
+      color: var(--hb-text-primary);
+      font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+      margin: 0;
+    }
+    .pv-wrap { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+    .pv-head { text-align: center; margin-bottom: 1.25rem; }
+    .pv-head img { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--hb-gold-400); }
+    .pv-head h1 { font-size: 1.3rem; margin: 0.5rem 0 0.25rem; }
+    .pv-head p { color: var(--hb-text-muted); font-size: 0.8rem; margin: 0; }
+    .pv-toolbar {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; justify-content: center;
+      margin: 1rem 0 1.5rem;
+    }
+    .pv-card {
+      background: var(--hb-navy-700);
+      border: 1px solid var(--hb-border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+    }
+    .pv-card-head {
+      display: flex; align-items: center; gap: 0.6rem;
+      border-bottom: 1px solid var(--hb-border);
+      padding-bottom: 0.6rem; margin-bottom: 0.6rem; cursor: pointer;
+    }
+    .pv-card-head i { color: var(--hb-gold-300); font-size: 1.1rem; }
+    .pv-card-head b { font-size: 0.95rem; }
+    .pv-card-count {
+      margin-inline-start: auto; font-size: 0.72rem; color: var(--hb-text-muted);
+    }
+    .pv-row {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      padding: 0.5rem 0.25rem; border-radius: 8px;
+    }
+    .pv-row + .pv-row { border-top: 1px dashed rgba(139, 148, 158, 0.25); }
+    .pv-row input[type='checkbox'] { margin-top: 0.35rem; width: 17px; height: 17px; accent-color: var(--hb-gold-400); flex-shrink: 0; cursor: pointer; }
+    .pv-row label { cursor: pointer; flex: 1; min-width: 0; }
+    .pv-label { font-size: 0.78rem; color: var(--hb-text-muted); display: block; }
+    .pv-value { font-size: 0.9rem; font-weight: 600; word-break: break-word; white-space: pre-wrap; }
+    .pv-empty {
+      text-align: center; color: var(--hb-text-muted); padding: 2rem 1rem;
+      border: 1px dashed var(--hb-border); border-radius: 14px;
+    }
+    .pv-footer-note {
+      text-align: center; color: var(--hb-text-muted); font-size: 0.72rem; margin-top: 1.5rem;
+    }
+
+    /* ---------- استایل چاپ / PDF ---------- */
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      body { background: #ffffff !important; }
+      .pv-no-print { display: none !important; }
+      .pv-wrap { max-width: 100%; padding: 0; }
+      .pv-card {
+        background: #ffffff !important;
+        border: 1px solid #999 !important;
+        border-radius: 8px !important;
+        color: #000 !important;
+        box-shadow: none !important;
+      }
+      .pv-card-head { border-color: #bbb !important; }
+      .pv-card-head i, .pv-card-head b, .pv-value { color: #000 !important; }
+      .pv-label { color: #555 !important; }
+      .pv-card-count { display: none !important; }
+      .pv-row + .pv-row { border-color: #ccc !important; }
+      .pv-row { break-inside: avoid; }
+      .pv-card { break-inside: avoid-page; }
+      a[href]:after { content: ''; }
+    }
+
+    /* حالت «آمادهٔ چاپ» در خود صفحه: فقط ردیف‌های تیک‌خورده */
+    .pv-card.pv-card-empty { display: none !important; }
+    body.pv-print-ready .pv-row:not(.pv-row-checked) { display: none !important; }
+    body.pv-print-ready .pv-toolbar { display: none !important; }
+    body.pv-print-ready .pv-row input[type='checkbox'] { display: none; }
+    body.pv-print-ready .pv-row { padding-top: 0.35rem; padding-bottom: 0.35rem; }
+  </style>
+</head>
+<body>
+  <div class='pv-wrap'>
+    <div class='pv-head'>
+      <img src='{% static "core/assets/logo.png" %}' alt='HabibHub'>
+      <h1>پیش‌نمایش اطلاعات من</h1>
+      <p>
+        {{ profile.full_name }} — <span dir='ltr'>{{ request.user.mobile_number }}</span>
+        — تهیه‌شده در <span data-pv-date>{{ generated_at|jdatetime }}</span>
+      </p>
+    </div>
+
+    <div class='pv-toolbar pv-no-print'>
+      <button type='button' class='hb-btn hb-btn-primary' data-pv-pdf>
+        <i class='bi bi-file-earmark-pdf'></i> تبدیل به PDF
+      </button>
+      <button type='button' class='hb-btn hb-btn-outline' data-pv-check-all>
+        <i class='bi bi-check2-all'></i> تیک همه
+      </button>
+      <button type='button' class='hb-btn hb-btn-outline' data-pv-uncheck-all>
+        <i class='bi bi-x-lg'></i> برداشتن تیک همه
+      </button>
+      <a class='hb-btn hb-btn-outline' href='{% url "core:profile" %}'>
+        <i class='bi bi-arrow-right'></i> بازگشت به پروفایل
+      </a>
+    </div>
+
+    {% if sections %}
+      {% for section in sections %}
+        <section class='pv-card' data-pv-card>
+          <div class='pv-card-head'>
+            <i class='bi {{ section.icon }}'></i>
+            <b>{{ section.title }}</b>
+            <span class='pv-card-count' data-pv-count></span>
+          </div>
+          {% for label, value in section.rows %}
+            <div class='pv-row pv-row-checked'>
+              <input type='checkbox' checked data-pv-check>
+              <label>
+                <span class='pv-label'>{{ label }}</span>
+                <span class='pv-value'>{{ value }}</span>
+              </label>
+            </div>
+          {% endfor %}
+        </section>
+      {% endfor %}
+    {% else %}
+      <div class='pv-empty'>
+        <i class='bi bi-info-circle' style='font-size:1.6rem;'></i>
+        <p>هنوز اطلاعات تکمیل‌شده‌ای برای نمایش وجود ندارد.</p>
+        <a class='hb-btn hb-btn-primary' href='{% url "core:profile" %}'>تکمیل پروفایل</a>
+      </div>
+    {% endif %}
+
+    <p class='pv-footer-note'>
+      این صفحه صرفاً پیش‌نمایش اطلاعات ثبت‌شدهٔ شماست؛ چیزی در آن ذخیره نمی‌شود.
+      برای خروجی PDF، فقط ردیف‌های تیک‌خورده در فایل نهایی می‌آیند.
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+      var checks = Array.prototype.slice.call(document.querySelectorAll('[data-pv-check]'));
+
+      function refreshCard(card) {
+        var rows = card.querySelectorAll('.pv-row');
+        var checked = card.querySelectorAll('.pv-row.pv-row-checked');
+        var count = card.querySelector('[data-pv-count]');
+        if (count) count.textContent = checked.length + ' از ' + rows.length;
+        if (!checked.length) card.classList.add('pv-card-empty');
+        else card.classList.remove('pv-card-empty');
+      }
+
+      function refreshAll() {
+        document.querySelectorAll('[data-pv-card]').forEach(refreshCard);
+      }
+
+      checks.forEach(function (check) {
+        check.addEventListener('change', function () {
+          check.closest('.pv-row').classList.toggle('pv-row-checked', check.checked);
+          refreshCard(check.closest('[data-pv-card]'));
+        });
+      });
+      refreshAll();
+
+      // کارتِ کاملاً تیک‌برداشته‌شده در خروجی چاپ نمی‌آید
+      document.querySelectorAll('.pv-card-head').forEach(function (head) {
+        head.addEventListener('click', function (e) {
+          var card = head.closest('[data-pv-card]');
+          var checks = card.querySelectorAll('[data-pv-check]');
+          var allChecked = card.querySelectorAll('.pv-row.pv-row-checked').length === checks.length;
+          checks.forEach(function (c) {
+            c.checked = !allChecked;
+            c.closest('.pv-row').classList.toggle('pv-row-checked', c.checked);
+          });
+          refreshAll();
+        });
+      });
+
+      document.querySelector('[data-pv-check-all]').addEventListener('click', function () {
+        checks.forEach(function (c) { c.checked = true; c.closest('.pv-row').classList.add('pv-row-checked'); });
+        refreshAll();
+      });
+      document.querySelector('[data-pv-uncheck-all]').addEventListener('click', function () {
+        checks.forEach(function (c) { c.checked = false; c.closest('.pv-row').classList.remove('pv-row-checked'); });
+        refreshAll();
+      });
+
+      // تبدیل به PDF: حالت چاپ (فقط ردیف‌های تیک‌خورده) + تاریخ شمسی
+      document.querySelector('[data-pv-pdf]').addEventListener('click', function () {
+        try {
+          var el = document.querySelector('[data-pv-date]');
+          if (el && window.Intl) {
+            var fmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+              year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            el.textContent = fmt.format(new Date());
+          }
+        } catch (err) { /* تاریخ میلادی می‌ماند */ }
+        document.body.classList.add('pv-print-ready');
+        refreshAll();
+        window.print();
+        setTimeout(function () { document.body.classList.remove('pv-print-ready'); }, 800);
+      });
+    })();
+  </script>
+{% include "core/_please_wait.html" %}
+</body>
+</html>

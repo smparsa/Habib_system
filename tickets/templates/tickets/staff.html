@@ -1,0 +1,96 @@
+{% load core_extras %}
+{% include "tickets/_top.html" with page_title="مدیریت تیکت‌ها" %}
+<div class='tkt-wrap tkt-wide'>
+  {% if messages %}
+    {% for message in messages %}
+      <div class='tkt-server-msg {{ message.tags }}'><i class='bi bi-info-circle'></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class='tkt-head'>
+    <div>
+      <h1><i class='bi bi-clipboard-data'></i> مدیریت تیکت‌ها</h1>
+      <p>نمای کارشناسان — آمار، ارجاع و عملیات گروهی.</p>
+    </div>
+    <a class='hb-btn hb-btn-outline hb-btn-sm' href="{% url 'tickets:export' %}" data-no-please-wait style='text-decoration:none;'><i class='bi bi-download'></i> خروجی CSV</a>
+  </div>
+
+  <div class='tkt-stats tkt-kpi'>
+    <div class='tkt-stat'><b>{{ stats.total }}</b><span>کل</span></div>
+    <div class='tkt-stat blue'><b>{{ stats.open }}</b><span>باز</span></div>
+    <div class='tkt-stat red'><b>{{ stats.urgent }}</b><span>فوری/بحرانی</span></div>
+    <div class='tkt-stat warn'><b>{{ stats.unassigned }}</b><span>بدون ارجاع</span></div>
+    <div class='tkt-stat danger'><b>{{ stats.sla_breached }}</b><span>نقض SLA</span></div>
+    <div class='tkt-stat gold'><b>{{ stats.waiting_user }}</b><span>در انتظار کاربر</span></div>
+    <div class='tkt-stat ok'><b>{{ stats.resolved }}</b><span>حل‌شده</span></div>
+    <div class='tkt-stat mute'><b>{{ stats.closed }}</b><span>بسته</span></div>
+  </div>
+
+  <div class='tkt-charts'>
+    <div class='tkt-chart'><b>بر اساس وضعیت</b>
+      {% for item in stats.statuses %}
+        <div class='bar'><span>{{ item.status }}</span><div><i style='width:{{ item.c }}0%'></i></div><em>{{ item.c }}</em></div>
+      {% endfor %}
+    </div>
+    <div class='tkt-chart'><b>بر اساس اولویت</b>
+      {% for item in stats.priorities %}
+        <div class='bar'><span>{{ item.priority }}</span><div><i style='width:{{ item.c }}0%'></i></div><em>{{ item.c }}</em></div>
+      {% endfor %}
+    </div>
+    <div class='tkt-chart'><b>بر اساس دسته</b>
+      {% for item in stats.by_category %}
+        <div class='bar'><span>{{ item.category__name_fa }}</span><div><i style='width:{{ item.c }}0%'></i></div><em>{{ item.c }}</em></div>
+      {% endfor %}
+    </div>
+    <div class='tkt-chart'><b>بر اساس دپارتمان</b>
+      {% for item in stats.by_dept %}
+        <div class='bar'><span>{{ item.department__name_fa }}</span><div><i style='width:{{ item.c }}0%'></i></div><em>{{ item.c }}</em></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form method='get' class='tkt-filters'>
+    <input type='text' name='q' value='{{ q }}' placeholder='شماره یا موضوع…'>
+    <select name='status'>
+      <option value=''>همهٔ وضعیت‌ها</option>
+      {% for value, label in status_choices %}<option value='{{ value }}' {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>فیلتر</button>
+  </form>
+
+  {% if rows %}
+    <form method='post' class='tkt-bulk'>{% csrf_token %}
+      <div class='tkt-bulk-actions'>
+        <b>عملیات گروهی:</b>
+        <select name='status'><option value=''>وضعیت…</option>{% for v, l in status_choices %}<option value='{{ v }}'>{{ l }}</option>{% endfor %}</select>
+        <select name='priority'><option value=''>اولویت…</option>{% for v, l in priority_choices %}<option value='{{ v }}'>{{ l }}</option>{% endfor %}</select>
+        <select name='agent'><option value=''>کارشناس…</option>{% for a in agents %}<option value='{{ a.id }}'>{{ a.mobile_number }}</option>{% endfor %}</select>
+        <button name='bulk_action' value='assign' class='hb-btn hb-btn-outline hb-btn-sm'>ارجاع</button>
+        <button name='bulk_action' value='close' class='hb-btn hb-btn-success hb-btn-sm' data-confirm>بستن</button>
+      </div>
+      <div class='tkt-table'>
+        <table>
+          <thead><tr><th><input type='checkbox' data-checkall></th><th>شماره</th><th>موضوع</th><th>فرستنده</th><th>وضعیت</th><th>اولویت</th><th>دسته</th><th>تاریخ</th><th></th></tr></thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td><input type='checkbox' name='ids' value='{{ r.id }}'></td>
+                <td dir='ltr'>{{ r.number }}</td>
+                <td>{{ r.subject }}</td>
+                <td>{{ r.author_label }}</td>
+                <td><span class='tkt-status st-{{ r.status }}'>{{ r.status_label }}</span></td>
+                <td><span class='tkt-prio pr-{{ r.priority }}'>{{ r.priority_label }}</span></td>
+                <td>{{ r.category_label|default:'—' }}</td>
+                <td>{{ r.created|jdate }}</td>
+                <td><a href='{{ r.url }}'>باز</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  {% else %}
+    <div class='tkt-empty'><i class='bi bi-clipboard-x'></i><p>تیکتی یافت نشد.</p></div>
+  {% endif %}
+</div>
+{% include "tickets/_bottom.html" %}

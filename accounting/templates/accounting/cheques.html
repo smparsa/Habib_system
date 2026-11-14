@@ -1,0 +1,85 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}چک‌ها{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">🧾 چک‌ها
+    <span class="sub">
+      <a href="?">همه</a> ·
+      <a href="?direction=received">دریافتی</a> ·
+      <a href="?direction=paid">پرداختی</a>
+    </span>
+  </h1>
+
+  <div class="acc-grid" style="grid-template-columns: 1fr; align-items:start;">
+    <div class="acc-card">
+      <p class="acc-msg info">
+        برای ثبت چک جدید از <a href="{% url 'accounting:entry_create' %}#chequePanel">فرم سند جدید ← پنل «ثبت چک»</a> استفاده کنید؛
+        آنجا صاحب چک را از فهرست اشخاص انتخاب می‌کنید و سندِ اسناد دریافتنی/پرداختنی با ردیفِ شخص، خودکار صادر می‌شود.
+      </p>
+      <div class="acc-table-wrap">
+        <table class="acc">
+          <thead>
+            <tr>
+              <th>شماره</th>
+              <th>نوع</th>
+              <th>مبلغ (ریال)</th>
+              <th>سررسید</th>
+              <th>بانک</th>
+              <th>طرف حساب</th>
+              <th>صاحب چک</th>
+              <th>وضعیت</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ch in cheques %}
+              <tr>
+                <td class="num">{{ ch.number|fa_digits }}</td>
+                <td>
+                  {% if ch.direction == 'received' %}
+                    <span class="acc-badge info">دریافتی</span>
+                  {% else %}
+                    <span class="acc-badge warn">پرداختی</span>
+                  {% endif %}
+                </td>
+                <td class="num">{{ ch.amount|rial }}</td>
+                <td class="num">{{ ch.due_date|jdate }}</td>
+                <td>{{ ch.bank_name|default:'—' }}</td>
+                <td>{{ ch.party_name|default:'—' }}</td>
+                <td>
+                  {% if ch.owner %}
+                    <a href="{% url 'accounting:person_ledger' ch.owner.user_id %}" title="دفتر شخص">👤 {{ ch.owner.name }}{% if ch.owner.nid %} <span class="code">{{ ch.owner.nid|fa_digits }}</span>{% endif %}</a>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if ch.status == 'collected' %}<span class="acc-badge ok">{{ ch.get_status_display }}</span>
+                  {% elif ch.status == 'bounced' %}<span class="acc-badge err">{{ ch.get_status_display }}</span>
+                  {% elif ch.status == 'cancelled' %}<span class="acc-badge err">{{ ch.get_status_display }}</span>
+                  {% else %}<span class="acc-badge">{{ ch.get_status_display }}</span>{% endif %}
+                </td>
+                <td>
+                  {% if can_write and ch.can_transition %}
+                    {% for s, label in ch.next_statuses %}
+                      <form method="post" action="{% url 'accounting:cheque_transition' ch.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="status" value="{{ s }}">
+                        <button class="acc-btn sm outline" type="submit">{{ label }}</button>
+                      </form>
+                    {% endfor %}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9">چکی ثبت نشده است.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}

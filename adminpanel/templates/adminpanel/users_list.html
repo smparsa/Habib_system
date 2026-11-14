@@ -1,0 +1,102 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}کاربران و پروفایل‌ها — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-people'></i> کاربران و پروفایل‌ها</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>جستجو، فعال/غیرفعال‌کردن و ویرایش کاربران و پروفایل‌هایشان از این‌جا انجام می‌شود.</p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست کاربران ({{ total }} نفر)</div>
+    </div>
+
+    <!-- نوار جستجو و فیلتر -->
+    <form method='get' action="{% url 'adminpanel:users_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:280px;' placeholder='شماره موبایل، نام، کد ملی…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      <select name='state' class='hb-form-control hb-form-select' style='max-width:170px;' onchange='this.form.submit()'>
+        <option value=''>وضعیت حساب: همه</option>
+        <option value='active' {% if state == 'active' %}selected{% endif %}>فعال</option>
+        <option value='inactive' {% if state == 'inactive' %}selected{% endif %}>غیرفعال</option>
+      </select>
+      <select name='role' class='hb-form-control hb-form-select' style='max-width:170px;' onchange='this.form.submit()'>
+        <option value=''>نقش: همه</option>
+        <option value='admin' {% if role == 'admin' %}selected{% endif %}>ادمین‌ها</option>
+        <option value='member' {% if role == 'member' %}selected{% endif %}>کاربران عادی</option>
+      </select>
+      {% if q or state or role %}
+      <a href="{% url 'adminpanel:users_list' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلترها</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کاربر</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>شماره موبایل</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نقش</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت حساب</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مشاغل</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>تاریخ عضویت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.full_name }}</strong></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-family:ui-monospace,Consolas,monospace;' dir='ltr'>{{ row.mobile }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.is_staff %}<span class='hb-badge hb-badge-warning'><i class='bi bi-shield-lock'></i> ادمین</span>{% else %}<span class='hb-badge hb-badge-info'>کاربر عادی</span>{% endif %}
+            {% if row.is_superuser %}<span class='hb-badge hb-badge-danger' style='margin-inline-start:0.25rem;'><i class='bi bi-star'></i> سوپریوزر</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% else %}<span class='hb-badge hb-badge-danger'>غیرفعال</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);'>{{ row.job_count }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);' dir='ltr'>{{ row.date_joined|jdate }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              <a href="{% url 'adminpanel:user_edit' row.pk %}?next={{ next_url|urlencode }}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              {% if row.pk == request.user.pk %}
+              <span class='hb-btn hb-btn-sm hb-btn-dark' style='opacity:0.5;cursor:not-allowed;' title='تغییر وضعیت حساب خودتان ممکن نیست'><i class='bi bi-pause-circle'></i> خودتان</span>
+              {% else %}
+              <form method='post' action="{% url 'adminpanel:user_toggle' row.pk %}" style='margin:0;'>
+                {% csrf_token %}
+                <input type='hidden' name='next' value='{{ next_url }}'>
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title="{% if row.is_active %}غیرفعال‌کردن حساب{% else %}فعال‌کردن حساب{% endif %}" {% if not row.is_active %}onclick="return confirm('«{{ row.full_name }}» فعال شود؟');"{% endif %}>
+                  {% if row.is_active %}<i class='bi bi-pause-circle'></i> غیرفعال{% else %}<i class='bi bi-play-circle'></i> فعال{% endif %}
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>کاربری یافت نشد.</p>
+    {% endif %}
+  </div>
+
+  <!-- صفحه‌بندی -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+    <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} کاربر)</span>
+    <div style='display:flex;gap:0.35rem;'>
+      {% if page_obj.has_previous %}
+      <a href="{% url 'adminpanel:users_list' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="{% url 'adminpanel:users_list' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

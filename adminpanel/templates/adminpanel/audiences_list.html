@@ -1,0 +1,101 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}مخاطبین هدف تیکت — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-crosshair'></i> مخاطبین هدف تیکت</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    جامعه‌های هدف را این‌جا تعریف کنید: همهٔ کاربران، شهر/استان/کشور، شعاع GPS (متر/کیلومتر)،
+    رده‌های پنج‌گانهٔ شغلی، کد ملی، شروع شمارهٔ موبایل یا بازهٔ سنی. کاربر هنگام ارسال تیکت،
+    یکی از این جوامع را انتخاب و تیکتش را به‌صورت انبوه برای همهٔ واجدین شرایط می‌فرستد.
+    ({{ active_count }} جامعهٔ هدف فعال)
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست جوامع هدف ({{ total }} مورد)</div>
+      <a href="{% url 'adminpanel:audience_add' %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-plus-lg'></i> افزودن جامعهٔ هدف</a>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:audiences_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:260px;' placeholder='جستجو در نام / توضیح…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      <select name='active' class='hb-form-control hb-form-select' style='max-width:150px;' onchange='this.form.submit()'>
+        <option value=''>وضعیت: همه</option>
+        <option value='1' {% if active == '1' %}selected{% endif %}>فعال</option>
+        <option value='0' {% if active == '0' %}selected{% endif %}>غیرفعال</option>
+      </select>
+      {% if q or active %}
+      <a href="{% url 'adminpanel:audiences_list' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلترها</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نام</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نوع مخاطب</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>شرط هدف‌گیری</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>واجدین فعلی</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <strong>{{ row.name }}</strong>
+            {% if row.description %}<div style='font-size:0.75rem;color:var(--hb-text-muted);'>{{ row.description }}</div>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <span class='hb-badge hb-badge-info'>{{ row.kind_label }}</span>
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-secondary);font-size:0.8rem;'>{{ row.rules_label }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.eligible is not None %}<b style='color:var(--hb-gold-300);'>{{ row.eligible }}</b> نفر{% else %}—{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% else %}<span class='hb-badge hb-badge-danger'>غیرفعال</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              <a href="{% url 'adminpanel:audience_edit' row.pk %}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              <form method='post' action="{% url 'adminpanel:audience_toggle' row.pk %}" style='margin:0;'>
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title="{% if row.is_active %}غیرفعال‌کردن (حذف از فهرست کاربران){% else %}فعال‌کردن{% endif %}">
+                  {% if row.is_active %}<i class='bi bi-pause-circle'></i> غیرفعال{% else %}<i class='bi bi-play-circle'></i> فعال{% endif %}
+                </button>
+              </form>
+              <form method='post' action="{% url 'adminpanel:audience_delete' row.pk %}" style='margin:0;' onsubmit="return confirm('«{{ row.name }}» برای همیشه حذف شود؟ (برای توقف موقت، غیرفعال کنید)');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title='حذف کامل'><i class='bi bi-trash' style='color:#c0392b;'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>جامعهٔ هدفی یافت نشد. با «افزودن جامعهٔ هدف» اولین مخاطب را تعریف کنید.</p>
+    {% endif %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+    <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+    <div style='display:flex;gap:0.35rem;'>
+      {% if page_obj.has_previous %}
+      <a href="{% url 'adminpanel:audiences_list' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="{% url 'adminpanel:audiences_list' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

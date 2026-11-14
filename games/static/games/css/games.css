@@ -1,0 +1,221 @@
+/* ==========================================================================
+   مرکز بازی HabibHub — تم تیرهٔ نئون مشترک بین بازی‌ها
+   ========================================================================== */
+
+.g-body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Vazirmatn, Tahoma, "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #0f172a 100%);
+  background-attachment: fixed;
+  color: #e2e8f0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.g-body * { box-sizing: border-box; }
+
+/* ---------- Back-to-menu button ---------- */
+.g-back {
+  position: fixed;
+  top: 1rem;
+  inset-inline-start: 1rem;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 0.6rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s;
+}
+.g-back:hover { background: rgba(30, 41, 59, 0.95); color: #fff; }
+
+/* ---------- Menu page ---------- */
+.g-menu {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  gap: 2.5rem;
+}
+.g-menu-header { text-align: center; }
+.g-menu-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 900;
+  background: linear-gradient(90deg, #4ade80, #c084fc, #f472b6);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gGradient 5s ease infinite;
+}
+@keyframes gGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.g-menu-sub { margin: 0; color: #94a3b8; }
+
+.g-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 320px));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 980px;
+}
+.g-card {
+  position: relative;
+  display: block;
+  padding: 1.75rem;
+  border-radius: 1rem;
+  border: 2px solid;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+.g-card:hover { transform: translateY(-5px) scale(1.02); }
+.g-card-green { border-color: rgba(74, 222, 128, 0.3); background: linear-gradient(135deg, rgba(74,222,128,0.08), rgba(16,185,129,0.08)); }
+.g-card-green:hover { border-color: rgba(74, 222, 128, 0.6); background: linear-gradient(135deg, rgba(74,222,128,0.16), rgba(16,185,129,0.16)); }
+.g-card-purple { border-color: rgba(192, 132, 252, 0.3); background: linear-gradient(135deg, rgba(192,132,252,0.08), rgba(236,72,153,0.08)); }
+.g-card-purple:hover { border-color: rgba(192, 132, 252, 0.6); background: linear-gradient(135deg, rgba(192,132,252,0.16), rgba(236,72,153,0.16)); }
+.g-card-orange { border-color: rgba(251, 146, 60, 0.3); background: linear-gradient(135deg, rgba(251,146,60,0.08), rgba(239,68,68,0.08)); }
+.g-card-orange:hover { border-color: rgba(251, 146, 60, 0.6); background: linear-gradient(135deg, rgba(251,146,60,0.16), rgba(239,68,68,0.16)); }
+.g-card-gold { border-color: rgba(250, 204, 21, 0.3); background: linear-gradient(135deg, rgba(250,204,21,0.1), rgba(234,88,12,0.08)); }
+.g-card-gold:hover { border-color: rgba(250, 204, 21, 0.65); background: linear-gradient(135deg, rgba(250,204,21,0.18), rgba(234,88,12,0.16)); }
+.g-card-emoji { font-size: 3.2rem; margin-bottom: 0.75rem; }
+.g-card-title { font-size: 1.35rem; font-weight: 800; margin: 0 0 0.4rem; }
+.g-card-green .g-card-title { color: #4ade80; }
+.g-card-purple .g-card-title { color: #c084fc; }
+.g-card-orange .g-card-title { color: #fb923c; }
+.g-card-gold .g-card-title { color: #facc15; }
+.g-card-desc { font-size: 0.85rem; color: #94a3b8; margin: 0 0 1rem; }
+.g-card-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.g-card-tag { padding: 0.2rem 0.6rem; border-radius: 0.4rem; font-size: 0.7rem; }
+.g-card-green .g-card-tag { background: rgba(74, 222, 128, 0.18); color: #86efac; }
+.g-card-purple .g-card-tag { background: rgba(192, 132, 252, 0.18); color: #d8b4fe; }
+.g-card-orange .g-card-tag { background: rgba(251, 146, 60, 0.18); color: #fdba74; }
+.g-card-gold .g-card-tag { background: rgba(250, 204, 21, 0.18); color: #fde047; }
+.g-card-arrow { position: absolute; bottom: 1rem; inset-inline-end: 1.25rem; transition: transform 0.2s; }
+.g-card:hover .g-card-arrow { transform: translateX(-4px); }
+.g-menu-foot { color: #64748b; font-size: 0.8rem; text-align: center; }
+
+/* ---------- Shared game page pieces ---------- */
+.g-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 2rem;
+  gap: 1rem;
+  user-select: none;
+}
+.g-page-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 800;
+  text-align: center;
+}
+.g-page-title.t-cyan { background: linear-gradient(90deg, #22d3ee, #c084fc, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.g-page-title.t-purple { background: linear-gradient(90deg, #c084fc, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.g-page-title.t-green { background: linear-gradient(90deg, #4ade80, #22d3ee); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.g-page-title.t-yellow { color: #facc15; }
+.g-page-title.t-red { color: #f87171; }
+.g-page-sub { margin: 0.35rem 0 0; color: #94a3b8; font-size: 0.85rem; text-align: center; }
+
+.g-panel-row { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+.g-stat {
+  min-width: 92px;
+  padding: 0.55rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid #334155;
+  text-align: center;
+}
+.g-stat-label { font-size: 0.68rem; color: #94a3b8; letter-spacing: 0.05em; }
+.g-stat-value { font-size: 1.25rem; font-weight: 800; }
+.g-stat-value.c-cyan { color: #22d3ee; }
+.g-stat-value.c-purple { color: #c084fc; }
+.g-stat-value.c-green { color: #4ade80; }
+.g-stat-value.c-blue { color: #60a5fa; }
+.g-stat-value.c-red { color: #f87171; }
+.g-stat-value.c-yellow { color: #facc15; }
+.g-stat-value.c-orange { color: #fb923c; }
+
+.g-select {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.g-btn {
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+}
+.g-btn:hover { filter: brightness(1.1); transform: scale(1.04); }
+.g-btn:active { transform: scale(0.96); }
+.g-btn-cyan { background: linear-gradient(90deg, #06b6d4, #7c3aed); box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3); }
+.g-btn-purple { background: linear-gradient(90deg, #a855f7, #ec4899); box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3); }
+.g-btn-green { background: linear-gradient(90deg, #22c55e, #059669); box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3); }
+.g-btn-yellow { background: linear-gradient(90deg, #eab308, #ea580c); box-shadow: 0 8px 24px rgba(234, 179, 8, 0.3); }
+.g-btn-blue { background: linear-gradient(90deg, #3b82f6, #6366f1); box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3); }
+.g-btn-ghost { background: #334155; box-shadow: none; }
+.g-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
+
+.g-mobile-controls { display: none; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+.g-mc-btn {
+  width: 52px; height: 44px;
+  background: rgba(51, 65, 85, 0.9);
+  color: #e2e8f0;
+  border: 1px solid #475569;
+  border-radius: 0.6rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.g-mc-btn:active { background: rgba(71, 85, 105, 1); }
+
+/* Overlays */
+.g-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(3px);
+  border-radius: 0.75rem;
+  text-align: center;
+  padding: 1rem;
+  z-index: 5;
+}
+.g-overlay[hidden] { display: none; }
+.g-overlay-title { font-size: 1.4rem; font-weight: 800; margin: 0; }
+.g-overlay-emoji { font-size: 3rem; }
+.g-overlay-note { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+.g-overlay-result { font-size: 0.9rem; color: #cbd5e1; margin: 0; }
+
+@media (max-width: 720px) {
+  .g-mobile-controls { display: flex; }
+}

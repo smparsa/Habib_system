@@ -1,0 +1,160 @@
+/* ---------- مرکز تیکت ---------- */
+.tkt-wrap{max-width:960px;margin:0 auto;padding:1.5rem 1.25rem 3rem;}
+.tkt-wide{max-width:1280px;}
+.tkt-narrow{max-width:860px;}
+.tkt-server-msg{padding:0.7rem 1rem;border-radius:var(--hb-radius-md);font-size:0.88rem;margin-bottom:0.7rem;}
+.tkt-server-msg.error,.tkt-server-msg.warning{background:rgba(218,54,51,0.12);border:1px solid rgba(218,54,51,0.4);color:#ff8a80;}
+.tkt-server-msg.success{background:rgba(46,160,67,0.12);border:1px solid rgba(46,160,67,0.4);color:var(--hb-success);}
+.tkt-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;}
+.tkt-head h1{font-size:1.45rem;display:flex;align-items:center;gap:0.5rem;margin:0;color:var(--hb-text-primary);}
+.tkt-head h1 i{color:var(--hb-gold-300);}
+.tkt-head p{color:var(--hb-text-muted);font-size:0.85rem;margin:0.4rem 0 0;}
+.tkt-back{display:inline-flex;align-items:center;gap:0.4rem;color:var(--hb-text-muted);text-decoration:none;font-size:0.85rem;margin-bottom:1rem;}
+.tkt-back:hover{color:var(--hb-gold-300);}
+/* آمار */
+.tkt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.6rem;margin-bottom:1.1rem;}
+.tkt-stat{background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.8rem;text-align:center;}
+.tkt-stat b{display:block;font-size:1.35rem;color:var(--hb-text-primary);}
+.tkt-stat span{font-size:0.75rem;color:var(--hb-text-muted);}
+.tkt-stat.warn b{color:var(--hb-warning);}.tkt-stat.blue b{color:var(--hb-info);}
+.tkt-stat.gold b{color:var(--hb-gold-300);}.tkt-stat.ok b{color:var(--hb-success);}
+.tkt-stat.red b,.tkt-stat.danger b{color:#ff8a80;}.tkt-stat.mute b{color:var(--hb-text-muted);}
+/* تب‌ها */
+.tkt-tabs{display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:1rem;}
+.tkt-tabs a{padding:0.4rem 0.85rem;border-radius:999px;background:var(--hb-navy-800);border:1px solid var(--hb-border);color:var(--hb-text-secondary);text-decoration:none;font-size:0.8rem;transition:var(--hb-transition);}
+.tkt-tabs a:hover{border-color:var(--hb-gold-400);}
+.tkt-tabs a.on{background:rgba(201,162,39,0.16);border-color:var(--hb-gold-400);color:var(--hb-gold-200);font-weight:700;}
+/* فیلتر */
+.tkt-filters{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;}
+.tkt-filters input[type=text],.tkt-filters select,.tkt-aud-fields input,.tkt-aud-fields select,
+.tkt-aud-fields textarea,.tkt-step-body input[type=text],.tkt-step-body textarea,
+.tkt-step-body select,.tkt-step-body input[type=date],.tkt-step-body input[type=number],
+.tkt-composer textarea{width:100%;background:var(--hb-navy-800);border:1px solid var(--hb-border);color:var(--hb-text-primary);border-radius:var(--hb-radius-sm);padding:0.55rem 0.7rem;font-size:0.88rem;margin-bottom:0.5rem;}
+.tkt-filters input[type=text]{flex:1;min-width:160px;}
+.tkt-filters select{width:auto;}
+.tkt-filters input:focus,.tkt-filters select:focus,.tkt-aud-fields input:focus,.tkt-step-body :focus{border-color:var(--hb-gold-400);outline:none;}
+/* لیست */
+.tkt-list{display:flex;flex-direction:column;gap:0.6rem;}
+.tkt-row{display:flex;align-items:center;gap:1rem;background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.9rem 1.1rem;text-decoration:none;transition:var(--hb-transition);}
+.tkt-row:hover{border-color:var(--hb-gold-400);transform:translateY(-1px);box-shadow:var(--hb-shadow-sm);}
+.tkt-row-main{flex:1;min-width:0;}
+.tkt-row-top{display:flex;align-items:center;gap:0.55rem;flex-wrap:wrap;}
+.tkt-number{font-family:monospace;font-size:0.78rem;color:var(--hb-gold-300);background:rgba(201,162,39,0.1);border:1px solid rgba(201,162,39,0.3);padding:0.1rem 0.5rem;border-radius:6px;}
+.tkt-subject{font-weight:700;color:var(--hb-text-primary);font-size:0.95rem;}
+.tkt-new{font-size:0.64rem;font-weight:800;color:#101827;background:var(--hb-gold-300);border-radius:999px;padding:0.12rem 0.5rem;}
+.tkt-row-sub{display:flex;gap:0.6rem;align-items:center;margin-top:0.3rem;font-size:0.78rem;color:var(--hb-text-muted);}
+.tkt-row-time{display:flex;flex-direction:column;align-items:flex-end;font-size:0.74rem;color:var(--hb-text-muted);white-space:nowrap;gap:0.3rem;}
+.tkt-row-time i{color:var(--hb-text-muted);}
+/* وضعیت/اولویت */
+.tkt-status{display:inline-flex;align-items:center;font-size:0.7rem;font-weight:700;border-radius:999px;padding:0.14rem 0.6rem;}
+.st-open{background:rgba(88,166,255,0.14);color:var(--hb-info);border:1px solid rgba(88,166,255,0.35);}
+.st-in_progress{background:rgba(201,162,39,0.14);color:var(--hb-gold-200);border:1px solid rgba(201,162,39,0.4);}
+.st-waiting_user{background:rgba(212,175,55,0.14);color:var(--hb-warning);border:1px solid rgba(212,175,55,0.4);}
+.st-user_replied{background:rgba(0,188,212,0.12);color:#26c6da;border:1px solid rgba(0,188,212,0.35);}
+.st-resolved{background:rgba(46,160,67,0.14);color:var(--hb-success);border:1px solid rgba(46,160,67,0.4);}
+.st-closed{background:rgba(120,130,150,0.14);color:var(--hb-text-muted);border:1px solid rgba(120,130,150,0.35);}
+.tkt-prio{font-size:0.68rem;border-radius:999px;padding:0.12rem 0.55rem;font-weight:700;}
+.pr-critical{background:rgba(218,54,51,0.2);color:#ff8a80;border:1px solid rgba(218,54,51,0.5);}
+.pr-urgent{background:rgba(255,140,0,0.15);color:#ffb74d;border:1px solid rgba(255,140,0,0.45);}
+.pr-high{background:rgba(212,175,55,0.14);color:var(--hb-warning);border:1px solid rgba(212,175,55,0.4);}
+.pr-normal{background:rgba(88,166,255,0.12);color:var(--hb-info);border:1px solid rgba(88,166,255,0.35);}
+.pr-low{background:rgba(120,130,150,0.12);color:var(--hb-text-muted);border:1px solid rgba(120,130,150,0.3);}
+.tkt-pip{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.prio-urgent{background:#ffb74d;box-shadow:0 0 6px rgba(255,140,0,0.7);}
+.prio-critical{background:#ff5252;box-shadow:0 0 6px rgba(218,54,51,0.7);}
+/* صفحه‌بندی/خالی */
+.tkt-pager{display:flex;gap:1rem;justify-content:center;margin-top:1.2rem;font-size:0.85rem;}
+.tkt-pager a{color:var(--hb-gold-300);text-decoration:none;}
+.tkt-empty{text-align:center;padding:2.5rem 1rem;color:var(--hb-text-muted);}
+.tkt-empty i{font-size:2.2rem;color:var(--hb-navy-300);display:block;margin-bottom:0.6rem;}
+/* جزئیات */
+.tkt-detail-head{display:flex;gap:1rem;justify-content:space-between;flex-wrap:wrap;margin-bottom:1rem;}
+.tkt-detail-head h1{margin:0.5rem 0;font-size:1.2rem;}
+.tkt-meta-line{display:flex;gap:1rem;flex-wrap:wrap;font-size:0.78rem;color:var(--hb-text-muted);}
+.tkt-head-actions{display:flex;gap:0.5rem;flex-wrap:wrap;align-content:flex-start;}
+.tkt-manage{display:flex;gap:0.5rem;flex-wrap:wrap;background:rgba(88,166,255,0.05);border:1px dashed rgba(88,166,255,0.3);border-radius:var(--hb-radius-md);padding:0.7rem 0.9rem;margin-bottom:1rem;}
+.tkt-manage-form{display:flex;gap:0.4rem;margin:0;}
+.tkt-manage-form select{background:var(--hb-navy-800);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.3rem 0.5rem;font-size:0.8rem;}
+.tkt-recipients{background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-sm);padding:0.6rem 0.9rem;margin-bottom:1rem;font-size:0.8rem;color:var(--hb-text-secondary);}
+.tkt-recipients ul{margin:0.4rem 0 0;padding-inline-start:1.2rem;display:flex;flex-direction:column;gap:0.2rem;}
+/* گفتگو */
+.tkt-thread{display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1rem;}
+.tkt-msg{max-width:82%;background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.7rem 0.9rem;align-self:flex-start;}
+.tkt-msg.mine{align-self:flex-end;background:rgba(201,162,39,0.1);border-color:rgba(201,162,39,0.4);}
+.tkt-msg-head{font-size:0.72rem;color:var(--hb-gold-300);display:flex;justify-content:space-between;gap:1rem;font-weight:700;}
+.tkt-msg-head span{color:var(--hb-text-muted);font-weight:400;}
+.tkt-msg p{margin:0.35rem 0 0.2rem;line-height:1.9;white-space:pre-wrap;word-break:break-word;}
+.tkt-sys{text-align:center;font-size:0.74rem;color:var(--hb-text-muted);background:rgba(120,130,150,0.07);border-radius:999px;padding:0.25rem 1rem;align-self:center;}
+.tkt-note{max-width:88%;background:rgba(218,54,51,0.08);border:1px dashed rgba(218,54,51,0.4);border-radius:var(--hb-radius-md);padding:0.7rem 0.9rem;align-self:flex-start;color:var(--hb-text-secondary);}
+.tkt-note-head{font-size:0.72rem;color:#ff8a80;font-weight:700;margin-bottom:0.25rem;}
+.tkt-note p{margin:0.2rem 0;line-height:1.8;}
+.tkt-file{display:inline-flex;align-items:center;gap:0.4rem;background:var(--hb-navy-900);border:1px solid var(--hb-border);border-radius:8px;padding:0.25rem 0.7rem;font-size:0.78rem;color:var(--hb-info);text-decoration:none;margin-top:0.4rem;}
+.tkt-file:hover{border-color:var(--hb-gold-400);color:var(--hb-gold-300);}
+/* کامپوزر/امتیاز */
+.tkt-composer{background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.9rem;margin-bottom:0.7rem;}
+.tkt-composer textarea{width:100%;min-height:90px;background:var(--hb-navy-900);}
+.tkt-composer-actions{display:flex;gap:0.6rem;align-items:center;margin-top:0.5rem;}
+.tkt-composer-actions input[type=file]{font-size:0.75rem;color:var(--hb-text-muted);flex:1;}
+.tkt-note-form{border-color:rgba(218,54,51,0.3);}
+.tkt-rate{background:rgba(46,160,67,0.07);border:1px solid rgba(46,160,67,0.35);border-radius:var(--hb-radius-md);padding:0.9rem;margin-bottom:1rem;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;}
+.tkt-rate-title{font-weight:700;color:var(--hb-success);width:100%;}
+.tkt-rate input[type=number],.tkt-rate input[type=text]{background:var(--hb-navy-900);border:1px solid var(--hb-border);color:var(--hb-text-primary);border-radius:8px;padding:0.35rem 0.6rem;}
+.tkt-rate label{display:flex;gap:0.4rem;align-items:center;font-size:0.8rem;color:var(--hb-text-secondary);}
+.tkt-history{background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.8rem 1rem;margin-top:1rem;font-size:0.8rem;}
+.tkt-history ul{margin:0.5rem 0 0;padding-inline-start:1.2rem;display:flex;flex-direction:column;gap:0.3rem;color:var(--hb-text-muted);}
+.tkt-history span{color:var(--hb-text-secondary);margin-inline-end:0.4rem;}
+/* جدول مدیریت */
+.tkt-bulk{background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.9rem;}
+.tkt-bulk-actions{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.8rem;}
+.tkt-bulk-actions select{background:var(--hb-navy-900);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.35rem 0.5rem;font-size:0.8rem;}
+.tkt-table{overflow-x:auto;}
+.tkt-table table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.tkt-table th{text-align:start;color:var(--hb-text-muted);padding:0.5rem;border-bottom:1px solid var(--hb-border);font-weight:600;}
+.tkt-table td{padding:0.55rem 0.5rem;border-bottom:1px solid rgba(120,130,150,0.12);color:var(--hb-text-secondary);}
+.tkt-table td a{color:var(--hb-gold-300);text-decoration:none;}
+/* نمودارها */
+.tkt-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.8rem;margin-bottom:1.2rem;}
+.tkt-chart{background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:0.8rem 0.95rem;font-size:0.8rem;}
+.tkt-chart b{display:block;margin-bottom:0.5rem;color:var(--hb-text-primary);}
+.bar{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;}
+.bar span{min-width:70px;color:var(--hb-text-muted);font-size:0.72rem;}
+.bar div{flex:1;height:7px;background:var(--hb-navy-900);border-radius:999px;overflow:hidden;}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--hb-gold-400),var(--hb-gold-200));border-radius:999px;}
+.bar em{font-style:normal;min-width:22px;text-align:end;color:var(--hb-text-secondary);}
+/* ایجاد */
+.tkt-wiz{display:flex;flex-direction:column;gap:1rem;}
+.tkt-step{display:flex;gap:1rem;background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:var(--hb-radius-md);padding:1rem 1.1rem;}
+.tkt-step-num{width:34px;height:34px;border-radius:50%;background:rgba(201,162,39,0.15);border:1px solid var(--hb-gold-400);color:var(--hb-gold-300);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+.tkt-step-body{flex:1;min-width:0;}
+.tkt-step-body h3{margin:0 0 0.6rem;font-size:1rem;color:var(--hb-text-primary);}
+.tkt-hint{font-size:0.78rem;color:var(--hb-text-muted);margin:0 0 0.6rem;line-height:1.8;}
+.tkt-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0.5rem;}
+.tkt-cat{display:flex;flex-direction:column;align-items:center;gap:0.35rem;padding:0.7rem 0.4rem;border:1px solid var(--hb-border);border-radius:var(--hb-radius-sm);cursor:pointer;font-size:0.78rem;color:var(--hb-text-secondary);text-align:center;transition:var(--hb-transition);}
+.tkt-cat i{font-size:1.2rem;color:var(--hb-gold-300);}
+.tkt-cat input{display:none;}
+.tkt-cat:has(input:checked){border-color:var(--hb-gold-400);background:rgba(201,162,39,0.12);color:var(--hb-gold-200);font-weight:700;}
+.tkt-aud-fields{margin-top:0.6rem;}
+.tkt-grid2{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;}
+.tkt-review{background:var(--hb-navy-900);border:1px solid var(--hb-border);border-radius:var(--hb-radius-sm);padding:0.7rem 0.9rem;margin-bottom:0.7rem;}
+.tkt-review div{display:flex;justify-content:space-between;font-size:0.84rem;color:var(--hb-text-secondary);padding:0.2rem 0;}
+.tkt-review b{color:var(--hb-gold-300);}
+/* وضعیت ارسال/مشاهده (مثل واتساپ/تلگرام): تیک = ارسال، دو تیک = دیده‌شده */
+.tkt-tick{display:inline-flex;align-items:center;font-size:1rem;line-height:1;}
+.tkt-tick-sent{color:var(--hb-text-muted);}
+.tkt-tick-seen{color:var(--hb-gold-300);}
+.tkt-dlv{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--hb-text-muted);background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.25);border-radius:999px;padding:0.12rem 0.55rem;}
+.tkt-dlv b{color:var(--hb-gold-300);}
+.tkt-aud-note{font-size:0.78rem;color:var(--hb-info);background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.25);border-radius:8px;padding:0.45rem 0.7rem;margin-top:0.4rem;line-height:1.8;}
+.tkt-recipients summary{cursor:pointer;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;}
+.tkt-dlv-summary{display:inline-flex;gap:0.35rem;align-items:center;font-size:0.75rem;color:var(--hb-text-muted);}
+.tkt-recipient{display:flex;gap:0.55rem;align-items:center;flex-wrap:wrap;}
+.tkt-recipient-name{font-weight:600;color:var(--hb-text-primary);}
+.tkt-recipient-tag{font-size:0.66rem;color:var(--hb-info);background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.3);border-radius:999px;padding:0.05rem 0.45rem;}
+.tkt-recipient-time{color:var(--hb-text-muted);font-size:0.72rem;font-family:ui-monospace,Consolas,monospace;direction:ltr;}
+/* تیکت‌های مجله */
+.tkt-row.mag-row{background:rgba(201,162,39,0.04);border-color:rgba(201,162,39,0.25);}
+.tkt-row.mag-row:hover{border-color:var(--hb-gold-400);}
+.tkt-row.mag-row.unread{background:rgba(201,162,39,0.1);border-color:rgba(201,162,39,0.45);}
+.tkt-mag-icon{color:var(--hb-gold-300);font-size:1.1rem;flex-shrink:0;}
+.tkt-mag-kind{font-size:0.7rem;color:var(--hb-gold-400);background:rgba(201,162,39,0.12);border:1px solid rgba(201,162,39,0.3);border-radius:999px;padding:0.08rem 0.55rem;}
+@media(max-width:600px){.tkt-grid2{grid-template-columns:1fr;}}

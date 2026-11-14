@@ -1,0 +1,147 @@
+{% comment %} نوار «تبلیغات» — نسخهٔ عمومی برای همهٔ هدرها.
+   پارامتر (include with):
+     ads_list        = آیتم‌های تبلیغ (خروجی context processor مربوط به همان هدر)
+     ads_placement   = کد محل پخش (dashboard/wallet/accounting/tickets)
+                       برای شناسه‌سازی DOM (هر صفحه فقط یک نوار دارد) و
+                       data-placement (شمارندهٔ بر اساس همین فیلتر شده).
+   پخش «پیوسته و بی‌درز»: محتوای گروه یک‌بار تکرار می‌شود و دور انیمیشن
+   فقط به اندازهٔ «یک گروه» حرکت می‌کند (لوپ روان از چپ به راست).
+{% endcomment %}
+{% if ads_list %}
+{% load static %}
+<link rel='stylesheet' href='{% static "core/css/style.css" %}?v=23'>
+{{ ads_list|json_script:ads_data_id }}
+<div class='hb-ads-marquee' data-ads-marquee aria-live='off' title='تبلیغات' data-placement='{{ ads_placement }}'>
+  <div class='hb-ads-marquee-inner' data-ads-track>
+    {% for ad in ads_list %}
+    <a class='hb-ads-item' href='{{ ad.link_url|default:"#" }}' {% if ad.link_url %}target='_blank' rel='noopener'{% endif %}>
+      <span class='hb-ads-logo'>
+        {% if ad.logo %}<img src='{{ ad.logo }}' alt='{{ ad.title }}' draggable='false'>{% else %}<i class='bi bi-megaphone'></i>{% endif %}
+      </span>
+      <span class='hb-ads-content'>
+        <strong>{{ ad.title }}</strong>
+        {% if ad.description %}<small>{{ ad.description }}</small>{% endif %}
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+<script>
+(function () {
+  var marquee = document.querySelector('[data-ads-marquee][data-placement="{{ ads_placement }}"]');
+  var track = marquee && marquee.querySelector('[data-ads-track]');
+  if (!marquee || !track) return;
+  var baseItems = Array.prototype.slice.call(track.children);
+  if (!baseItems.length) return;
+
+  // سرعت نوار (ثانیه برای هر دورِ یک گروه) = کمترین سرعت تعیین‌شدهٔ تبلیغ‌ها
+  var speed = 30;
+  try {
+    var data = JSON.parse(document.getElementById('{{ ads_data_id }}').textContent || '[]');
+    // فقط سرعت‌های معتبرِ هر تبلیغ (۵ تا ۱۲۰ ثانیه) وارد محاسبه می‌شود؛
+    // مقادیر نامعتبر (مثلاً ۰ یا بیش از ۱۲۰) نادیده گرفته می‌شوند تا
+    // کنترل سرعتِ ادمین قابل پیش‌بینی بماند (پیش‌فرض: ۳۰).
+    var speeds = [];
+    data.forEach(function (d) {
+      var s = Number(d.speed);
+      if (s >= 5 && s <= 120) speeds.push(s);
+    });
+    if (speeds.length) {
+      // سرعت مؤثر نوار = کمترین سرعت تعیین‌شدهٔ تبلیغ‌های در حال پخش
+      speed = Math.min.apply(null, speeds);
+    }
+  } catch (e) { /* پیش‌فرض */ }
+
+  var groupWidth = 0;
+  var period = 0;
+
+  // دورهٔ واقعی تکرار = فاصلهٔ شروع گروه پایه تا شروع گروه کپی.
+  // (scrollWidth شامل padding دو طرف قاب است و بزرگ‌تر از دورهٔ واقعی
+  // برآورد می‌شود؛ همین اختلاف باعث پرش در هر چرخش می‌شد. اندازه‌گیری با
+  // getBoundingClientRect و Math.abs دقیق و جهت‌مستقل است.)
+  var measureLoop = function () {
+    track.querySelectorAll('.hb-ads-copy').forEach(function (n) { n.remove(); });
+    var baseR = baseItems[0].getBoundingClientRect().right;
+    var probe = baseItems[0].cloneNode(true);
+    probe.setAttribute('aria-hidden', 'true');
+    probe.classList.add('hb-ads-copy');
+    track.appendChild(probe);
+    period = Math.abs(probe.getBoundingClientRect().right - baseR);
+    track.removeChild(probe);
+    if (!(period > 0)) period = track.scrollWidth + 1;
+    groupWidth = Math.round(period * 100) / 100; // دقت نیم‌پیکسلی حفظ شود
+  };
+
+  var buildLoop = function () {
+    measureLoop();
+    // پوشش مطمئن: نوار باید همیشه با تکرار کامل گروه پوشیده باشد؛
+    // groups لازم = پوشش عرض دید + ۱ گروه احتیاط. (ساده‌سازی قبلی
+    // barW*2.2/groupWidth وقتی گروه عریض است کپی کافی نمی‌ساخت → پرش بزرگ)
+    var barW = marquee.clientWidth || 1;
+    var copies = Math.max(2, Math.ceil((barW + groupWidth * 2) / groupWidth));
+    var count = Math.round((track.children.length / Math.max(baseItems.length, 1)) - 1);
+    count = Math.max(0, Math.round(copies - 1) - count); // مجموعهٔ کامل پس از پایه
+    for (var i = 0; i < count; i++) {
+      baseItems.forEach(function (el) {
+        var c = el.cloneNode(true);
+        c.setAttribute('aria-hidden', 'true');
+        c.classList.add('hb-ads-copy');
+        track.appendChild(c);
+      });
+    }
+    // دور انیمیشن = حرکت به اندازهٔ «دورهٔ واقعی گروه» → لوپ بی‌درز
+    track.style.setProperty('--hb-ads-loop', groupWidth + 'px');
+  };
+
+  // جهت و انیمیشن — با Web Animations API تا هر دو فریم لوپ دقیق باشد:
+  //   RTL (فارسی/عربی): محتوا لنگرِ راست است و سرریز به چپ می‌رود → حرکت
+  //   «چپ به راست» یعنی translateX از 0 به +دوره (پنجره در کپی‌ها می‌رود).
+  //   LTR برعکس: از −دوره به 0. (روش قبلی از −دوره به 0 در RTL سمت راست نوار
+  //   را خالی می‌گذاشت → «پرش» در هر دور لوپ)
+  var rtl = false;
+  var paused = false;
+  var anim = null;
+
+  var play = function () {
+    if (anim) { try { anim.cancel(); } catch (e) {} anim = null; }
+    rtl = getComputedStyle(track).direction === 'rtl';
+    var dur = Math.max(1, Math.round(speed * 1000));
+    var frames = rtl
+      ? [{ transform: 'translateX(0)' }, { transform: 'translateX(' + groupWidth + 'px)' }]
+      : [{ transform: 'translateX(' + (-groupWidth) + 'px)' }, { transform: 'translateX(0)' }];
+    try {
+      anim = track.animate(frames, { duration: dur, iterations: Infinity, easing: 'linear' });
+      if (paused) anim.pause();
+    } catch (e) {
+      // پشتیبان مرورگرهای بسیار قدیمی بدون Web Animations API
+      track.style.animation = 'hbAdsScroll ' + speed + 's linear infinite';
+    }
+  };
+
+  buildLoop();
+  play();
+
+  // مکث روی هاور؛ ادامهٔ دقیق حرکت پس از خروج موس
+  marquee.addEventListener('mouseenter', function () { paused = true; if (anim) anim.pause(); });
+  marquee.addEventListener('mouseleave', function () { paused = false; if (anim) anim.play(); });
+
+  // بازمحاسبه پس از لود تصویرها و تغییر اندازهٔ پنجره
+  marquee.querySelectorAll('.hb-ads-logo img').forEach(function (img) {
+    if (!img.complete) {
+      img.addEventListener('load', function () { buildLoop(); play(); }, { once: true });
+    }
+  });
+  var rsz;
+  var rebuild = function () {
+    clearTimeout(rsz);
+    rsz = setTimeout(function () { buildLoop(); play(); }, 200);
+  };
+  window.addEventListener('resize', rebuild);
+
+  // سوییچ زبان (RTL↔LTR) هندسهٔ نوار را عوض می‌کند → بازسازی
+  try {
+    new MutationObserver(rebuild).observe(document.body, { attributes: true, attributeFilter: ['dir'] });
+  } catch (e) { /* مرورگر قدیمی: بدون این به‌روزرسانی */ }
+})();
+</script>
+{% endif %}

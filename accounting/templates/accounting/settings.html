@@ -1,0 +1,127 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}تنظیمات حسابداری{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">⚙️ سیستم و تنظیمات</h1>
+
+  <div class="acc-grid cols-2" style="align-items:start;">
+    <!-- کاربران حسابداری -->
+    <div class="acc-card">
+      <h3>👤 کاربران حسابداری</h3>
+      <div class="acc-table-wrap">
+        <table class="acc">
+          <thead><tr><th>نام کاربری</th><th>نام</th><th>نقش</th><th>فعال</th></tr></thead>
+          <tbody>
+            {% for u in acc_users %}
+              <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.full_name|default:'—' }}</td>
+                <td>{{ u.get_role_display }}</td>
+                <td>{% if u.is_active %}<span class="acc-badge ok">فعال</span>{% else %}<span class="acc-badge err">غیرفعال</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4">کاربری تعریف نشده است.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if can_settings %}
+        <hr style="border:none;border-top:1px solid var(--acc-line);margin:1rem 0;">
+        <h3 style="margin-bottom:.5rem;">➕ تعریف / تغییر کاربر</h3>
+        <form method="post" action="{% url 'accounting:setup_credentials' %}">
+          {% csrf_token %}
+          <div class="acc-field"><label>نام کاربری</label>
+            <input class="acc-input" name="username" required></div>
+          <div class="acc-field"><label>کلمه عبور (حداقل ۴ کاراکتر)</label>
+            <input class="acc-input" name="password" type="password" required minlength="4"></div>
+          <div class="acc-field"><label>نام کامل</label>
+            <input class="acc-input" name="full_name"></div>
+          <div class="acc-field"><label>نقش</label>
+            <select class="acc-input" name="role">
+              <option value="manager">مدیر</option>
+              <option value="accountant" selected>حسابدار</option>
+              <option value="viewer">مشاهده‌کننده</option>
+            </select></div>
+          <button class="acc-btn">ذخیره کاربر</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <!-- سال مالی -->
+    <div class="acc-card">
+      <h3>📅 سال‌های مالی</h3>
+      <div class="acc-table-wrap">
+        <table class="acc">
+          <thead><tr><th>عنوان</th><th>از</th><th>تا</th><th>وضعیت</th>{% if can_settings %}<th></th>{% endif %}</tr></thead>
+          <tbody>
+            {% for f in fiscal_years %}
+              <tr>
+                <td>{{ f.name }}
+                  {% if f.is_default %}<span class="acc-badge info">پیش‌فرض</span>{% endif %}
+                </td>
+                <td class="num">{{ f.start_date|jdate }}</td>
+                <td class="num">{{ f.end_date|jdate }}</td>
+                <td>{% if f.is_closed %}<span class="acc-badge err">بسته</span>{% else %}<span class="acc-badge ok">باز</span>{% endif %}</td>
+                {% if can_settings %}
+                  <td>
+                    {% if not f.is_closed and f.id != fy.id %}
+                      <form method="post" action="{% url 'accounting:fiscal_year_close' f.id %}">
+                        {% csrf_token %}<button class="acc-btn sm danger">بستن سال</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if can_settings %}
+        <hr style="border:none;border-top:1px solid var(--acc-line);margin:1rem 0;">
+        <h3 style="margin-bottom:.5rem;">➕ تعریف سال مالی جدید</h3>
+        <form method="post" action="{% url 'accounting:fiscal_year_create' %}">
+          {% csrf_token %}
+          <div class="acc-field">
+            <label>{{ fyform.jalali_year.label }}</label>
+            {{ fyform.jalali_year }}
+          </div>
+          <div class="acc-field">
+            <label>{{ fyform.is_default.label }}</label>
+            {{ fyform.is_default }}
+          </div>
+          <button class="acc-btn">ایجاد سال مالی</button>
+          <p class="acc-modal-note">
+            مرز سال به‌صورت فروردین ۱ تا اسفند ۲۹/۳۰ ساخته و پلان حساب ۹ گروهی
+            پیش‌فرض (مطابق نگین پارسا) خودکار ایجاد می‌شود. حداکثر ۸ سال مالی.
+          </p>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- حسابرسی -->
+  <div class="acc-card" style="margin-top:1rem;">
+    <h3>🕵️ آخرین رخدادها (حسابرسی)</h3>
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead><tr><th>زمان</th><th>عملیات</th><th>موضوع</th><th>کاربر</th></tr></thead>
+        <tbody>
+          {% for log in audit_logs %}
+            <tr>
+              <td class="num">{{ log.created_at|jdate }}</td>
+              <td>{{ log.get_action_display }}</td>
+              <td>{{ log.object_repr }}</td>
+              <td>{{ log.user.username|default:'—' }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">رخدادی ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

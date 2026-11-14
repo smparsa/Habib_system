@@ -1,0 +1,231 @@
+{% load core_extras %}
+{% include "tickets/_top.html" with page_title="تیکت" %}
+<div class='tkt-wrap tkt-narrow'>
+  {% if messages %}
+    {% for message in messages %}
+      <div class='tkt-server-msg {{ message.tags }}'><i class='bi bi-info-circle'></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <a href="{% url 'tickets:center' %}" class='tkt-back'><i class='bi bi-arrow-right'></i> بازگشت به تیکت‌ها</a>
+
+  {% if wallet_order %}
+  <!-- تیکتِ درخواست خرید/فروش سکه: میان‌برِ بررسی برای ادمین — بدون جستجوی پنل -->
+  <div class='hb-card' style='display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;padding:0.75rem 1rem;margin-bottom:0.75rem;border:1px solid rgba(201,162,39,0.35);background:rgba(201,162,39,0.06);'>
+    <i class='bi bi-bag-check' style='color:var(--hb-gold-400);font-size:1.1rem;'></i>
+    <div style='flex:1;min-width:200px;'>
+      <b style='font-size:0.88rem;'>سفارش مرتبط: <span dir='ltr'>{{ wallet_order.code }}</span></b>
+      <div style='font-size:0.78rem;color:var(--hb-text-muted);'>
+        {{ wallet_order.get_kind_display }} — {{ wallet_order.coins }} سکه — {{ wallet_order.total_rial }} ریال
+        — وضعیت: {{ wallet_order.get_status_display }}
+      </div>
+    </div>
+    <a href="{% url 'adminpanel:wallet_orders' %}?q={{ wallet_order.code|urlencode }}" class='hb-btn hb-btn-primary hb-btn-sm' style='text-decoration:none;'>
+      <i class='bi bi-sliders'></i> بررسی در پنل مدیریت
+    </a>
+  </div>
+  {% endif %}
+
+  {% if approval_item %}
+  <!-- تیکتِ درخواست تأیید تبلیغ/اسلایدشو: تأیید یا ردِ مستقیم (با بازگشت وجه) -->
+  <div class='hb-card' style='padding:0.9rem 1rem;margin-bottom:0.75rem;border:1px solid rgba(201,162,39,0.35);background:rgba(201,162,39,0.06);'>
+    <div style='display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;'>
+      <i class='bi bi-patch-check' style='color:var(--hb-gold-400);font-size:1.2rem;'></i>
+      <div style='flex:1;min-width:220px;'>
+        <b style='font-size:0.9rem;'>{% if approval_kind == 'ad' %}درخواست تبلیغ{% else %}درخواست اسلایدشو{% endif %}: «{{ approval_item.title }}»</b>
+        <div style='font-size:0.78rem;color:var(--hb-text-muted);line-height:1.8;'>
+          هزینهٔ کسرشده: {{ approval_item.coins_paid|floatformat }} سکه —
+          وضعیت:
+          {% if approval_item.status == 'pending' %}<span class='hb-badge hb-badge-warning'>در انتظار تأیید</span>
+          {% elif approval_item.status == 'approved' %}<span class='hb-badge hb-badge-success'>تأییدشده</span>
+          {% else %}<span class='hb-badge hb-badge-danger'>ردشده</span>
+            {% if approval_item.refunded_at %}— بازگشت {{ approval_item.refunded_coins|floatformat }} سکه (کارمزد {{ approval_item.refund_fee_coins|floatformat }}){% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% if approval_item.status == 'pending' %}
+    <div style='display:flex;gap:0.6rem;flex-wrap:wrap;align-items:flex-start;margin-top:0.8rem;'>
+      <form method='post' style='margin:0;' data-pw-delay='600'>{% csrf_token %}
+        <input type='hidden' name='action' value='approval_approve'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-check-lg'></i> تأیید و قرار دادن در صف نمایش</button>
+      </form>
+      <form method='post' style='margin:0;display:flex;gap:0.5rem;flex-wrap:wrap;flex:1;min-width:260px;' data-pw-delay='600'
+            onsubmit="return confirm('رد شود؟ {{ approval_fee }}٪ هزینه کسر و مابقی به کیف پول کاربر بازمی‌گردد.');">{% csrf_token %}
+        <input type='hidden' name='action' value='approval_reject'>
+        <input type='text' name='reason' maxlength='200' placeholder='دلیل رد (اختیاری؛ برای کاربر ارسال می‌شود)'
+               style='flex:1;min-width:160px;padding:0.4rem 0.6rem;border-radius:8px;border:1px solid var(--hb-border);background:var(--hb-navy-800);color:var(--hb-text-primary);font-size:0.8rem;'>
+        <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' style='color:#e74c3c;border-color:#e74c3c;'><i class='bi bi-x-lg'></i> رد و بازگشت وجه ({{ approval_fee }}٪ کارمزد)</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class='tkt-detail-head'>
+    <div>
+      <div class='tkt-row-top'>
+        <span class='tkt-number' dir='ltr'>{{ ticket.number }}</span>
+        <span class='tkt-status st-{{ ticket.status }}'>{{ status_label }}</span>
+        <span class='tkt-prio pr-{{ ticket.priority }}'>{{ priority_label }}</span>
+      </div>
+      <h1>{{ ticket.subject }}</h1>
+      <div class='tkt-meta-line'>
+        {% if category_label %}<span><i class='bi bi-tag'></i> {{ category_label }}</span>{% endif %}
+        {% if department_label %}<span><i class='bi bi-diagram-3'></i> {{ department_label }}</span>{% endif %}
+        <span><i class='bi bi-calendar'></i> {{ ticket.created_at|jdatetime }}</span>
+        {% if assignment %}<span><i class='bi bi-person-check'></i> کارشناس: {{ assignment.agent.mobile_number }}</span>{% endif %}
+      </div>
+    </div>
+    <div class='tkt-head-actions'>
+      {% if my_rec and my_state != 'unread' %}
+        <form method='post' style='display:inline;margin:0;'>{% csrf_token %}
+          <input type='hidden' name='action' value='{% if my_rec.important %}unimportant{% else %}important{% endif %}'>
+          <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-star{% if my_rec.important %}-fill{% endif %}'></i> {% if my_rec.important %}مهم نیست{% else %}مهم{% endif %}</button>
+        </form>
+        <form method='post' style='display:inline;margin:0;'>{% csrf_token %}
+          <input type='hidden' name='action' value='{% if my_rec.archived %}unarchive{% else %}archive{% endif %}'>
+          <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-archive'></i> {% if my_rec.archived %}خارج از بایگانی{% else %}بایگانی{% endif %}</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if can_manage %}
+    <div class='tkt-manage'>
+      <form method='post' class='tkt-manage-form'>{% csrf_token %}
+        <input type='hidden' name='action' value='status'>
+        <select name='status' title='وضعیت'>
+          {% for value, label in status_choices %}<option value='{{ value }}' {% if value == ticket.status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>ثبت وضعیت</button>
+      </form>
+      <form method='post' class='tkt-manage-form'>{% csrf_token %}
+        <input type='hidden' name='action' value='priority'>
+        <select name='priority' title='اولویت'>
+          {% for value, label in priority_choices %}<option value='{{ value }}' {% if value == ticket.priority %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm'>اولویت</button>
+      </form>
+      {% if can_assign %}
+        <form method='post' class='tkt-manage-form'>{% csrf_token %}
+          <input type='hidden' name='action' value='assign'>
+          <select name='agent' title='کارشناس'>
+            {% for a in agents %}<option value='{{ a.id }}'>{{ a.mobile_number }}{% if a.profile and a.profile.full_name %} — {{ a.profile.full_name }}{% endif %}</option>{% endfor %}
+          </select>
+          <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm'>ارجاع</button>
+        </form>
+        <form method='post' class='tkt-manage-form'>{% csrf_token %}
+          <input type='hidden' name='action' value='unassign'>
+          <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm'>برداشتن ارجاع</button>
+        </form>
+      {% endif %}
+
+    </div>
+  {% endif %}
+
+  {% if show_recipients and recipients %}
+    <details class='tkt-recipients' open>
+      <summary>
+        <i class='bi bi-people'></i> گیرندگان ({{ recipients_count }})
+        {% if recipients_count > 1 %}
+          <span class='tkt-dlv-summary'>
+            <i class='bi bi-check2 tkt-tick-sent'></i>
+            ارسال به {{ recipients_count }} گیرنده —
+            <i class='bi bi-check2-all tkt-tick-seen'></i>
+            دیده‌شده: {{ seen_count }}
+          </span>
+        {% endif %}
+      </summary>
+      <ul>
+        {% for r in recipients %}
+          <li class='tkt-recipient'>
+            <span class='tkt-recipient-name'>{{ r.name }}</span>
+            {% if r.is_author %}<span class='tkt-recipient-tag'>فرستنده</span>{% endif %}
+            <span class='tkt-tick {% if r.ticks == "seen" %}tkt-tick-seen{% else %}tkt-tick-sent{% endif %}'
+                  title="{% if r.ticks == 'seen' %}دیده‌شده — {{ r.read_at|jdatetime }}{% else %}ارسال‌شده — {{ r.sent_at|jdatetime }}{% endif %}">
+              <i class='bi {% if r.ticks == "seen" %}bi-check2-all{% else %}bi-check2{% endif %}'></i>
+            </span>
+            <small class='tkt-recipient-time'>
+              ارسال: {{ r.sent_at|jdatetime }}
+              {% if r.read_at %} · دیده‌شده: {{ r.read_at|jdatetime }}{% endif %}
+            </small>
+          </li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+
+  <div class='tkt-thread'>
+    {% for m in conversation %}
+      {% if m.kind == 'internal_note' %}
+        <div class='tkt-note'>
+          <div class='tkt-note-head'><i class='bi bi-lock-fill'></i> یادداشت داخلی — {{ m.author.mobile_number }}</div>
+          <p>{{ m.body|linebreaksbr }}</p>
+          {% for a in m.attachments.all %}<div class='tkt-file'><i class='bi bi-paperclip'></i> {{ a.name }}</div>{% endfor %}
+        </div>
+      {% elif m.kind == 'normal' %}
+        <div class='tkt-msg {% if m.author_id == request.user.id %}mine{% endif %}'>
+          <div class='tkt-msg-head'>{% if m.author_id == request.user.id %}شما{% else %}{{ m.author.mobile_number }}{% endif %}
+            <span>{{ m.created_at|jtime }}</span></div>
+          <p>{{ m.body|linebreaksbr }}</p>
+          {% for a in m.attachments.all %}
+            <a class='tkt-file' href='/api/tickets/attachments/{{ a.id }}/'><i class='bi bi-paperclip'></i> {{ a.name }} ({{ a.size|filesizeformat }})</a>
+          {% endfor %}
+          {% if m.edited_at %}<small style='color:var(--hb-text-muted);'>(ویرایش‌شده)</small>{% endif %}
+        </div>
+      {% else %}
+        <div class='tkt-sys'><i class='bi bi-info-circle'></i> {{ m.kind }} — {{ m.body }}</div>
+      {% endif %}
+    {% empty %}
+      <div class='tkt-empty'><i class='bi bi-chat-square-text'></i><p>پیامی نیست؛ اولین پیام را بنویسید.</p></div>
+    {% endfor %}
+  </div>
+
+  {% if can_rate and rating_form %}
+    <form method='post' class='tkt-rate'>{% csrf_token %}
+      <input type='hidden' name='action' value='rate'>
+      <div class='tkt-rate-title'>به پاسخ این تیکت امتیاز دهید</div>
+      <label>ستاره: <input type='number' name='stars' min='1' max='5' required></label>
+      <label>کیفیت پاسخ (۱-۵): <input type='number' name='response_quality' min='1' max='5'></label>
+      <label>کیفیت حل (۱-۵): <input type='number' name='resolution_quality' min='1' max='5'></label>
+      <input type='text' name='comment' placeholder='نظر (اختیاری)'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>ثبت امتیاز</button>
+    </form>
+  {% endif %}
+
+  {% if can_reply %}
+    <form method='post' class='tkt-composer' enctype='multipart/form-data'>{% csrf_token %}
+      <input type='hidden' name='action' value='reply'>
+      <textarea name='body' placeholder='پاسخ خود را بنویسید…'>{% if draft_reply and not can_see_note %}{{ draft_reply }}{% endif %}</textarea>
+      <div class='tkt-composer-actions'>
+        <input type='file' name='attachments' multiple title='پیوست'>
+        <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-send'></i> ارسال</button>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if can_see_note %}
+    <form method='post' class='tkt-composer tkt-note-form' enctype='multipart/form-data'>{% csrf_token %}
+      <input type='hidden' name='action' value='note'>
+      <textarea name='body' placeholder='یادداشت داخلی (فقط برای کارکنان)…'>{% if draft_reply %}{{ draft_reply }}{% endif %}</textarea>
+      <div class='tkt-composer-actions'>
+        <button type='submit' class='hb-btn hb-btn-outline'><i class='bi bi-lock'></i> افزودن یادداشت داخلی</button>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if history %}
+    <div class='tkt-history'>
+      <b>تاریخچهٔ وضعیت</b>
+      <ul>
+        {% for h in history %}
+          <li><span>{{ h.created_at|jdatetime }}</span>
+            {{ h.from_status|default:'—' }} ← {{ h.to_status }}
+            {% if h.note %}— {{ h.note }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
+{% include "tickets/_bottom.html" %}

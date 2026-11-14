@@ -1,0 +1,65 @@
+__pycache__/
+*.pyc
+db.sqlite3
+venv/
+staticfiles/
+db_backups/
+
+# Local env files (never commit real keys)
+.env
+.env.*
+!.env.example
+
+# Local browser profile and generated bundles
+cdp-profile/
+smparsa-website-bundle.zip
+
+# IDE
+.idea/
+
+# Local database
+db.sqlite3
+db.sqlite3-journal
+
+# Generated Python cache
+__pycache__/
+
+# Freebuff local data
+.freebuff/
+.cloud-attachments/
+
+# Pytest cache
+.pytest_cache/
+
+# Local logs and test outputs
+*.log
+test_output.txt
+
+# Sensitive or personal files
+User-password.jpg
+
+# Local IDE and temporary data
+.vscode/
+.coverage
+htmlcov/
+
+# SQLite temporary files
+*.sqlite3-journal
+
+
+# User uploaded files - transfer separately
+media/
+
+# Local project context and temporary security prompts
+# Keep these files local for now
+context.txt
+security-prompt.txt
+
+
+# Temporary SQLite test databases
+cloudstorage/*.sqlite3
+
+# User documents and personal uploaded files
+docs/0054413066/
+docs/0123456789/
+

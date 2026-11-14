@@ -1,0 +1,127 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{{ cfg.plural }} — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi {{ cfg.icon }}'></i> {{ cfg.plural }}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:catalog_home' %}" style='color:var(--hb-gold-300);'>کاتالوگ مشاغل</a>
+    › {{ cfg.plural }}
+    {% if parent %} — در {{ cfg.parent_label }}: <strong>{{ parent.name }}</strong>{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست {{ cfg.plural }} ({{ total }} مورد)</div>
+      <a href="{% url 'adminpanel:layer_add' layer %}{% if parent %}?parent={{ parent.pk }}{% endif %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-plus-lg'></i> افزودن {{ cfg.label|lower }}</a>
+    </div>
+
+    <!-- نوار ابزار: جستجو + فیلتر وضعیت -->
+    <form method='get' action="{% url 'adminpanel:layer_list' layer %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;'>
+      {% if parent %}<input type='hidden' name='parent' value='{{ parent.pk }}'>{% endif %}
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:280px;' placeholder='جستجو بر اساس نام یا کد…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      <div style='display:flex;gap:0.35rem;align-items:center;'>
+        <a href="{% url 'adminpanel:layer_list' layer %}{% if parent %}?parent={{ parent.pk }}{% endif %}" class='hb-btn hb-btn-sm {% if not active %}hb-btn-primary{% else %}hb-btn-dark{% endif %}'>همه</a>
+        <a href="{% url 'adminpanel:layer_list' layer %}?active=1{% if parent %}&parent={{ parent.pk }}{% endif %}" class='hb-btn hb-btn-sm {% if active == "1" %}hb-btn-primary{% else %}hb-btn-dark{% endif %}'>فعال</a>
+        <a href="{% url 'adminpanel:layer_list' layer %}?active=0{% if parent %}&parent={{ parent.pk }}{% endif %}" class='hb-btn hb-btn-sm {% if active == "0" %}hb-btn-primary{% else %}hb-btn-dark{% endif %}'>غیرفعال</a>
+      </div>
+      {% if parent %}
+      <a href="{% url 'adminpanel:layer_list' layer %}" class='hb-btn hb-btn-outline hb-btn-sm' style='margin-inline-start:auto;'><i class='bi bi-x-lg'></i> حذف فیلتر «{{ parent.name }}»</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نام</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد</th>
+          {% for label, _ in rows.0.cells %}
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ label }}</th>
+          {% endfor %}
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.name }}</strong></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-family:ui-monospace,Consolas,monospace;' dir='ltr'>{{ row.code }}</td>
+          {% for label, value in row.cells %}
+          {% if label == "توضیحات" %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);max-width:340px;'>
+            <div class='hb-desc-preview' data-hb-desc-preview>{{ value }}</div>
+            <button type='button' class='hb-desc-toggle' data-hb-desc-toggle hidden><i class='bi bi-chevron-expand'></i><span>نمایش کامل</span></button>
+          </td>
+          {% else %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);'>{{ value }}</td>
+          {% endif %}
+          {% endfor %}
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% else %}<span class='hb-badge hb-badge-danger'>غیرفعال</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              {% if cfg.child %}
+              <a href="{% url 'adminpanel:layer_list' cfg.child %}?parent={{ row.pk }}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-diagram-2'></i> {{ cfg.child_label }}</a>
+              {% endif %}
+              <a href="{% url 'adminpanel:layer_edit' layer row.pk %}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              <form method='post' action="{% url 'adminpanel:layer_toggle' layer row.pk %}" style='margin:0;'>
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title="{% if row.is_active %}غیرفعال‌کردن{% else %}فعال‌کردن{% endif %}">
+                  {% if row.is_active %}<i class='bi bi-pause-circle'></i> غیرفعال{% else %}<i class='bi bi-play-circle'></i> فعال{% endif %}
+                </button>
+              </form>
+              <form method='post' action="{% url 'adminpanel:layer_delete' layer row.pk %}" style='margin:0;' onsubmit="return confirm('«{{ row.name }}» حذف شود؟');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm' style='color:#e74c3c;' title='حذف'><i class='bi bi-trash'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>موردی یافت نشد.{% if parent %} در «{{ parent.name }}»{% endif %}</p>
+    {% endif %}
+  </div>
+</div>
+<style>
+  .hb-desc-preview{white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .hb-desc-preview.hb-desc-open{display:block;}
+  .hb-desc-toggle{display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.3rem;padding:0.05rem 0.5rem;font-size:0.74rem;background:none;border:1px solid rgba(201,162,39,0.3);color:var(--hb-gold-300);border-radius:6px;cursor:pointer;}
+  .hb-desc-toggle:hover{background:rgba(201,162,39,0.12);}
+  .hb-desc-toggle[hidden]{display:none !important;}
+</style>
+<script>
+(function () {
+  function wire() {
+    document.querySelectorAll('[data-hb-desc-preview]').forEach(function (pre) {
+      if (pre.dataset.hbWired) return;
+      pre.dataset.hbWired = '1';
+      var td = pre.closest('td');
+      var btn = td ? td.querySelector('[data-hb-desc-toggle]') : null;
+      if (!btn) return;
+      var open = false;
+      function clamped() { return pre.scrollHeight > pre.clientHeight + 2; }
+      function refresh() { if (!open) btn.hidden = !clamped(); }
+      btn.addEventListener('click', function () {
+        open = !open;
+        pre.classList.toggle('hb-desc-open', open);
+        btn.querySelector('span').textContent = open ? 'بستن' : 'نمایش کامل';
+        btn.querySelector('i').className = 'bi ' + (open ? 'bi-chevron-contract' : 'bi-chevron-expand');
+      });
+      refresh();
+      window.addEventListener('load', refresh);
+      setTimeout(refresh, 400);
+    });
+  }
+  if (document.readyState !== 'loading') wire();
+  else document.addEventListener('DOMContentLoaded', wire);
+})();
+</script>
+{% endblock %}

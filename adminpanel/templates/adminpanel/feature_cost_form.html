@@ -1,0 +1,65 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{% if mode == "add" %}افزودن{% else %}ویرایش{% endif %} هزینهٔ سکه — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-coin'></i> {% if mode == "add" %}افزودن هزینهٔ سکه{% else %}ویرایش «{{ form.instance.title }}»{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:feature_costs_list' %}" style='color:var(--hb-gold-300);'>هزینه‌های سکهٔ ماژول‌ها</a>
+    › {% if mode == "add" %}افزودن{% else %}ویرایش{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:640px;'>
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div></div>
+    <p style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;'>
+      «کد» شناسه‌ای است که بخش موردنظر هنگام استفاده برای کسر سکه صدا می‌زند
+      (مثلاً <code dir='ltr'>bulk_ticket</code> برای ارسال تیکت انبوه). با ثبت این هزینه،
+      به‌محض استفادهٔ کاربر، سکه از کیف پولش کسر و تیکت اطلاع‌رسانی برایش ارسال می‌شود.
+    </p>
+  </div>
+
+  <div class='hb-card'>
+    <form method='post' novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>{% endif %}
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.code.id_for_label }}'>{{ form.code.label }} *</label>
+        {{ form.code }}
+        {% if form.code.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.code.help_text }}</small>{% endif %}
+        {% if form.code.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.code.errors }}</div>{% endif %}
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.title.id_for_label }}'>{{ form.title.label }} *</label>
+        {{ form.title }}
+        {% if form.title.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.title.errors }}</div>{% endif %}
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.description.id_for_label }}'>{{ form.description.label }}</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.description.errors }}</div>{% endif %}
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label class='hb-form-label' for='{{ form.coins.id_for_label }}'>{{ form.coins.label }} *</label>
+        {{ form.coins }}
+        {% if form.coins.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.coins.help_text }}</small>{% endif %}
+        {% if form.coins.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.25rem;'>{{ form.coins.errors }}</div>{% endif %}
+      </div>
+
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        <label style='display:flex;align-items:center;gap:0.4rem;font-size:0.88rem;cursor:pointer;'>{{ form.is_active }} {{ form.is_active.label }}</label>
+        {% if form.is_active.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.is_active.help_text }}</small>{% endif %}
+      </div>
+
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi {% if mode == "add" %}bi-plus-lg{% else %}bi-check-lg{% endif %}'></i> {% if mode == "add" %}ثبت هزینه{% else %}ذخیره تغییرات{% endif %}</button>
+        <a href="{% url 'adminpanel:feature_costs_list' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

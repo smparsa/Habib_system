@@ -1,0 +1,52 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}دفتر {{ account.name }}{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📒 دفتر حساب
+    <span class="sub">{{ account.code|fa_digits }} — {{ account.name }} ({{ account.get_group_display }})</span>
+  </h1>
+
+  <div class="acc-card">
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead>
+          <tr>
+            <th>تاریخ</th>
+            <th>سند</th>
+            <th>شرح</th>
+            <th>بدهکار (ریال)</th>
+            <th>بستانکار (ریال)</th>
+            <th>مانده (ریال)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="num">{{ r.date_fa|fa_digits }}</td>
+              <td class="num">{{ r.number|fa_digits }}</td>
+              <td style="white-space:normal;">{{ r.description }}</td>
+              <td class="num">{{ r.debit|rial }}</td>
+              <td class="num">{{ r.credit|rial }}</td>
+              <td class="num {{ r.balance|amount_class }}">{{ r.balance|rial }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6">گردشی ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if rows %}
+          <tfoot>
+            <tr>
+              <td colspan="5">ماندهٔ نهایی</td>
+              <td class="num {{ balance|amount_class }}">{{ balance|rial }}</td>
+            </tr>
+          </tfoot>
+        {% endif %}
+      </table>
+    </div>
+    <p style="margin-top:.75rem;">
+      <a class="acc-btn outline sm" href="{% url 'accounting:accounts' %}">⬅ بازگشت به پلان</a>
+    </p>
+  </div>
+{% endblock %}

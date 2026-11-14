@@ -1,0 +1,132 @@
+{% extends "cloudstorage/base_cloud.html" %}
+{% load core_extras %}
+{% block title %}مرور فضای ابری - HabibHub{% endblock %}
+{% block cloud_content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-folder-symlink'></i> پوشه‌های ابری من</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    پوشه‌ها با شناسهٔ پایدار ذخیره شده‌اند؛ حتی اگر پوشهٔ محلی قبلی در دستگاه شما دیگر موجود نباشد، محتوا از اینجا قابل مرور و دانلود است.
+  </p>
+  <a href="{% url 'cloudstorage:home' %}" style='display:inline-block;margin-top:0.4rem;font-size:0.85rem;text-decoration:none;color:var(--hb-gold-300);border:1px solid var(--hb-gold-400);border-radius:8px;padding:0.3rem 0.8rem;'>
+    <i class='bi bi-cloud-arrow-up'></i> رفتن به ماژول «فضای ذخیره‌سازی ابری (Cloud Object Storage)»
+  </a>
+</div>
+<div style='padding:0 2rem 2rem;'>
+  {% if messages %}
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;{% if message.tags == "success" %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == "error" %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi bi-info-circle'></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-search'></i> جستجو و مرتب‌سازی</div>
+      <a href="{% url 'cloudstorage:home' %}" style='font-size:0.85rem;'><i class='bi bi-cloud-arrow-up'></i> آپلود جدید</a>
+    </div>
+    <form method='get' style='display:flex;gap:0.6rem;flex-wrap:wrap;align-items:flex-end;'>
+      <label style='font-size:0.8rem;'>جستجو در نام پوشه‌ها
+        <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='margin-top:0.25rem;'>
+      </label>
+      <label style='font-size:0.8rem;'>مرتب‌سازی
+        <select name='sort' class='hb-form-control' style='margin-top:0.25rem;'>
+          <option value='new' {% if sort == 'new' %}selected{% endif %}>جدیدترین</option>
+          <option value='name' {% if sort == 'name' %}selected{% endif %}>نام</option>
+          <option value='size' {% if sort == 'size' %}selected{% endif %}>حجم</option>
+          <option value='files' {% if sort == 'files' %}selected{% endif %}>تعداد فایل</option>
+        </select>
+      </label>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>اعمال</button>
+    </form>
+  </div>
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-collection'></i> پوشه‌ها ({{ folders|length }})</div>
+    </div>
+    {% if folders %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.83rem;'>
+      <thead>
+        <tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+          <th style='padding:0.6rem;text-align:right;'>نام پوشه</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>شناسه</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>فایل</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>حجم</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>آخرین Sync</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>Sync خودکار</th>
+          <th style='padding:0.6rem;text-align:left;white-space:nowrap;'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in folders %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.7rem;'>
+            <a href="{% url 'cloudstorage:folder_detail' f.uid %}" style='color:var(--hb-text-primary);font-weight:600;'>
+              <i class='bi bi-folder2' style='color:var(--hb-gold-300);'></i> {{ f.name }}
+            </a>
+            <div style='font-size:0.72rem;color:var(--hb-text-muted);'>{{ f.path_display }}</div>
+          </td>
+          <td style='padding:0.7rem;font-size:0.72rem;' dir='ltr'>{{ f.uid|slice:":10" }}…</td>
+          <td style='padding:0.7rem;text-align:center;'>{{ f.files_count }}</td>
+          <td style='padding:0.7rem;white-space:nowrap;'>{{ f.size_bytes|filesizeformat }}</td>
+          <td style='padding:0.7rem;font-size:0.75rem;white-space:nowrap;'>{{ f.last_sync_at|jdatetime|default:"—" }}</td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            {% if f.auto_sync_enabled %}<span class='hb-badge hb-badge-success'>فعال</span>
+            {% else %}<span class='hb-badge hb-badge-muted'>متوقف</span>{% endif %}
+          </td>
+          <td style='padding:0.7rem;text-align:left;white-space:nowrap;'>
+            <form method='post' action="{% url 'cloudstorage:sync_toggle' f.uid %}" style='display:inline;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='padding:0.15rem 0.5rem;font-size:0.7rem;'>
+                {% if f.auto_sync_enabled %}توقف Sync{% else %}فعال‌سازی Sync{% endif %}
+              </button>
+            </form>
+            <a class='hb-btn hb-btn-outline hb-btn-sm' href="{% url 'cloudstorage:home' %}?target={{ f.uid }}" style='text-decoration:none;padding:0.15rem 0.5rem;font-size:0.7rem;'>
+              <i class='bi bi-arrow-repeat'></i> Sync دستی
+            </a>
+            <form method='post' action="{% url 'cloudstorage:folder_delete' f.uid %}" style='display:inline;' onsubmit="return confirm('کل پوشهٔ «{{ f.name|escapejs }}» و همهٔ فایل‌های آن حذف شود؟ فضای مصرفی شما آزاد می‌شود.');">
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-sm' style='padding:0.15rem 0.5rem;font-size:0.7rem;background:rgba(192,57,43,0.12);color:#e74c3c;border:1px solid rgba(192,57,43,0.35);'>
+                <i class='bi bi-trash3'></i> حذف
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style='padding:1.2rem;color:var(--hb-text-muted);font-size:0.85rem;text-align:center;'>
+      هنوز پوشه‌ای در فضای ابری ندارید — از صفحهٔ اصلی یک پوشه یا مجموعه گالری آپلود کنید.
+    </div>
+    {% endif %}
+  </div>
+
+  <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;'>
+    <div class='hb-card'>
+      <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-arrow-repeat'></i> تاریخچهٔ Sync</div></div>
+      {% if sync_jobs %}
+        {% for j in sync_jobs %}
+        <div style='display:flex;justify-content:space-between;gap:0.5rem;font-size:0.78rem;padding:0.45rem 0;border-bottom:1px solid var(--hb-border);'>
+          <span>{{ j.folder.name }} — {{ j.get_source_display }}</span>
+          <span>{% if j.status == 'done' %}<span class='hb-badge hb-badge-success'>موفق</span>{% elif j.status == 'failed' %}<span class='hb-badge hb-badge-danger'>ناموفق</span>{% else %}<span class='hb-badge hb-badge-muted'>لغو</span>{% endif %}</span>
+        </div>
+        {% endfor %}
+      {% else %}<div style='font-size:0.8rem;color:var(--hb-text-muted);'>موردی ثبت نشده است.</div>{% endif %}
+    </div>
+    <div class='hb-card'>
+      <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-file-earmark-zip'></i> آرشیوهای دانلود (لینک زمان‌دار {{ sts.archive_retention_hours }} ساعته)</div></div>
+      {% if archive_jobs %}
+        {% for j in archive_jobs %}
+        <div style='display:flex;justify-content:space-between;gap:0.5rem;font-size:0.78rem;padding:0.45rem 0;border-bottom:1px solid var(--hb-border);align-items:center;'>
+          <span>{{ j.client_name }} — {{ j.files_count }} فایل</span>
+          {% if j.status == 'ready' and not j.is_expired %}
+            <a class='hb-btn hb-btn-primary hb-btn-sm' href="{% url 'cloudstorage:archive_download' j.download_token %}" style='text-decoration:none;padding:0.15rem 0.5rem;font-size:0.7rem;'>دانلود ZIP</a>
+          {% else %}<span class='hb-badge hb-badge-muted'>{{ j.get_status_display }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}<div style='font-size:0.8rem;color:var(--hb-text-muted);'>آرشیوی ساخته نشده است.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

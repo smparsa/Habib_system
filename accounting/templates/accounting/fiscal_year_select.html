@@ -1,0 +1,32 @@
+{% extends "accounting/base.html" %}
+
+{% block title %}انتخاب سال مالی{% endblock %}
+
+{% block content %}
+  <div class="acc-auth">
+    <div class="acc-card card">
+      <h2>📁 انتخاب بانک اطلاعاتی (سال مالی)</h2>
+      <p class="sub" style="color:var(--acc-muted);">
+        دفتر: <b>{{ org.name }}</b> — سال مالی موردنظر را انتخاب کنید.
+      </p>
+      <hr style="border:none;border-top:1px solid var(--acc-line);">
+
+      {% for fy in fiscal_years %}
+        <a class="acc-btn outline"
+           style="display:block;text-align:center;margin-bottom:.5rem;{% if fy.is_closed %}opacity:.65;{% endif %}"
+           href="{% url 'accounting:select_fy' fy.id %}">
+          بانک اطلاعاتی شماره {{ forloop.counter }}: {{ fy.name }}
+          {% if fy.is_default %}· پیش‌فرض{% endif %}
+          {% if fy.is_closed %}· بسته{% endif %}
+        </a>
+      {% empty %}
+        <p>سال مالی وجود ندارد.</p>
+      {% endfor %}
+
+      <p class="acc-modal-note">
+        پس از انتخاب سال مالی، نام کاربری و کلمه عبورِ مجزای حسابداری از شما پرسیده می‌شود.
+      </p>
+      <a href="{% url 'core:dashboard' %}">بازگشت به سایت</a>
+    </div>
+  </div>
+{% endblock %}

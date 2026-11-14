@@ -1,0 +1,90 @@
+{% load static location_tags %}
+<!DOCTYPE html>
+<html lang='fa'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>{% block title %}اسلایدشوی آمار داشبورد - HabibHub{% endblock %}</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'>
+  {% location_service_config %}
+</head>
+<body>
+<!-- Sidebar -->
+<aside class='hb-sidebar' id='sidebar'>
+  <button class='hb-sidebar-toggle'><i class='bi bi-chevron-left'></i></button>
+  <div class='hb-sidebar-header'>
+    <img src='{% static "core/assets/logo.png" %}' alt='Logo' class='hb-sidebar-logo'>
+    <div>
+      <div class='hb-sidebar-brand'>Habib<span>Hub</span></div>
+      <small style='color:var(--hb-text-muted);font-size:0.7rem;' data-i18n='tagline'>همه ابزارها · یک هاب</small>
+    </div>
+  </div>
+{% include "core/_sidebar_nav.html" with nav_active="slideshow" %}
+  <div class='hb-sidebar-footer'>
+    <div style='display:flex;align-items:center;gap:0.75rem;'>
+      {% if profile.avatar %}
+        <img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;object-fit:cover;'>
+      {% else %}
+        <img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;'>
+      {% endif %}
+      <div class='user-info'>
+        <div style='font-weight:600;font-size:0.85rem;'>{{ profile.full_name }}</div>
+        <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ request.user.mobile_number }}</div>
+      </div>
+      <form method='post' action="{% url 'accounts:logout' %}" style='margin-inline-start:auto;'>{% csrf_token %}<button type='submit' title='خروج' style='background:none;border:none;color:var(--hb-text-muted);cursor:pointer;font-size:1.1rem;'><i class='bi bi-box-arrow-right'></i></button></form>
+    </div>
+  </div>
+</aside>
+<!-- Overlay -->
+<div class='hb-overlay'></div>
+<!-- Header -->
+<header class='hb-header'>
+  <div style='display:flex;align-items:center;gap:1rem;'>
+    <button class='hb-mobile-toggle'><i class='bi bi-list'></i></button>
+    <div class='hb-header-search'>
+      <i class='bi bi-search'></i>
+      <input type='text' data-i18n='search' placeholder='جستجو...'>
+    </div> {% include "core/_breaking_news_bar.html" %}
+  </div>
+  <div class='hb-header-actions'>
+    <div class='hb-header-location' title='موقعیت شما' style='display:flex;align-items:center;gap:0.4rem;background:rgba(201,162,39,0.08);border:1px solid var(--hb-border);border-radius:20px;padding:0.4rem 0.8rem;font-size:0.78rem;color:var(--hb-text-secondary);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>
+      <i class='bi bi-geo-alt-fill' style='color:var(--hb-gold-300);'></i>
+      <span class='hb-header-location-text'>در حال دریافت موقعیت…</span>
+    </div>
+    <div class='hb-lang-dropdown'>
+      <button class='hb-header-btn hb-lang-toggle'><i class='bi bi-globe'></i></button>
+      <div class='hb-lang-menu'>
+        <div class='hb-lang-item active' data-lang='fa'><span class='hb-lang-flag'>🇮🇷</span><span>فارسی</span></div>
+        <div class='hb-lang-item' data-lang='en'><span class='hb-lang-flag'>🇺🇸</span><span>English</span></div>
+        <div class='hb-lang-item' data-lang='zh'><span class='hb-lang-flag'>🇨🇳</span><span>中文</span></div>
+        <div class='hb-lang-item' data-lang='ar'><span class='hb-lang-flag'>🇸🇦</span><span>العربية</span></div>
+      </div>
+    </div>
+    <div class='hb-user-menu' style='position:relative;'>
+      {% if profile.avatar %}
+        <img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar hb-user-menu-toggle' style='object-fit:cover;'>
+      {% else %}
+        <img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar hb-user-menu-toggle'>
+      {% endif %}
+      <div class='hb-user-menu-dropdown' style='position:absolute;left:0;top:110%;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:10px;min-width:180px;padding:0.5rem;z-index:50;'>
+        <div style='padding:0.5rem 0.75rem;color:var(--hb-text-muted);font-size:0.8rem;border-bottom:1px solid var(--hb-navy-500);margin-bottom:0.25rem;' dir='ltr'>{{ request.user.mobile_number }}</div>
+        <a href="{% url 'core:profile' %}" style='display:block;padding:0.5rem 0.75rem;color:var(--hb-text-primary);text-decoration:none;border-radius:6px;'>پروفایل من</a>
+        <a href="{% url 'wallet:history' %}" style='display:block;padding:0.5rem 0.75rem;color:var(--hb-text-primary);text-decoration:none;border-radius:6px;'>تراکنش‌های سکه</a>
+        <form method='post' action="{% url 'accounts:logout' %}" style='margin:0;'>{% csrf_token %}<button type='submit' style='width:100%;text-align:right;background:none;border:none;padding:0.5rem 0.75rem;color:var(--hb-text-primary);cursor:pointer;border-radius:6px;'>خروج</button></form>
+      </div>
+    </div>
+  </div>
+</header>
+<!-- Main Content -->
+<main class='hb-main'>
+  {% block slideshow_content %}{% endblock %}
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+</main>
+<script src='{% static "core/js/app.js" %}?v=49'></script>
+{% include "core/_sidebar_nav_script.html" %}
+</body>
+</html>

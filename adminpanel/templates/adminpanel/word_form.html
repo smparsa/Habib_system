@@ -1,0 +1,56 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{% if mode == "add" %}افزودن{% else %}ویرایش{% endif %} واژهٔ حساس — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-shield-exclamation'></i> {% if mode == "add" %}افزودن واژه / عبارت حساس{% else %}ویرایش واژهٔ «{{ form.instance.term }}»{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:words_list' %}" style='color:var(--hb-gold-300);'>پالایش محتوا</a>
+    › {% if mode == "add" %}افزودن{% else %}ویرایش{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:760px;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-lightbulb'></i> راهنمای حالت‌های تطبیق</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li><b>واژه / عبارت کامل:</b> دقیقاً همان واژهٔ مستقل — مناسب کلمات واضح (مثلاً ناسزای مشخص).</li>
+      <li><b>ابتدای واژه:</b> واژه را در ابتدای کلمه می‌گیرد؛ برای شکل‌های صرف‌شده (مثلاً با «فحش»، «فحاشی» هم گرفته می‌شود).</li>
+      <li><b>هر جای متن:</b> برای عبارت‌های چندکلمه‌ای یا وقتی اطمینان دارید واژه در جای دیگری نمی‌آید.</li>
+      <li><b>الگوی منظم (regex):</b> برای الگوهای پیشرفته (اعداد، جایگزینی حروف و ...) — با «آزمون متن» امتحان کنید.</li>
+    </ul>
+    <p style='font-size:0.78rem;color:var(--hb-text-muted);margin:0.6rem 0 0;'>
+      <i class='bi bi-info-circle'></i>
+      املای عربی/فارسی (ي/ی، ك/ک، أإآ/ا، ة/ه)، حرکت‌گذاری و نیم‌فاصله هنگام بررسی خودکار یکسان‌سازی می‌شوند؛
+      پس یک بار ثبت کنید، نگارش‌های دیگر هم گرفته می‌شوند. برای واژه‌های حساسِ سیاسی/مذهبی بهتر است دستهٔ دقیق انتخاب و با دقت آزمون شود تا گفتگوی سالم مسدود نشود.
+    </p>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        {% if field.errors %}
+          <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+        {% endif %}
+        <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ field.help_text }}</small>{% endif %}
+      </div>
+      {% endfor %}
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+          <i class='bi {% if mode == "add" %}bi-plus-lg{% else %}bi-check-lg{% endif %}'></i>
+          {% if mode == "add" %}ثبت واژه{% else %}ذخیره تغییرات{% endif %}
+        </button>
+        <a href="{% url 'adminpanel:words_list' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}تراز آزمایشی{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📊 تراز آزمایشی
+    <span class="sub">
+      سطح:
+      <a href="?level=2">حساب کل</a> ·
+      <a href="?level=3">معین</a> ·
+      <a href="?level=4">تفصیلی</a>
+    </span>
+  </h1>
+
+  <div class="acc-card">
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead>
+          <tr>
+            <th>کد</th>
+            <th>نام حساب</th>
+            <th>بدهکار (ریال)</th>
+            <th>بستانکار (ریال)</th>
+            <th>مانده (ریال)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="num">{{ r.account.code|fa_digits }}</td>
+              <td class="ind-{{ r.account.level }}">{{ r.account.name }}</td>
+              <td class="num">{{ r.debit|rial }}</td>
+              <td class="num">{{ r.credit|rial }}</td>
+              <td class="num {{ r.balance|amount_class }}">{{ r.balance|rial }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">گردشی برای نمایش نیست.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if rows %}
+          <tfoot>
+            <tr>
+              <td colspan="2">جمع کل</td>
+              <td class="num">{{ totals.debit|rial }}</td>
+              <td class="num">{{ totals.credit|rial }}</td>
+              <td class="num {{ totals.balance|amount_class }}">{{ totals.balance|rial }}</td>
+            </tr>
+          </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+{% endblock %}

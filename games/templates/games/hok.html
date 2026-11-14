@@ -1,0 +1,151 @@
+{% load static %}<!DOCTYPE html>
+<html lang='fa' dir='rtl'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Honor of Kings - HabibHub</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "games/css/games.css" %}?v=1' rel='stylesheet'>
+  <link href='{% static "games/css/hok.css" %}?v=1' rel='stylesheet'>
+</head>
+<body class='g-body'>
+  <a class='g-back' href="{% url 'games:home' %}"><i class='bi bi-arrow-right'></i> منو</a>
+
+  <div class='g-page'>
+    <header style='text-align:center;'>
+      <h1 class='g-page-title t-yellow'>👑 Honor of Kings</h1>
+      <p class='g-page-sub'>حرکت: WASD / جهت‌ها / جوی‌استیک / کلیک • قدرت ویژه: B • ارتقا: U • بازگشت: H • توقف: P</p>
+    </header>
+
+    <!-- نوار تیم‌ها و زمان -->
+    <div class='h-topbar'>
+      <div class='h-team h-team-blue'>
+        <span class='h-team-icon'>🛡️</span>
+        <div class='h-team-towers'>
+          <span class='h-tower-dot' id='hok-tb-0'>🏰</span>
+          <span class='h-tower-dot' id='hok-tb-1'>🏰</span>
+          <span class='h-tower-dot' id='hok-tb-2'>🏰</span>
+          <span class='h-tower-dot' id='hok-tb-base'>💎</span>
+        </div>
+        <span class='h-kills' id='hok-kills-blue'>۰</span>
+      </div>
+      <div class='h-timer' id='hok-timer'>۰:۰۰</div>
+      <div class='h-team h-team-red'>
+        <span class='h-team-icon'>⚔️</span>
+        <div class='h-team-towers'>
+          <span class='h-tower-dot' id='hok-tr-0'>🏰</span>
+          <span class='h-tower-dot' id='hok-tr-1'>🏰</span>
+          <span class='h-tower-dot' id='hok-tr-2'>🏰</span>
+          <span class='h-tower-dot' id='hok-tr-base'>💎</span>
+        </div>
+        <span class='h-kills' id='hok-kills-red'>۰</span>
+      </div>
+    </div>
+
+    <!-- اعلان‌های رویداد -->
+    <div class='h-stage'>
+      <div class='h-events' id='hok-events'></div>
+      <canvas id='g-hok-canvas' width='640' height='480'></canvas>
+      <div class='g-overlay' id='g-hok-overlay'>
+        <div class='g-overlay-emoji' id='g-hok-overlay-emoji'>👑</div>
+        <h2 class='g-overlay-title t-yellow' id='g-hok-overlay-title'>Honor of Kings</h2>
+        <p class='g-page-sub' style='max-width:30rem;'>۳ لِین • نابودکردن پایگاه دشمن 💎 • ارتقای هیرو با طلا و XP</p>
+        <button class='g-btn g-btn-yellow' id='g-hok-overlay-btn'>شروع نبرد 👑</button>
+        <p class='g-overlay-note' id='g-hok-overlay-note'>هیرو را انتخاب کنید • Enter برای شروع</p>
+      </div>
+    </div>
+
+    <!-- انتخاب هیرو -->
+    <div class='h-heroes' id='hok-hero-list'>
+      <button type='button' class='h-hero-card selected' data-hero='arthur'>
+        <div class='h-hero-emoji'>🛡️</div>
+        <div class='h-hero-name'>آرتور</div>
+        <div class='h-hero-role'>سپر + سرعت</div>
+      </button>
+      <button type='button' class='h-hero-card' data-hero='zhao'>
+        <div class='h-hero-emoji'>⚔️</div>
+        <div class='h-hero-name'>ژائو یون</div>
+        <div class='h-hero-role'>جهش + ضربهٔ محیطی</div>
+      </button>
+      <button type='button' class='h-hero-card' data-hero='houyi'>
+        <div class='h-hero-emoji'>🏹</div>
+        <div class='h-hero-name'>هویی</div>
+        <div class='h-hero-role'>تیرانداز دوربرد</div>
+      </button>
+      <button type='button' class='h-hero-card' data-hero='daji'>
+        <div class='h-hero-emoji'>🌸</div>
+        <div class='h-hero-name'>داجی</div>
+        <div class='h-hero-role'>انفجار جادویی</div>
+      </button>
+      <button type='button' class='h-hero-card' data-hero='atlas'>
+        <div class='h-hero-emoji'>🐙</div>
+        <div class='h-hero-name'>اطلس</div>
+        <div class='h-hero-role'>مداوا + کنترل</div>
+      </button>
+      <button type='button' class='h-hero-card' data-hero='lunata'>
+        <div class='h-hero-emoji'>🌙</div>
+        <div class='h-hero-name'>لونا</div>
+        <div class='h-hero-role'>یورش سریع</div>
+      </button>
+    </div>
+
+    <!-- قابلیت‌ها -->
+    <div class='h-abilities'>
+      <div class='h-ability' id='hok-ab-b' title='قدرت ویژه (B)'>
+        <span id='hok-ab-b-icon'>🛡️</span>
+        <span class='h-ability-key'>B</span>
+        <span class='h-ability-cd' id='hok-ab-b-cd' style='display:none;'>۰</span>
+      </div>
+      <div class='h-ability' id='hok-ab-u' title='ارتقای تجهیزات (U)'>
+        <span>⚒️</span>
+        <span class='h-ability-key'>U</span>
+        <span class='h-ability-lvl' id='hok-ab-u-cost'>۵۰۰</span>
+      </div>
+      <div class='h-ability' id='hok-ab-h' title='بازگشت به پایگاه (H)'>
+        <span>🏠</span>
+        <span class='h-ability-key'>H</span>
+        <span class='h-ability-cd' id='hok-ab-h-cd' style='display:none;'>۰</span>
+      </div>
+    </div>
+
+    <!-- نوار وضعیت -->
+    <div class='h-bottombar'>
+      <div class='h-bars'>
+        <div class='h-bar-track h-bar-hp'><div class='h-bar-fill' id='hok-hp'></div><div class='h-bar-label' id='hok-hp-label'></div></div>
+        <div class='h-bar-track h-bar-mp'><div class='h-bar-fill' id='hok-mp'></div><div class='h-bar-label' id='hok-mp-label'></div></div>
+        <div class='h-bar-track h-bar-xp'><div class='h-bar-fill' id='hok-xp' style='width:0%;'></div></div>
+      </div>
+      <div class='h-resources'>
+        <span class='h-gold'>🪙 <span id='hok-gold'>۰</span></span>
+        <span class='h-level'>⭐ سطح <span id='hok-lvl'>۱</span></span>
+      </div>
+      <select class='g-select' id='hok-diff' aria-label='سطح دشواری'>
+        <option value='easy'>آسان</option>
+        <option value='medium' selected>متوسط</option>
+        <option value='hard'>سخت</option>
+      </select>
+    </div>
+
+    <!-- کنترل لمسی -->
+    <div style='display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap; justify-content:center;'>
+      <div class='h-joystick' aria-label='جوی‌استیک حرکت'>
+        <div class='h-joystick-knob'></div>
+      </div>
+      <div class='h-minion-orders'>
+        <button type='button' class='h-order-btn active' data-order='push'>🚩 حمله</button>
+        <button type='button' class='h-order-btn' data-order='hold'>🛑 دفاع</button>
+        <button type='button' class='h-order-btn' data-order='retreat'>↩ عقب‌نشینی</button>
+      </div>
+    </div>
+
+    <p class='g-menu-foot' id='hok-hero-info'></p>
+  </div>
+
+  <script src='{% static "games/js/hok.js" %}?v=2'></script>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+{% include "core/_please_wait.html" %}
+</body>
+</html>

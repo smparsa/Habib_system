@@ -1,0 +1,70 @@
+{% load static %}<!DOCTYPE html>
+<html lang='fa' dir='rtl'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>بازی مار - HabibHub</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "games/css/games.css" %}?v=1' rel='stylesheet'>
+  <style>
+    .s-stage { position: relative; }
+    #g-snake-canvas {
+      display: block;
+      border: 2px solid rgba(74, 222, 128, 0.35);
+      border-radius: 0.75rem;
+      max-width: min(92vw, 480px);
+      height: auto;
+      box-shadow: 0 0 40px rgba(74, 222, 128, 0.12);
+    }
+  </style>
+</head>
+<body class='g-body'>
+  <a class='g-back' href="{% url 'games:home' %}"><i class='bi bi-arrow-right'></i> منو</a>
+
+  <div class='g-page'>
+    <header style='text-align:center;'>
+      <h1 class='g-page-title t-green'>🐍 بازی مار</h1>
+      <p class='g-page-sub'>← → ↑ ↓ حرکت • P توقف • Enter شروع</p>
+    </header>
+
+    <div class='g-panel-row'>
+      <div class='g-stat'><div class='g-stat-label'>امتیاز</div><div class='g-stat-value c-green' id='g-snake-score'>۰</div></div>
+      <div class='g-stat'><div class='g-stat-label'>رکورد</div><div class='g-stat-value c-yellow' id='g-snake-best'>۰</div></div>
+      <div class='g-stat'><div class='g-stat-label'>طول مار</div><div class='g-stat-value c-cyan' id='g-snake-length'>۱</div></div>
+      <div>
+        <select class='g-select' id='g-snake-difficulty' aria-label='سطح دشواری'>
+          <option value='easy'>آسان</option>
+          <option value='medium' selected>متوسط</option>
+          <option value='hard'>سخت</option>
+        </select>
+      </div>
+    </div>
+
+    <div class='s-stage'>
+      <canvas id='g-snake-canvas' width='480' height='480'></canvas>
+      <div class='g-overlay' id='g-snake-overlay'>
+        <div class='g-overlay-emoji' id='g-snake-overlay-emoji'>🐍</div>
+        <h2 class='g-overlay-title' id='g-snake-overlay-title'>آماده بازی؟</h2>
+        <button class='g-btn g-btn-green' id='g-snake-overlay-btn'>شروع بازی</button>
+        <p class='g-overlay-note' id='g-snake-overlay-note'>یا Enter را بزنید</p>
+      </div>
+    </div>
+
+    <div class='g-mobile-controls'>
+      <button class='g-mc-btn' data-dir='0,-1' aria-label='بالا'>↑</button>
+      <button class='g-mc-btn' data-dir='-1,0' aria-label='چپ'>←</button>
+      <button class='g-mc-btn' data-dir='1,0' aria-label='راست'>→</button>
+      <button class='g-mc-btn' data-dir='0,1' aria-label='پایین'>↓</button>
+    </div>
+
+    <button class='g-btn g-btn-ghost' id='g-snake-restart'>بازی مجدد</button>
+  </div>
+
+  <script src='{% static "games/js/snake.js" %}?v=1'></script>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+{% include "core/_please_wait.html" %}
+</body>
+</html>

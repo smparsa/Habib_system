@@ -1,0 +1,37 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}ترازنامه{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">⚖️ ترازنامه (صورت وضعیت مالی) <span class="sub">سال مالی {{ fy.name }}</span></h1>
+
+  <div class="acc-grid cols-2">
+    <div class="acc-card">
+      <h3>دارایی‌ها</h3>
+      <div class="num" style="font-size:1.1rem;">{{ assets|rial }} ریال</div>
+    </div>
+    <div class="acc-card">
+      <h3>بدهی‌ها و سرمایه</h3>
+      <table class="acc">
+        <tbody>
+          <tr><td>بدهی‌ها</td><td class="num">{{ liabilities|rial }}</td></tr>
+          <tr><td>سرمایه</td><td class="num">{{ equity|rial }}</td></tr>
+          <tr><td><b>جمع</b></td><td class="num"><b>{{ liabilities|rial }} + {{ equity|rial }}</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="acc-card" style="margin-top:1rem;">
+    {% if difference == 0 %}
+      <span class="acc-badge ok">تراز است ✔ — جمع دارایی‌ها با جمع بدهی‌ها و سرمایه برابر است.</span>
+    {% else %}
+      <span class="acc-badge err">عدم تراز: اختلاف {{ difference|rial }} ریال</span>
+      <p class="acc-modal-note">
+        (در فاز نخست، سود/زیان دوره به‌صورت خودکار در سمت سرمایه لحاظ شده است؛
+        اختلاف معمولاً ناشی از اسناد ناقص یا حساب‌های اشخاص است.)
+      </p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% load core_extras %}
+{# جدول مشترک تبلیغ/اسلایدشو: items, kind ('ad' | 'slide') #}
+<div style='overflow-x:auto;'>
+<table style='width:100%;border-collapse:collapse;font-size:0.85rem;'>
+  <thead>
+    <tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+      <th style='padding:0.6rem;text-align:right;'>{% if kind == 'ad' %}لوگو{% else %}تصویر{% endif %}</th>
+      <th style='padding:0.6rem;text-align:right;'>عنوان / توضیح</th>
+      {% if kind == 'ad' %}<th style='padding:0.6rem;text-align:right;white-space:nowrap;'>هدرها</th>{% endif %}
+      <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>هزینه (سکه)</th>
+      <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>وضعیت</th>
+      <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>بازهٔ نمایش</th>
+      <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>اقدام</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr style='border-bottom:1px solid var(--hb-border);'>
+      <td style='padding:0.7rem;'>
+        {% if kind == 'ad' %}
+          {% if it.logo %}<img src='{{ it.logo.url }}' alt='{{ it.title }}' style='width:44px;height:44px;object-fit:contain;border-radius:8px;border:1px solid var(--hb-border);background:#fff;'>{% endif %}
+        {% else %}
+          {% if it.image %}<img src='{{ it.image.url }}' alt='{{ it.title }}' style='width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--hb-border);'>{% else %}<i class='bi bi-collection-play' style='color:var(--hb-gold-300);font-size:1.4rem;'></i>{% endif %}
+        {% endif %}
+      </td>
+      <td style='padding:0.7rem;line-height:1.8;'>
+        <b>{{ it.title }}</b>
+        {% if it.description %}<div style='font-size:0.78rem;color:var(--hb-text-muted);'>{{ it.description|truncatechars:80 }}</div>{% endif %}
+      </td>
+      {% if kind == 'ad' %}
+      <td style='padding:0.7rem;font-size:0.78rem;color:var(--hb-text-secondary);'>
+        {% for h in it.header_modules.all %}{{ h.title }}{% if not forloop.last %}، {% endif %}{% endfor %}
+      </td>
+      {% endif %}
+      <td style='padding:0.7rem;white-space:nowrap;'>{{ it.coins_paid|floatformat }}</td>
+      <td style='padding:0.7rem;white-space:nowrap;'>
+        {% if it.status == 'pending' %}<span class='hb-badge hb-badge-warning'>در انتظار تأیید</span>
+        {% elif it.status == 'rejected' %}<span class='hb-badge hb-badge-danger'>ردشده</span>
+          {% if it.refunded_at %}<div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.25rem;'>بازگشت {{ it.refunded_coins|floatformat }} سکه به کیف پول (کارمزد {{ it.refund_fee_coins|floatformat }})</div>{% endif %}
+        {% elif it.is_expired %}<span class='hb-badge hb-badge-danger'><i class='bi bi-clock-history'></i> منقضی</span>
+        {% elif it.is_live %}<span class='hb-badge hb-badge-success'>در حال پخش</span>
+          {% if it.is_near_expiry %}<div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.25rem;'>۲ روز پایانی</div>{% endif %}
+        {% else %}<span class='hb-badge hb-badge-info'>زمان‌بندی‌شده</span>{% endif %}
+      </td>
+      <td style='padding:0.7rem;white-space:nowrap;direction:ltr;text-align:right;font-size:0.78rem;color:var(--hb-text-secondary);'>
+        {{ it.show_from|jdatetime }} → {{ it.show_until|jdatetime }}
+      </td>
+      <td style='padding:0.7rem;white-space:nowrap;'>
+        <div style='display:flex;gap:0.5rem;align-items:center;'>
+        {% if it.is_expired %}
+          <a class='hb-btn hb-btn-primary hb-btn-sm' href="{% if kind == 'ad' %}{% url 'ads:create' %}{% else %}{% url 'slideshow:create' %}{% endif %}?renew={{ it.pk }}" style='text-decoration:none;'>
+            <i class='bi bi-arrow-repeat'></i> تمدید
+          </a>
+        {% endif %}
+        {% if it.user_can_delete %}
+          <form method='post' action="{% if kind == 'ad' %}{% url 'ads:delete' it.pk %}{% else %}{% url 'slideshow:delete' it.pk %}{% endif %}" style='margin:0;'
+                onsubmit="return confirm('{% if kind == 'ad' %}تبلیغ{% else %}اسلاید{% endif %} «{{ it.title|escapejs }}» برای همیشه حذف شود؟ این کار قابل بازگشت نیست و سکهٔ پرداخت‌شده بازگردانده نمی‌شود.');">{% csrf_token %}
+            <button type='submit' class='hb-btn hb-btn-sm' style='color:#e74c3c;border:1px solid rgba(231,76,60,0.55);background:transparent;'>
+              <i class='bi bi-trash'></i> حذف
+            </button>
+          </form>
+        {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>

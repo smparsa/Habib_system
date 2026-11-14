@@ -1,0 +1,80 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}انواع تیکت — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-tags'></i> انواع تیکت</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    «نوع تیکت» را ادمین تعریف می‌کند (مثلاً درخواست کالا/خدمات، ارسال متن تبلیغاتی، ارتباط با ادمین و ...)؛
+    کاربر هنگام ارسال تیکت، نوع را از همین فهرست انتخاب می‌کند. ({{ active_count }} نوع فعال)
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست انواع تیکت ({{ total }} مورد)</div>
+      <a href="{% url 'adminpanel:ticket_type_add' %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-plus-lg'></i> افزودن نوع تیکت</a>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:ticket_types_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:260px;' placeholder='جستجو در نام / کد…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      <select name='active' class='hb-form-control hb-form-select' style='max-width:150px;' onchange='this.form.submit()'>
+        <option value=''>وضعیت: همه</option>
+        <option value='1' {% if active == '1' %}selected{% endif %}>فعال</option>
+        <option value='0' {% if active == '0' %}selected{% endif %}>غیرفعال</option>
+      </select>
+      {% if q or active %}
+      <a href="{% url 'adminpanel:ticket_types_list' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلترها</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>ترتیب</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>آیکون</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نام</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>تیکت‌ها</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);'>{{ row.order }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><i class='bi {{ row.icon }}' style='color:var(--hb-gold-300);font-size:1.1rem;'></i></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.name_fa }}</strong></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><span dir='ltr' style='font-family:monospace;font-size:0.8rem;color:var(--hb-info);'>{{ row.code }}</span></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.ticket_count }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% else %}<span class='hb-badge hb-badge-danger'>غیرفعال</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              <a href="{% url 'adminpanel:ticket_type_edit' row.pk %}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              <form method='post' action="{% url 'adminpanel:ticket_type_toggle' row.pk %}" style='margin:0;'>
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title="{% if row.is_active %}غیرفعال‌کردن (حذف از فهرست انتخاب کاربران){% else %}فعال‌کردن{% endif %}">
+                  {% if row.is_active %}<i class='bi bi-pause-circle'></i> غیرفعال{% else %}<i class='bi bi-play-circle'></i> فعال{% endif %}
+                </button>
+              </form>
+              <form method='post' action="{% url 'adminpanel:ticket_type_delete' row.pk %}" style='margin:0;' onsubmit="return confirm('«{{ row.name_fa }}» برای همیشه حذف شود؟ (برای توقف موقت، غیرفعال کنید)');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title='حذف کامل'><i class='bi bi-trash' style='color:#c0392b;'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>نوع تیکتی یافت نشد.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

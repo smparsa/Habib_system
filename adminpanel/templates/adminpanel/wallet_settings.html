@@ -1,0 +1,149 @@
+{% extends "adminpanel/base.html" %}
+{% load static %}
+{% load core_extras %}
+{% block title %}تنظیمات سکه و کیف پول — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-wallet2'></i> تنظیمات سکه و کیف پول</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    نرخ هر سکه، فعال/غیرفعال‌کردن خرید/فروش/انتقال، حداقل و حداکثر سکه و اطلاعات بانکی مبادلات.
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:900px;'>
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-graph-up'></i> تغییر نرخ هر سکه</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:wallet_settings' %}">
+      {% csrf_token %}<input type='hidden' name='submit' value='rate'>
+      <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;'>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>نرخ جدید (ریال)</label>
+          <input type='number' name='coin_value_rial' step='0.01' min='0.01' required value='{{ setting.coin_value_rial }}' class='hb-form-control' dir='ltr'>
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>توضیح تغییر (اختیاری)</label>
+          <input type='text' name='rate_note' value='{{ rate_note|default:'' }}' class='hb-form-control' placeholder='مثال: به‌روزرسانی ماهانه'>
+        </div>
+      </div>
+      <small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-bottom:0.75rem;'>
+        نرخ فعلی: <b style='color:var(--hb-gold-300);'>{{ setting.coin_value_rial }}</b> ریال. تغییر نرخ در تاریخچه ثبت می‌شود.
+      </small>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-check-lg'></i> ثبت نرخ</button>
+    </form>
+  </div>
+
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-sliders'></i> تنظیمات عمومی کیف پول</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:wallet_settings' %}" enctype='multipart/form-data'>
+      {% csrf_token %}<input type='hidden' name='submit' value='settings'>
+      {% if form.non_field_errors %}<div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>{% endif %}
+
+      <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;'>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.coin_value_rial.label }}</label>
+          {{ form.coin_value_rial }}
+          {% if form.coin_value_rial.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.coin_value_rial.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.coin_value_point.label }}</label>
+          {{ form.coin_value_point }}
+          {% if form.coin_value_point.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.coin_value_point.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.bank_name.label }}</label>
+          {{ form.bank_name }}
+        </div>
+        <div class='hb-form-group' style='display:flex;align-items:flex-end;gap:0.4rem;'>
+          <div style='flex:1;'>
+            <label class='hb-form-label'>{{ form.receiving_card_number.label }}</label>
+            {{ form.receiving_card_number }}
+          </div>
+          {% if setting.receiving_card_number %}
+          <button type='button' class='hb-btn hb-btn-outline hb-btn-sm' onclick="navigator.clipboard.writeText('{{ setting.receiving_card_number }}')" title='کپی شماره کارت'><i class='bi bi-clipboard'></i></button>
+          {% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.receiving_iban.label }}</label>
+          {{ form.receiving_iban }}
+          {% if form.receiving_iban.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.receiving_iban.help_text }}</small>{% endif %}
+        </div>
+      </div>
+
+      <!-- تصویر/لوگوی سکه -->
+      <div class='hb-form-group' style='margin-bottom:0.75rem;'>
+        <label class='hb-form-label'>{{ form.coin_image.label }}</label>
+        <div style='display:flex;gap:1rem;align-items:center;flex-wrap:wrap;'>
+          {% if setting.coin_image %}
+          <img src='{{ setting.coin_image.url }}' alt='تصویر سکه' style='width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--hb-gold-400);box-shadow:0 0 14px rgba(201,162,39,0.25);'>
+          {% else %}
+          <img src="{% static 'core/assets/coin.jpg' %}" alt='تصویر پیش‌فرض سکه' style='width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--hb-border);opacity:0.7;'>
+          {% endif %}
+          <div style='flex:1;min-width:220px;'>
+            {{ form.coin_image }}
+            {% if form.coin_image.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.coin_image.help_text }}</small>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div style='display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:0.75rem;'>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.min_buy_coins.label }}</label>
+          {{ form.min_buy_coins }}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.max_buy_coins.label }}</label>
+          {{ form.max_buy_coins }}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.min_sell_coins.label }}</label>
+          {{ form.min_sell_coins }}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.max_sell_coins.label }}</label>
+          {{ form.max_sell_coins }}
+        </div>
+      </div>
+
+      <div style='display:flex;gap:1.25rem;flex-wrap:wrap;margin-bottom:1rem;'>
+        <label style='display:flex;align-items:center;gap:0.4rem;font-size:0.88rem;cursor:pointer;'>{{ form.buy_enabled }} {{ form.buy_enabled.label }}</label>
+        <label style='display:flex;align-items:center;gap:0.4rem;font-size:0.88rem;cursor:pointer;'>{{ form.sell_enabled }} {{ form.sell_enabled.label }}</label>
+        <label style='display:flex;align-items:center;gap:0.4rem;font-size:0.88rem;cursor:pointer;'>{{ form.transfer_enabled }} {{ form.transfer_enabled.label }}</label>
+      </div>
+
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-save'></i> ذخیره تنظیمات</button>
+    </form>
+  </div>
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-clock-history'></i> تاریخچهٔ تغییر نرخ (آخرین ۲۰ مورد)</div>
+    </div>
+    {% if history %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نرخ (ریال)</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>تغییردهنده</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>توضیح</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+      </tr></thead>
+      <tbody>
+        {% for h in history %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><b style='color:var(--hb-gold-300);'>{{ h.value_rial }}</b></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{% if h.changed_by %}{{ h.changed_by.mobile_number }}{% else %}—{% endif %}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ h.note|default:'—' }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ h.created_at|jdatetime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>هنوز تغییری در نرخ ثبت نشده است.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

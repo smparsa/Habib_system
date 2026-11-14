@@ -1,0 +1,77 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}محل‌های تبلیغ فوتر — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-megaphone'></i> محل‌های تبلیغ فوتر</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    هر رکورد = یک «محل» که نوار تبلیغات در آن پخش می‌شود. از اینجا
+    فعال/غیرفعال می‌کنید و ترتیب چک‌باکس‌های کاربر را مشخص می‌کنید.
+    کدهای یکتا (مثلاً dashboard / wallet / accounting / tickets) در فرم ثبت تبلیغ کاربر نمایش داده می‌شوند.
+  </p>
+</div>  <div style='padding:0 2rem 2rem;'>
+    <div style='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;'>
+      <a href="{% url 'adminpanel:header_placement_add' %}" class='hb-btn hb-btn-primary hb-btn-sm' style='text-decoration:none;'>
+        <i class='bi bi-plus-lg'></i> افزودن محل تبلیغ هدر
+      </a>
+      <a href="{% url 'adminpanel:header_placements_list' %}" class='hb-btn {% if not active %}hb-btn-outline hb-btn-sm{% else %}hb-btn-dark hb-btn-sm{% endif %}'>همه</a>
+      <a href="{% url 'adminpanel:header_placements_list' %}?active=1" class='hb-btn {% if active == '1' %}hb-btn-outline hb-btn-sm{% else %}hb-btn-dark hb-btn-sm{% endif %}'>فعال ({{ active_count }})</a>
+      <a href="{% url 'adminpanel:header_placements_list' %}?active=0" class='hb-btn {% if active == '0' %}hb-btn-outline hb-btn-sm{% else %}hb-btn-dark hb-btn-sm{% endif %}'>غیرفعال</a>
+      <form method='get' class='hb-form-group' style='margin:0;display:inline;flex:1;min-width:220px;'>
+        <input type='search' name='q' value='{{ q }}' class='hb-form-control hb-form-control-sm' placeholder='جستجو (کد / عنوان / توضیح)…'>
+      </form>
+    </div>
+
+  <div class='hb-card'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.85rem;'>
+      <thead>
+        <tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+          <th style='padding:0.6rem;text-align:right;'>کد</th>
+          <th style='padding:0.6rem;text-align:right;'>عنوان / توضیح</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>ترتیب</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>وضعیت</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>تعداد تبلیغ</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>آخرین تغییر</th>
+          <th style='padding:0.6rem;text-align:left;white-space:nowrap;'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.7rem;font-family:var(--hb-font-mono);font-size:0.78rem;color:var(--hb-text-secondary);'>{{ row.code }}</td>
+          <td style='padding:0.7rem;line-height:1.8;'>
+            <b>{{ row.title }}</b>
+            {% if row.description %}<div style='font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.description }}</div>{% endif %}
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;font-family:var(--hb-font-mono);'>{{ row.sort_order }}</td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            {% if row.is_active %}<span class='hb-badge hb-badge-success'><i class='bi bi-check-lg'></i> فعال</span>
+            {% else %}<span class='hb-badge hb-badge-warning'><i class='bi bi-pause-circle'></i> غیرفعال</span>{% endif %}
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;font-family:var(--hb-font-mono);'>{{ row.ad_count }}</td>
+          <td style='padding:0.7rem;white-space:nowrap;font-size:0.78rem;color:var(--hb-text-secondary);'>{{ row.updated_at|date:"Y-m-d H:i" }}</td>
+          <td style='padding:0.7rem;text-align:left;white-space:nowrap;'>
+            <a href="{% url 'adminpanel:header_placement_edit' row.pk %}" class='hb-btn hb-btn-dark hb-btn-sm' style='text-decoration:none;' title='ویرایش'><i class='bi bi-pencil-square'></i></a>
+            <form method='post' action="{% url 'adminpanel:header_placement_toggle' row.pk %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' title='{% if row.is_active %}غیرفعال{% else %}فعال{% endif %}'>
+                <i class='bi {% if row.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}'></i>
+              </button>
+            </form>
+            <form method='post' action="{% url 'adminpanel:header_placement_delete' row.pk %}" style='display:inline;margin:0;'
+                  onsubmit="return confirm('این محل تبلیغ هدر حذف شود؟');"
+                  {% if row.ad_count > 0 %}style='opacity:0.6;'{% endif %}>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);' title='حذف'>
+                <i class='bi bi-trash'></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan='7' style='padding:1.2rem;color:var(--hb-text-muted);'>هنوز محل تبلیغ هدری ثبت نشده است.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

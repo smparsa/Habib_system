@@ -1,0 +1,126 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}ویرایش تبلیغ — پنل مدیریت{% endblock %}
+{% block content %}
+<!-- استایل تقویم شمسی — همان انتخابگرِ «اخبار فوری»؛ فعال‌سازی با initSolarDatepicker در app.js -->
+<style>
+  .hb-shamsi-picker{position:relative;}
+  .hb-shamsi-field{position:relative;}
+  .hb-shamsi-field>i{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--hb-text-muted);pointer-events:none;}
+  .hb-shamsi-field .hb-shamsi-input{padding-right:2.3rem;}
+  .hb-shamsi-popup{position:absolute;top:calc(100% + 4px);right:0;width:264px;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:12px;padding:0.75rem;box-shadow:0 12px 32px rgba(0,0,0,.45);z-index:60;}
+  .hb-shamsi-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;}
+  .hb-shamsi-nav button{background:none;border:none;color:var(--hb-gold-400);font-size:1.2rem;cursor:pointer;line-height:1;padding:0 0.4rem;}
+  .hb-shamsi-quick{display:flex;gap:0.35rem;margin-bottom:0.55rem;}
+  .hb-shamsi-quick select{flex:1;min-width:0;background:var(--hb-navy-800);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.3rem 0.45rem;font-size:0.8rem;cursor:pointer;}
+  .hb-shamsi-quick select:hover{border-color:var(--hb-gold-400);}
+  .hb-shamsi-quick select:focus{outline:none;border-color:var(--hb-gold-400);box-shadow:0 0 0 2px rgba(201,162,39,0.18);}
+  .hb-shamsi-title{font-size:0.85rem;color:var(--hb-text-primary);font-weight:600;}
+  .hb-shamsi-dow,.hb-shamsi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+  .hb-shamsi-dow span{font-size:0.7rem;color:var(--hb-text-muted);padding:0.2rem 0;}
+  .hb-shamsi-grid span{padding:0.35rem 0;border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--hb-text-secondary);}
+  .hb-shamsi-grid span:hover{background:rgba(201,162,39,0.15);}
+  .hb-shamsi-grid span.off{visibility:hidden;cursor:default;}
+  .hb-shamsi-grid span.day.sel{background:var(--hb-gold-400);color:#0b101d;font-weight:700;}
+  .hb-shamsi-grid span.day.today{outline:1px solid var(--hb-gold-400);}
+  .hb-shamsi-info{margin-top:0.4rem;font-size:0.8rem;color:var(--hb-text-secondary);padding:0.35rem 0.7rem;background:rgba(201,162,39,0.08);border-radius:8px;display:none;}
+</style>
+
+<div class='hb-page-header'>
+  <h1><i class='bi bi-megaphone'></i> ویرایش تبلیغ</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:ads_list' %}" style='color:var(--hb-gold-300);'>تبلیغات</a>
+    › ویرایش
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:760px;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li>لوگو و متن تبلیغ را کاربر بارگذاری کرده و <b>تاریخ شروع و پایان را خودِ کاربر تعیین کرده</b> و هزینهٔ آن طبق تعرفهٔ «هزینه‌های سکهٔ ماژول‌ها» از کیف پول او کسر شده است.</li>
+      <li>هزینه بر اساس <b>تعداد روزها × تعرفهٔ ۲۴ ساعته</b> محاسبه می‌شود؛ ساعت شروع و پایان <b>یکی</b> است و همان ساعت برای هر دو به‌کار می‌رود. اینجا می‌توانید بازه را بازبینی کنید؛ تغییر بازه، هزینهٔ پرداخت‌شده را تغییر نمی‌دهد.</li>
+      <li>تبلیغِ فعال فقط از «شروع نمایش» تا «پایان نمایش» در نوار متحرک پایین داشبورد پخش می‌شود.</li>
+      <li><b>سرعت:</b> مدت یک دور کامل حرکت نوار بر حسب ثانیه (۵ تا ۱۲۰؛ کمتر = سریع‌تر). با چند تبلیغِ هم‌زمانِ در حال پخش، کمترین سرعت بین آن‌ها روی نوار اعمال می‌شود.</li>
+    </ul>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' enctype='multipart/form-data' novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        {% if field.name == 'start_date' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>{% endif %}
+          <label class='hb-form-label'>تاریخ شروع نمایش (تاریخ شمسی) *</label>
+          <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='max-width:320px;'>
+            <div class='hb-shamsi-field'>
+              <i class='bi bi-calendar3'></i>
+              <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl' value='{{ field.value|default_if_none:"" }}'>
+              <input type='hidden' name='start_date' data-shamsi-gregorian value='{{ field.value|default_if_none:"" }}'>
+            </div>
+            <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+            <div class='hb-shamsi-info' data-shamsi-info></div>
+          </div>
+        </div>
+        {% elif field.name == 'end_date' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>{% endif %}
+          <label class='hb-form-label'>تاریخ پایان نمایش (تاریخ شمسی) *</label>
+          <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='max-width:320px;'>
+            <div class='hb-shamsi-field'>
+              <i class='bi bi-calendar3'></i>
+              <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl' value='{{ field.value|default_if_none:"" }}'>
+              <input type='hidden' name='end_date' data-shamsi-gregorian value='{{ field.value|default_if_none:"" }}'>
+            </div>
+            <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+            <div class='hb-shamsi-info' data-shamsi-info></div>
+          </div>
+        </div>
+        {% elif field.name == 'show_from' or field.name == 'show_until' or field.name == 'show_from_date' or field.name == 'show_until_date' or field.name == 'show_from_time' or field.name == 'show_until_time' %}
+          {# بازهٔ نمایش از تاریخ‌های بالا + ساعتِ واحد ساخته می‌شود؛ فیلدهای کمکی قدیمی حذف شده‌اند. #}
+        {% elif field.name == 'header_modules' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>{% endif %}
+          <label class='hb-form-label'>هدر(های) نوار تبلیغ — محل(های) پخش *</label>
+          <div style='display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;'>
+            {% for choice in form.header_modules.field.queryset %}
+            <label style='display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--hb-text-primary);cursor:pointer;background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:8px;padding:0.55rem 0.75rem;'>
+              <input type='checkbox' name='header_modules' value='{{ choice.pk }}'
+                {% if choice.pk in form.header_modules.value %}checked{% endif %}>
+              <span><b>{{ choice.title }}</b> <small style='color:var(--hb-text-muted);'>({{ choice.code }}{% if not choice.is_active %} — پذیرش تبلیغ غیرفعال{% endif %})</small></span>
+            </label>
+            {% endfor %}
+          </div>
+          <small style='display:block;margin-top:0.4rem;color:var(--hb-text-muted);font-size:0.75rem;'>{{ form.header_modules.help_text }}</small>
+        </div>
+        {% else %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.name == 'logo' and item.logo %}
+            <div style='margin-top:0.5rem;'>
+              <img src='{{ item.logo.url }}' alt='لوگوی فعلی' style='width:64px;height:64px;object-fit:contain;border-radius:8px;border:1px solid var(--hb-border);background:#fff;'>
+            </div>
+          {% endif %}
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>{{ field.help_text }}</small>
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+          <i class='bi bi-check-lg'></i> ذخیرهٔ تغییرات
+        </button>
+        <a href="{% url 'adminpanel:ads_list' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}دفتر {{ full_name }}{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📒 دفتر شخص
+    <span class="sub">{{ full_name }} · کد ملی {{ national_id|fa_digits }} · سال مالی {{ fy.name }}</span>
+  </h1>
+
+  <div class="acc-card">
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead>
+          <tr>
+            <th>تاریخ</th>
+            <th>سند</th>
+            <th>حساب</th>
+            <th>شرح</th>
+            <th>بدهکار (ریال)</th>
+            <th>بستانکار (ریال)</th>
+            <th>مانده (ریال)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="num">{{ r.date_fa|fa_digits }}</td>
+              <td class="num">{{ r.number|fa_digits }}</td>
+              <td>{{ r.account.code|fa_digits }} - {{ r.account.name }}</td>
+              <td style="white-space:normal;">{{ r.description }}</td>
+              <td class="num">{% if r.debit %}{{ r.debit|rial }}{% else %}—{% endif %}</td>
+              <td class="num">{% if r.credit %}{{ r.credit|rial }}{% else %}—{% endif %}</td>
+              <td class="num {{ r.balance|amount_class }}">{{ r.balance|rial }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7">گردشی برای این شخص ثبت نشده است. برای ثبت، در سند جدید ستون «شخص» را روی همین فرد بگذارید.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if rows %}
+          <tfoot>
+            <tr>
+              <td colspan="6">ماندهٔ نهایی (بدهکار − بستانکار)</td>
+              <td class="num {{ balance|amount_class }}">{{ balance|rial }}</td>
+            </tr>
+          </tfoot>
+        {% endif %}
+      </table>
+    </div>
+    <p style="margin-top:.75rem;">
+      <a class="acc-btn outline sm" href="{% url 'accounting:persons' %}">⬅ بازگشت به فهرست اشخاص</a>
+      <a class="acc-btn outline sm" href="{% url 'accounting:entry_create' %}">➕ سند جدید</a>
+    </p>
+  </div>
+{% endblock %}

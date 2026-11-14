@@ -1,0 +1,919 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}{% if editing_entry %}ویرایش سند {{ editing_entry.number|fa_digits }}{% else %}سند جدید{% endif %}{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📝 {% if editing_entry %}ویرایش سند{% else %}سند جدید{% endif %}
+    <span class="sub" id="suggestedNumber">شمارهٔ پیشنهادی: <b style="font-weight:800;font-size:1.05em;">{{ next_number|fa_digits }}</b> · تاریخ: <span id="todayFa">{% if editing_entry %}{{ edit_date_fa|fa_digits }}{% else %}{{ today_fa|fa_digits }}{% endif %}</span></span>
+  </h1>
+
+  <!-- نوار ناوبری اسناد: سند قبل/بعد، انتخاب سریع و ویرایش پیش‌نویس‌ها -->
+  <div class="acc-card" style="margin-bottom:1rem;padding:.6rem 1rem;">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+      <a class="acc-btn sm outline {% if not prev_entry %}is-disabled{% endif %}" {% if prev_entry %}href="?edit={{ prev_entry.pk }}#entryForm" title="سند قبلی{% if prev_entry.status != 'draft' %} — فقط نمایش (پیش‌نویس نیست){% endif %}"{% else %}aria-disabled="true" style="opacity:.45;pointer-events:none;"{% endif %}>→ سند قبلی</a>
+      <a class="acc-btn sm outline {% if not next_entry %}is-disabled{% endif %}" {% if next_entry %}href="?edit={{ next_entry.pk }}#entryForm" title="سند بعدی{% if next_entry.status != 'draft' %} — فقط نمایش (پیش‌نویس نیست){% endif %}"{% else %}aria-disabled="true" style="opacity:.45;pointer-events:none;"{% endif %}>سند بعدی ←</a>
+      <span class="sub" style="color:var(--acc-muted);margin-inline-start:.25rem;">
+        {% if editing_entry %}در حال کار روی سند {{ editing_entry.number|fa_digits }}{% else %}سند جدید — شمارهٔ پیشنهادی {{ next_number|fa_digits }}{% endif %}
+        · از {{ total_entries|fa_digits }} سند سال مالی
+      </span>
+      {% if latest_entry %}<a class="acc-btn sm outline" href="?edit={{ latest_entry.pk }}#entryForm" title="آخرین سند ثبت‌شده در سال مالی">⏭ آخرین سند</a>{% endif %}
+      {% if editing_entry %}<a class="acc-btn sm" href="{% url 'accounting:entry_create' %}">＋ سند جدید</a>{% endif %}
+    </div>
+    <details style="margin-top:.6rem;" {% if editing_entry %}open{% endif %}>
+      <summary style="cursor:pointer;font-weight:700;">⤴️ انتخاب سریع سند و ویرایش</summary>
+      <div class="acc-table-wrap" style="margin-top:.75rem;">
+        <table class="acc">
+          <thead>
+            <tr>
+              <th style="width:90px;">شماره</th>
+              <th style="width:110px;">تاریخ</th>
+              <th>شرح</th>
+              <th style="width:120px;">مبلغ (ریال)</th>
+              <th style="width:110px;">عملیات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in recent_entries %}
+              <tr {% if editing_entry and editing_entry.pk == e.pk %}style="background:rgba(15,76,129,0.08);font-weight:700;"{% endif %}>
+                <td class="num">{{ e.number|fa_digits }}</td>
+                <td class="num">{{ e.date|jdate|fa_digits }}</td>
+                <td style="white-space:normal;">{{ e.description|default:'—' }}</td>
+                <td class="num">{{ e.total_debit|rial }}</td>
+                <td>
+                  <a class="acc-btn sm outline" href="?edit={{ e.pk }}#entryForm">✏️ ویرایش</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5">سند پیش‌نویسی برای ویرایش وجود ندارد.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:.8rem;color:var(--acc-muted);margin:.5rem 0 0;">
+        فقط سندهای <b>پیش‌نویس</b> قابل ویرایش‌اند؛ سندِ ثبت‌شده از صفحهٔ خودش قابل لغو است و سپس می‌توان سند اصلاحی زد.
+        {% if editing_entry %}<a href="{% url 'accounting:entry_create' %}">← انصراف از ویرایش و سند جدید</a>{% endif %}
+      </p>
+    </details>
+  </div>
+
+  <div class="acc-card" id="entryForm">
+    <form method="post" id="entryFormTag" novalidate>
+      {% csrf_token %}
+      {% if editing_entry %}<input type="hidden" name="edit_pk" value="{{ editing_entry.pk }}">{% endif %}
+      <!-- چک‌های افزوده‌شده به جدول؛ در لحظهٔ ثبت/ذخیرهٔ سند ذخیره می‌شوند -->
+      <input type="hidden" name="pending_cheques" id="pendingChequesData" value="[]">
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;margin-bottom:1rem;">
+        <div class="acc-field" style="min-width:220px;margin:0;">
+          <label for="id_date">تاریخ سند (شمسی)</label>
+          <div style="display:flex;gap:.25rem;">
+            <input class="acc-input" type="text" id="id_date" name="date" value="{% if editing_entry %}{{ edit_date_fa|fa_digits }}{% else %}{{ today_fa|fa_digits }}{% endif %}" dir="ltr"
+                   placeholder="۱۴۰۵/۰۷/۰۲" autocomplete="off">
+            <button class="acc-btn outline" type="button" id="calToggle" title="انتخاب از تقویم شمسی">📅</button>
+          </div>
+          <!-- تقویم شمسی -->
+          <div id="jalaliCalendar" style="display:none;position:absolute;z-index:50;background:var(--acc-panel);border:1px solid var(--acc-line);border-radius:var(--acc-radius);padding:.75rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);width:290px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+              <button type="button" class="acc-btn sm outline" id="calPrevMonth">‹</button>
+              <b id="calTitle"></b>
+              <button type="button" class="acc-btn sm outline" id="calNextMonth">›</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:.75rem;color:var(--acc-muted);margin-bottom:.25rem;">
+              <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+            </div>
+            <div id="calDays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;"></div>
+          </div>
+        </div>
+        <div class="acc-field" style="flex:1;min-width:240px;margin:0;">
+          <label for="id_desc">شرح سند</label>
+          <input class="acc-input" type="text" id="id_desc" name="description" value="{{ editing_entry.description|default:'' }}" placeholder="شرح کلی سند...">
+        </div>
+      </div>
+
+      <div class="acc-table-wrap">
+        <table class="acc" id="linesTable">
+          <thead>
+            <tr>
+              <th style="width:56px;">ردیف</th>
+              <th style="min-width:220px;">نام حساب / نام شخص</th>
+              <th style="width:120px;">کد حساب / کد ملی</th>
+              <th style="width:150px;">مبلغ بدهکار (ریال)</th>
+              <th style="width:150px;">مبلغ بستانکار (ریال)</th>
+              <th>توضیحات</th>
+            </tr>
+          </thead>
+          <tbody id="linesBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">جمع</td>
+              <td class="num" id="sumDebit">0</td>
+              <td class="num" id="sumCredit">0</td>
+              <td id="balanceState" class="num"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- چک‌های در انتظار ذخیره (فقط نمایش؛ با حذف ردیف از جدول بالا هم حذف می‌شوند) -->
+      <div id="pendingChequesWrap" style="display:none;margin-top:1rem;">
+        <b style="font-size:.9rem;">🧾 چک‌های افزوده‌شده به این سند (در انتظار ثبت/ذخیره)</b>
+        <div class="acc-table-wrap" style="margin-top:.5rem;">
+          <table class="acc" id="pendingChequesTable">
+            <thead>
+              <tr>
+                <th style="width:56px;">ردیف</th>
+                <th>نوع</th>
+                <th>شماره چک</th>
+                <th>مبلغ (ریال)</th>
+                <th>سررسید</th>
+                <th>صاحب چک</th>
+                <th style="width:70px;">حذف</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap;">
+        <button class="acc-btn outline" type="button" onclick="addLine()">➕ افزودن ردیف</button>
+        <button class="acc-btn outline" type="submit" name="action" value="draft">💾 ذخیره پیش‌نویس</button>
+        <button class="acc-btn success" type="submit" name="action" value="post">✔ ثبت سند</button>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- پنل ثبت چک (جایگزین فرم جداگانهٔ صفحهٔ گزارش چک‌ها):          -->
+      <!-- چک دریافتی/پرداختی + صاحب چک از فهرست اشخاص؛ پس از ثبت،     -->
+      <!-- سندِ اسناد دریافتنی/پرداختنی با ردیفِ شخصِ صاحب چک صادر می‌شود. -->
+      <!-- ============================================================ -->
+      <details id="chequePanel" style="margin-top:1rem;border:1px solid var(--acc-line);border-radius:var(--acc-radius);padding:.75rem 1rem;background:rgba(15,76,129,0.03);">
+        <summary style="cursor:pointer;font-weight:700;">🧾 ثبت چک (دریافتی / پرداختی) — افزودن ردیفِ چک با صاحب چک به سند</summary>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin-top:.75rem;">
+          <div class="acc-field" style="margin:0;">
+            <label for="ch_direction">نوع چک</label>
+            <select class="acc-input" id="ch_direction" name="ch_direction">
+              <option value="received">دریافتی (از صاحب چک)</option>
+              <option value="paid">پرداختی (به صاحب چک)</option>
+            </select>
+          </div>
+          <div class="acc-field" style="margin:0;">
+            <label for="ch_number">شماره چک</label>
+            <input class="acc-input" id="ch_number" name="ch_number" dir="ltr" autocomplete="off">
+          </div>
+          <div class="acc-field" style="margin:0;">
+            <label for="ch_amount">مبلغ (ریال)</label>
+            <input class="acc-input num" id="ch_amount" name="ch_amount" dir="ltr" inputmode="numeric"
+                   placeholder="0" oninput="fmtAmount(this)" autocomplete="off">
+          </div>
+          <div class="acc-field" style="margin:0;position:relative;">
+            <label for="ch_due">سررسید (شمسی)</label>
+            <div style="display:flex;gap:.25rem;">
+              <input class="acc-input" id="ch_due" name="ch_due" dir="ltr" placeholder="۱۴۰۵/۰۸/۱۵" autocomplete="off">
+              <button class="acc-btn outline" type="button" id="chDueToggle" title="انتخاب از تقویم شمسی">📅</button>
+            </div>
+            <!-- تقویم شمسی سررسید چک -->
+            <div id="chDueCalendar" style="display:none;position:absolute;z-index:50;background:var(--acc-panel);border:1px solid var(--acc-line);border-radius:var(--acc-radius);padding:.75rem;box-shadow:0 8px 24px rgba(0,0,0,0.15);width:290px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+                <button type="button" class="acc-btn sm outline" id="chDuePrev">‹</button>
+                <b id="chDueTitle"></b>
+                <button type="button" class="acc-btn sm outline" id="chDueNext">›</button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:.75rem;color:var(--acc-muted);margin-bottom:.25rem;">
+                <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+              </div>
+              <div id="chDueDays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;"></div>
+            </div>
+          </div>
+          <div class="acc-field" style="margin:0;">
+            <label for="ch_sayad">شناسه صیاد (اختیاری)</label>
+            <input class="acc-input" id="ch_sayad" name="ch_sayad" dir="ltr" autocomplete="off">
+          </div>
+          <div class="acc-field" style="margin:0;" id="chDepositWrap">
+            <label for="ch_deposit">حساب وصول (بانک شرکت) — برای چک دریافتی</label>
+            <select class="acc-input" id="ch_deposit" name="ch_deposit">
+              <option value="">پیش‌فرض: بانک (110102)</option>
+              {% for a in deposit_accounts %}
+                <option value="{{ a.id }}">{{ a.code }} - {{ a.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="acc-field" style="margin:0;">
+            <label for="ch_bank">بانک / شعبه (اختیاری)</label>
+            <input class="acc-input" id="ch_bank" name="ch_bank" autocomplete="off">
+          </div>
+          <div class="acc-field" style="margin:0;min-width:240px;">
+            <label for="ch_person">صاحب چک (شخص)</label>
+            <input class="acc-input" id="ch_person" autocomplete="off"
+                   placeholder="جستجو: نام / فامیل / کد ملی...">
+            <input type="hidden" id="ch_person_id" name="ch_person_id">
+            <div class="acc-combo-list" id="chPersonList" style="display:none;"></div>
+          </div>
+          <div class="acc-field" style="margin:0;grid-column:span 2;">
+            <label for="ch_desc">شرح (اختیاری)</label>
+            <input class="acc-input" id="ch_desc" name="ch_desc">
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap;align-items:center;">
+          <button class="acc-btn" type="button" id="chAddRow">➕ افزودن چک به ردیف‌های سند</button>
+          <span class="sub" style="color:var(--acc-muted);">چک در جدول بالا نشسته و همراه بقیهٔ ردیف‌ها با «ثبت سند»/«ذخیرهٔ پیش‌نویس» ذخیره می‌شود — بلافاصله چیزی ثبت نمی‌شود. چک دریافتی: بدهکار «اسناد دریافتنی» / بستانکار حساب صاحب چک — چک پرداختی برعکس؛ ردیف شخص، گردش «دفتر شخص» را هم ثبت می‌کند.</span>
+        </div>
+      </details>
+    </form>
+    <p class="acc-modal-note" style="margin-top:.5rem;">
+      هر ردیف: <b>نام حساب یا نام شخص</b> + <b>کد حساب یا کد ملی</b> (جفتِ هماهنگ؛ تایپ در یکی، دیگری را کامل می‌کند).
+      در جستجو، حساب‌ها بر اساس <b>نام گروه والد</b> هم یافت می‌شوند (مثلاً تایپ «بانک» همهٔ حساب‌های زیرمجموعهٔ بانک را می‌آورد)
+      و اشخاص با <b>نام فامیل</b> هم جستجو می‌شوند. انتخاب حساب یا شخص داخل خود کادر می‌نشیند؛ اگر هر دو را انتخاب کنید، برچسبِ انتخابِ دیگر زیر کادر دیده می‌شود. گردش در «دفتر حساب» و «دفتر شخص» ثبت می‌شود.
+      چک‌های پنل «ثبت چک» به‌صورت ردیف به همین جدول اضافه می‌شوند و همراه بقیهٔ ردیف‌ها با «ثبت سند» ذخیره می‌شوند.
+      سندِ تراز (بدهکار = بستانکار) قابل ثبت است.
+    </p>
+  </div>
+
+  {% if error_focus %}{{ error_focus|json_script:"errorFocusData" }}{% endif %}
+  {% if form_data %}{{ form_data|json_script:"formData" }}{% endif %}
+
+  <script>
+    const ACCOUNTS = [
+      {% for a in leaf_accounts %}{id: {{ a.id }}, code: "{{ a.code }}", name: "{{ a.name|escapejs }}", group: "{{ a.parent_name|escapejs }}", search: "{{ a.code }} {{ a.name|escapejs }} {{ a.parent_name|escapejs }}"},{% endfor %}
+    ];
+    const PERSONS = [
+      {% for p in persons %}{id: "{{ p.id }}", name: "{{ p.name|escapejs }}", nid: "{{ p.nid|escapejs }}", family: "{{ p.family|escapejs }}", search: "{{ p.name|escapejs }} {{ p.nid|escapejs }} {{ p.family|escapejs }}"},{% endfor %}
+    ];
+    // سندهای قبلی برای ویرایش از همین صفحه
+    const EDIT_LINES = [
+      {% for ln in edit_lines %}{account: {{ ln.account_id }}, person: "{{ ln.person_id }}", personName: "{{ ln.person_name|escapejs }}", personNid: "{{ ln.person_nid|escapejs }}", debit: "{{ ln.debit }}", credit: "{{ ln.credit }}", desc: "{{ ln.description|escapejs }}"},{% endfor %}
+    ];
+    // چک‌های افزوده‌شده به جدول سند (در انتظار ذخیره) — با submit فرم به سرور می‌رود
+    const PENDING_CHEQUES = [];
+    // فیلد مقصرِ خطای ثبت (سند یا چک) و مقادیر فرم — از عنصرهای JSON زیر خوانده می‌شوند
+    const ERROR_FOCUS = (document.getElementById("errorFocusData")
+      ? JSON.parse(document.getElementById("errorFocusData").textContent) : null);
+    const FORM_DATA = (document.getElementById("formData")
+      ? JSON.parse(document.getElementById("formData").textContent) : null);
+
+    // ---------- جستجوی تایپی: نرمال‌سازی فارسی + امتیازدهی ----------
+    function normFa(s) {
+      return String(s || '')
+        .replace(/[ىيﻱﻲ]/g, 'ی').replace(/ك/g, 'ک')
+        .replace(/[ؤ]/g, 'و').replace(/ة/g, 'ه').replace(/[أإآ]/g, 'ا')
+        .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+        .replace(/\s+/g, ' ')
+        .toLowerCase().trim();
+    }
+    function faToEnDigits(s) {
+      return String(s || '').replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
+    }
+    function hi(text, q) {
+      // برجسته‌سازی عبارت جستجو در نتیجه (بدون تغییر داده)
+      if (!q) return text;
+      const nq = normFa(q);
+      const idx = normFa(text).indexOf(nq);
+      if (idx < 0) return text;
+      return text.slice(0, idx) + '<span class="mark">' + text.slice(idx, idx + q.length) + '</span>' + text.slice(idx + q.length);
+    }
+    function scoreItem(item, q) {
+      const nq = normFa(q);
+      if (!nq) return 0;
+      const hay = normFa(item.search || item.label || item.name || '');
+      const code = faToEnDigits(String(item.code || ''));
+      const nqEn = faToEnDigits(nq);
+      let s = 0;
+      if (code === nqEn) s += 100;            // تطابق کامل کد
+      else if (code.startsWith(nqEn)) s += 60;
+      if (hay === nq) s += 80;                 // تطابق کامل متن
+      else if (hay.startsWith(nq)) s += 40;
+      const pos = hay.indexOf(nq);
+      if (pos >= 0) s += 25 - Math.min(pos, 20);
+      else if (nq.length > 2 && nq.split(' ').every(w => hay.includes(w))) s += 12; // همهٔ کلمات
+      return s;
+    }
+
+    function searchItems(items, q, limit) {
+      limit = limit || 12;
+      if (!q || !normFa(q)) return items.slice(0, limit);
+      return items
+        .map(it => ({ it, s: scoreItem(it, q) }))
+        .filter(x => x.s > 0)
+        .sort((a, b) => b.s - a.s)
+        .slice(0, limit)
+        .map(x => x.it);
+    }
+
+    // ---------- کامبوباکس حساب: جفت هماهنگ نام ↔ کد (دو ستون جدا) ----------
+    // nameCell = ستون «نام حساب»، codeCell = ستون «کد حساب»؛
+    // انتخاب از هر کدام، دیگری را کامل می‌کند و hidden مشترک را ست می‌کند.
+    // ---------- کامبوی ترکیبی حساب/شخص: جفت هماهنگ نام ↔ کد ----------
+    // فهرست جستجو ترکیبی است: حساب‌ها (با کد، نام و نام گروه والد — مثلاً تایپ
+    // «بانک» همهٔ حساب‌های زیرمجموعهٔ بانک را می‌آورد) و اشخاص (نام کامل،
+    // کد ملی و نام فامیل). انتخاب حساب کادرها را پر می‌کند؛ انتخاب شخص به‌صورت
+    // نام شخص داخل خود کادر می‌نشیند (مثل حساب)؛ اگر هر دو (حساب + شخص) انتخاب شوند،
+    // برچسب (chip) انتخابِ دیگر را زیر کادر نشان می‌دهد تا هر ردیف بتواند هم حساب و هم شخص داشته باشد.
+    function buildEntryCombo(nameCell, codeCell, pre) {
+      pre = pre || {};
+      const state = { acc: (pre.account === null || pre.account === undefined || pre.account === '') ? '' : String(pre.account), person: pre.person ? String(pre.person) : '', disp: '', chipFor: '', open: false, active: -1, results: [] };
+      nameCell.innerHTML = `
+        <input type="hidden" class="acc-hidden">
+        <input type="hidden" class="person-hidden">
+        <div class="acc-combo">
+          <input class="acc-input acc-combo-input" type="text" autocomplete="off"
+                 placeholder="جستجو: نام حساب، گروه والد، نام/فامیل شخص...">
+          <button type="button" class="acc-combo-clear" title="پاک کردن حساب" style="display:none;">✕</button>
+          <div class="acc-combo-list" style="display:none;"></div>
+        </div>
+        <span class="acc-combo-tag acc-person-chip" style="display:none;"><span class="txt"></span><button type="button" class="chip-del" title="حذف شخص">✕</button></span>`;
+      codeCell.innerHTML = `
+        <div class="acc-combo">
+          <input class="acc-input acc-combo-input" type="text" autocomplete="off" dir="ltr"
+                 placeholder="کد حساب / کد ملی..." style="font-size:.8rem;">
+          <button type="button" class="acc-combo-clear" title="پاک کردن" style="display:none;">✕</button>
+          <div class="acc-combo-list" style="display:none;"></div>
+        </div>`;
+      const accHidden = nameCell.querySelector('.acc-hidden');
+      const personHidden = nameCell.querySelector('.person-hidden');
+      const nameInput = nameCell.querySelector('input.acc-combo-input');
+      const nameClear = nameCell.querySelector('.acc-combo-clear');
+      const nameList = nameCell.querySelector('.acc-combo-list');
+      const chip = nameCell.querySelector('.acc-person-chip');
+      const chipTxt = nameCell.querySelector('.acc-person-chip .txt');
+      const codeInput = codeCell.querySelector('input.acc-combo-input');
+      const codeClear = codeCell.querySelector('.acc-combo-clear');
+      const codeList = codeCell.querySelector('.acc-combo-list');
+
+      function accById(id) { return ACCOUNTS.find(x => String(x.id) === String(id)); }
+      function personById(id) { return PERSONS.find(x => String(x.id) === String(id)); }
+      // chip فقط وقتی نمایش داده می‌شود که هم حساب و هم شخص روی ردیف باشند؛
+      // فیلد همیشه آخرین انتخاب (حساب یا شخص) را داخل خودش نشان می‌دهد و chip انتخابِ دیگر را.
+      function chipShow(other) {
+        state.chipFor = other;
+        if (other === 'person') {
+          const p = personById(state.person);
+          chipTxt.textContent = `👤 ${p.name} (${p.nid})`;
+          chip.querySelector('.chip-del').title = 'حذف شخص';
+          chip.style.display = 'inline-flex';
+        } else if (other === 'acc') {
+          const a = accById(state.acc);
+          chipTxt.textContent = `🏦 ${a.name} (${a.code})`;
+          chip.querySelector('.chip-del').title = 'حذف حساب';
+          chip.style.display = 'inline-flex';
+        } else {
+          chip.style.display = 'none';
+        }
+      }
+      function fillFields(name, code) {
+        nameInput.value = name;
+        codeInput.value = code;
+        nameClear.style.display = 'block';
+        codeClear.style.display = 'block';
+      }
+      function clearFields() {
+        nameInput.value = '';
+        codeInput.value = '';
+        nameClear.style.display = 'none';
+        codeClear.style.display = 'none';
+      }
+      function setAccount(id, silent) {
+        state.acc = id ? String(id) : '';
+        // hidden همیشه نام درست دارد؛ انتخابِ خالی فقط مقدار را خالی می‌کند
+        // (نام‌پاک‌شده = فیلد گم‌شده در submit = «حساب نامعتبر است»)
+        accHidden.name = `account_${nameCell.dataset.idx}`;
+        accHidden.value = state.acc;
+        const a = state.acc ? accById(state.acc) : null;
+        if (a) {
+          state.disp = 'acc';
+          fillFields(a.name, a.code);
+          chipShow(state.person ? 'person' : '');
+          close();
+        } else if (!silent) {
+          // پاک شدن حساب: اگر شخص باقی مانده، فیلدها به شخص برگردد
+          const p = state.person ? personById(state.person) : null;
+          if (p) { state.disp = 'person'; fillFields(p.name, p.nid); }
+          else { state.disp = ''; clearFields(); }
+          chipShow('');
+        }
+      }
+      function setPerson(id, silent) {
+        state.person = id ? String(id) : '';
+        personHidden.name = `person_${nameCell.dataset.idx}`;
+        personHidden.value = state.person;
+        const p = state.person ? personById(state.person) : null;
+        if (p) {
+          // نام شخص داخل خود فیلد می‌نشیند (مثل حساب) — نه زیر آن
+          state.disp = 'person';
+          fillFields(p.name, p.nid);
+          chipShow(state.acc ? 'acc' : '');
+          close();
+        } else if (!silent) {
+          const a = state.acc ? accById(state.acc) : null;
+          if (a) { state.disp = 'acc'; fillFields(a.name, a.code); }
+          else { state.disp = ''; clearFields(); }
+          chipShow('');
+        }
+      }
+      function render(listEl, results, q) {
+        listEl.style.display = 'block'; // بدون این، فهرست هرگز دیده نمی‌شود (فقط close مخفی می‌کرد)
+        // فهرست به‌صورت fixed زیر کادرِ فعال باز می‌شود تا از بریدگی overflow جدول و سلول باریک «ردیف» در امان باشد
+        const anchor = (listEl === nameList ? nameInput : codeInput);
+        const r = anchor.getBoundingClientRect();
+        listEl.style.top = (r.bottom + 2) + 'px';
+        listEl.style.left = r.left + 'px';
+        listEl.style.width = Math.max(r.width, 190) + 'px';
+        if (!results.length) {
+          listEl.innerHTML = '<div class="acc-combo-empty">موردی یافت نشد</div>';
+          return;
+        }
+        listEl.innerHTML = results.map((it, i) => `
+          <div class="acc-combo-item ${i === state.active ? 'active' : ''}" data-kind="${it.kind}" data-id="${it.id}">
+            <span>${it.kind === 'person' ? '👤 ' : ''}${it.group ? '<span class="grp">' + hi(it.group, q) + ' ›</span> ' : ''}${hi(it.name, q)}</span>
+            <span class="code">${it.kind === 'account' ? it.code : it.nid}</span>
+          </div>`).join('');
+      }
+      function open(which) {
+        state.open = true;
+        const q = which === 'code' ? codeInput.value : nameInput.value;
+        const accRes = searchItems(ACCOUNTS, q).map(a => ({ ...a, kind: 'account' }));
+        const perRes = searchItems(PERSONS.filter(p => p.id), q).map(p => ({ ...p, kind: 'person' }));
+        state.results = accRes.concat(perRes).slice(0, 14);
+        state.active = state.results.length ? 0 : -1;
+        render(which === 'code' ? codeList : nameList, state.results, q);
+      }
+      function close() { state.open = false; nameList.style.display = 'none'; codeList.style.display = 'none'; nameList.style.left = ''; codeList.style.left = ''; state.active = -1; }
+      function pick(kind, id) {
+        if (kind === 'person') { setPerson(id); }
+        else { setAccount(id); }
+      }
+
+      function wireInput(input, list, clearBtn, which) {
+        input.addEventListener('focus', () => open(which));
+        input.addEventListener('input', () => {
+          // اگر متن همان مقدار انتخاب فعلی است (رویدادهای تکراری/IME کیبورد فارسی)،
+          // انتخاب را باطل نکن — این همان مسیری بود که hidden بدون نام می‌ماند.
+          // تایپِ جدید فقط انتخابِ «نمایش‌داده‌شده در فیلد» را باطل می‌کند؛
+          // انتخابِ دیگر (روی chip) سر جایش می‌ماند.
+          if (state.disp === 'acc' && state.acc) {
+            const a = accById(state.acc);
+            if (a && input.value === a.name) return;
+            setAccount(null, true);
+          } else if (state.disp === 'person' && state.person) {
+            const p = personById(state.person);
+            if (p && (input.value === p.name || input.value === p.nid)) return;
+            setPerson(null, true);
+          }
+          open(which);
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); if (!state.open) open(which); else { state.active = Math.min(state.active + 1, state.results.length - 1); render(list, state.results, input.value); } }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); state.active = Math.max(state.active - 1, 0); render(list, state.results, input.value); }
+          else if (e.key === 'Enter') { e.preventDefault(); if (state.open && state.active >= 0 && state.results[state.active]) pick(state.results[state.active].kind, state.results[state.active].id); }
+          else if (e.key === 'Escape') { close(); }
+          else if (e.key === 'Tab') { close(); }
+        });
+        list.addEventListener('mousedown', (e) => {
+          const el = e.target.closest('.acc-combo-item');
+          if (el) { e.preventDefault(); pick(el.dataset.kind, el.dataset.id); }
+        });
+        clearBtn.addEventListener('click', () => { setAccount(null, true); setPerson(null, true); state.disp = ''; clearFields(); chipShow(''); nameInput.focus(); });
+        input.addEventListener('blur', () => {
+          setTimeout(() => {
+            const nm = nameInput.value.trim();
+            const cd = faToEnDigits(codeInput.value).trim();
+            const typed = (input === nameInput) ? nm : cd;
+            if (typed && !state.acc) {
+              // اگر متن دقیقاً نام/کد یک حساب بود، همان را ثبت کن
+              const exactA = ACCOUNTS.find(x => x.name === nm || (cd && x.code === cd));
+              if (exactA) { setAccount(exactA.id); return; }
+            }
+            if (typed && !state.person) {
+              // اگر متن دقیقاً نام کامل یا کد ملی یک شخص بود، همان را ثبت کن
+              const exactP = PERSONS.find(p => p.id && (p.name === nm || (cd && p.nid === cd)));
+              if (exactP) { setPerson(exactP.id); return; }
+            }
+            if (!state.acc && !state.person) {
+              // هیچ انتخابی باقی نمانده: کادرها خالی شوند
+              state.disp = '';
+              clearFields();
+            }
+            close();
+          }, 150);
+        });
+      }
+      wireInput(nameInput, nameList, nameClear, 'name');
+      wireInput(codeInput, codeList, codeClear, 'code');
+      // ✕ روی chip همان چیزی را حذف می‌کند که chip نشان می‌دهد (حساب یا شخص)؛
+      // پس از حذف، انتخابِ دیگر به داخل فیلد برمی‌گردد.
+      chip.querySelector('.chip-del').addEventListener('click', () => {
+        if (state.chipFor === 'acc') setAccount(null); else setPerson(null);
+      });
+      // با موقعیت fixed، اسکرول صفحه فهرست را از کادر جدا می‌کند → هنگام اسکرول ببند
+      // (اسکرول داخل خود فهرست مستثنی است تا مرور نتایج، فهرست را نبندد)
+      window.addEventListener('scroll', function (e) {
+        if (state.open && !nameList.contains(e.target) && !codeList.contains(e.target)) close();
+      }, true);
+      // مقدار اولیه (حالت ویرایش سند): کادرها + hidden ها ست شوند؛
+      // بدون این، کادرها خالی دیده می‌شوند و account_i به سرور نمی‌رسد.
+      // اگر ردیف هم حساب و هم شخص دارد: فیلد حساب را نشان می‌دهد و chip شخص را.
+      if (state.person) setPerson(state.person);
+      if (state.acc) setAccount(state.acc);
+    }
+
+    function buildAccountCombo(nameCell, codeCell, selectedId) {
+      buildEntryCombo(nameCell, codeCell, { account: selectedId });
+    }
+
+    // ---------- مبلغ عددی: سه‌رقم‌سه‌رقم با کاما از راست ----------
+    // تبدیل ارقام فارسی/عربی + حذف جداکننده‌ها → عدد
+    function parseAmount(v) {
+      const n = parseFloat(faToEnDigits(String(v || '')).replace(/[^\d.-]/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+    // حین تایپ: فقط رقم بماند و سه‌رقمی با کاما گروه‌بندی شود (مکان‌نما حفظ می‌شود)
+    function fmtAmount(el) {
+      const fromEnd = el.value.length - (el.selectionStart ?? el.value.length);
+      const digits = faToEnDigits(el.value).replace(/[^\d]/g, '');
+      el.value = digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+      const pos = Math.max(0, el.value.length - fromEnd);
+      try { el.setSelectionRange(pos, pos); } catch (e) {}
+    }
+
+    // یک ردیف سند — ۶ ستون: ردیف | نام حساب/شخص | کد حساب/کد ملی | بدهکار | بستانکار | توضیحات
+    // (دکمهٔ حذف ردیف به‌صورت دکمهٔ کوچک درون سلول توضیحات جاسازی شده است.)
+    function addLine(pre) {
+      pre = pre || {};
+      const tbody = document.getElementById('linesBody');
+      const idx = tbody.children.length;
+      const tr = document.createElement('tr');
+      const debitVal = pre.debit ? parseAmount(pre.debit).toLocaleString('en-US') : '';
+      const creditVal = pre.credit ? parseAmount(pre.credit).toLocaleString('en-US') : '';
+      // ردیف حاصل از «ثبت چک» نشانه‌گذاری می‌شود تا حذفش، چک را از فهرست در انتظار هم پاک کند
+      if (pre.cheque) tr.dataset.chequeId = pre.cheque.cid || '';
+      tr.innerHTML = `
+        <td class="num">${idx + 1}</td>
+        <td class="acc-line-account"></td>
+        <td class="acc-line-account-code"></td>
+        <td><input class="acc-input num" name="debit_${idx}" dir="ltr" inputmode="numeric" placeholder="0" value="${debitVal}" oninput="fmtAmount(this); recalc()"></td>
+        <td><input class="acc-input num" name="credit_${idx}" dir="ltr" inputmode="numeric" placeholder="0" value="${creditVal}" oninput="fmtAmount(this); recalc()"></td>
+        <td><input class="acc-input" name="desc_${idx}" placeholder="شرح ردیف..." value="${pre.desc || ''}">
+          <button type="button" class="acc-btn sm danger acc-line-del" title="حذف ردیف">🗑</button></td>`;
+      tbody.appendChild(tr);
+      const accCell = tr.querySelector('.acc-line-account');
+      const codeCell = tr.querySelector('.acc-line-account-code');
+      accCell.dataset.idx = idx;
+      codeCell.dataset.idx = idx;
+      // نشانگر سروری: این ردیف، ردیف چک است (سمت سرور حذف می‌شود؛ خودش دوباره ساخته می‌شود)
+      if (pre.cheque) {
+        const flag = document.createElement('input');
+        flag.type = 'hidden';
+        flag.name = `cheque_row_${idx}`;
+        flag.value = '1';
+        tr.appendChild(flag);
+      }
+      buildEntryCombo(accCell, codeCell, pre);
+    }
+
+    function renumber() {
+      const rows = document.querySelectorAll('#linesBody tr');
+      rows.forEach((tr, i) => {
+        tr.querySelector('td').textContent = i + 1;
+        // hidden های کامبوها + فیلدهای ساده با نام‌گذاری مجدد؛
+        // سلول‌های کامبو (نام و کد) هم به‌روزرسانی شوند تا ذخیره‌های بعدی نام درست بگیرند
+        const accH = tr.querySelector('.acc-hidden');
+        const personH = tr.querySelector('.person-hidden');
+        const accCell = tr.querySelector('.acc-line-account');
+        const codeCell = tr.querySelector('.acc-line-account-code');
+        if (accCell) accCell.dataset.idx = i;
+        if (codeCell) codeCell.dataset.idx = i;
+        // hidden ها همیشه نام درست می‌گیرند (حتی خالی) تا ردیف‌ها بعد از حذف جابه‌جا نشوند
+        if (accH) accH.name = `account_${i}`;
+        if (personH) personH.name = `person_${i}`;
+        ['debit', 'credit', 'desc'].forEach(base => {
+          const el = tr.querySelector(`[name^="${base}_"]`);
+          if (el) el.name = `${base}_${i}`;
+        });
+        // فلگ «ردیف چک» هم با شمارهٔ جدید نام‌گذاری شود
+        const flag = tr.querySelector('[name^="cheque_row_"]');
+        if (flag) flag.name = `cheque_row_${i}`;
+      });
+    }
+
+    // حذف ردیف (دکمهٔ 🗑 در سلول توضیحات) — اگر ردیفِ چک باشد، از فهرست در انتظار هم پاک می‌شود
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.acc-line-del');
+      if (btn) {
+        const tr = btn.closest('tr');
+        const cid = tr.dataset ? tr.dataset.chequeId : null;
+        if (cid) {
+          const i = PENDING_CHEQUES.findIndex(c => c.cid === cid);
+          if (i >= 0) { PENDING_CHEQUES.splice(i, 1); renderPending(); }
+        }
+        tr.remove(); renumber(); recalc();
+      }
+    });
+
+    function recalc() {
+      let d = 0, c = 0;
+      document.querySelectorAll('#linesBody [name^="debit_"]').forEach(i => d += parseAmount(i.value));
+      document.querySelectorAll('#linesBody [name^="credit_"]').forEach(i => c += parseAmount(i.value));
+      document.getElementById('sumDebit').textContent = d.toLocaleString('en-US');
+      document.getElementById('sumCredit').textContent = c.toLocaleString('en-US');
+      const st = document.getElementById('balanceState');
+      if (d === 0 && c === 0) { st.textContent = ''; }
+      else if (Math.abs(d - c) < 0.5) { st.textContent = '✔ تراز است'; st.style.color = 'var(--acc-success)'; }
+      else { st.textContent = '✖ تراز نیست'; st.style.color = 'var(--acc-danger)'; }
+    }
+
+    // ---------- گارد submit: تضمین hidden حساب و شخص پیش از ارسال ----------
+    // اگر به هر دلیلی (IME، events تکراری، ...) hidden مقدار نداشت ولی متنِ
+    // کادر دقیقاً نام/کد یک حساب یا نام/کد ملی یک شخص بود، همان قبل از ارسال ثبت می‌شود.
+    document.getElementById('entryFormTag').addEventListener('submit', function () {
+      document.getElementById('pendingChequesData').value = JSON.stringify(PENDING_CHEQUES.map(({ cid, ...rest }) => rest));
+      document.querySelectorAll('#linesBody tr').forEach(function (tr) {
+        const nameCell = tr.querySelector('.acc-line-account');
+        if (!nameCell) return;
+        const idx = nameCell.dataset.idx || '0';
+        const nameInput = nameCell.querySelector('input.acc-combo-input');
+        const codeCell = tr.querySelector('.acc-line-account-code');
+        const codeInput = codeCell ? codeCell.querySelector('input.acc-combo-input') : null;
+        const hasAmount = ['debit', 'credit'].some(function (base) {
+          const el = tr.querySelector('[name^="' + base + '_"]');
+          return el && parseAmount(el.value) > 0;
+        });
+        const nm = nameInput ? nameInput.value.trim() : '';
+        const cd = codeInput ? faToEnDigits(codeInput.value).trim() : '';
+        // hidden های حساب و شخص هر دو در سلول نام هستند (معماری جدید)
+        const accHidden = nameCell.querySelector('.acc-hidden');
+        const pHidden = nameCell.querySelector('.person-hidden');
+        const accSelected = accHidden && accHidden.value;
+        if (accHidden) {
+          accHidden.name = 'account_' + idx;
+          if (!accHidden.value && hasAmount) {
+            const exact = ACCOUNTS.find(function (a) {
+              return (nm && a.name === nm) || (cd && a.code === cd);
+            });
+            if (exact) accHidden.value = exact.id;
+          }
+        }
+        if (pHidden) {
+          // اگر حساب انتخاب شده، کادرها متعلق به حساب‌اند → شخص را دست‌نخورده بگذار
+          if (!accSelected && !pHidden.value && hasAmount) {
+            const exact = PERSONS.find(function (p) {
+              return p.id && ((nm && p.name === nm) || (cd && p.nid === cd));
+            });
+            if (exact) pHidden.value = exact.id;
+          }
+          pHidden.name = 'person_' + idx;
+        }
+      });
+    });
+
+    // ---------- انتخابگر صاحب چک (فهرست اشخاص، همان جستجوی فامیل/کد ملی) ----------
+    (function () {
+      const input = document.getElementById('ch_person');
+      const hidden = document.getElementById('ch_person_id');
+      const list = document.getElementById('chPersonList');
+      if (!input) return;
+      function close() { list.style.display = 'none'; list.style.left = ''; }
+      function render(q) {
+        const results = searchItems(PERSONS.filter(p => p.id), q).slice(0, 12);
+        list.style.display = 'block';
+        const r = input.getBoundingClientRect();
+        list.style.top = (r.bottom + 2) + 'px';
+        list.style.left = r.left + 'px';
+        list.style.width = Math.max(r.width, 190) + 'px';
+        if (!results.length) { list.innerHTML = '<div class="acc-combo-empty">موردی یافت نشد</div>'; return; }
+        list.innerHTML = results.map(p => `
+          <div class="acc-combo-item" data-id="${p.id}">
+            <span>👤 ${p.name}</span>
+            <span class="code">${p.nid}</span>
+          </div>`).join('');
+      }
+      input.addEventListener('focus', () => render(input.value));
+      input.addEventListener('input', () => { hidden.value = ''; render(input.value); });
+      input.addEventListener('blur', () => {
+        setTimeout(() => {
+          // اگر متن دقیقاً نام/کد ملی یک شخص بود، همان انتخاب شود
+          const nm = input.value.trim();
+          const cd = faToEnDigits(input.value).trim();
+          const exact = PERSONS.find(p => p.id && (p.name === nm || (cd && p.nid === cd)));
+          if (exact) { hidden.value = exact.id; return; }
+          if (!hidden.value) { input.value = ''; }
+        }, 150);
+      });
+      list.addEventListener('mousedown', (e) => {
+        const el = e.target.closest('.acc-combo-item');
+        if (!el) return;
+        e.preventDefault();
+        hidden.value = el.dataset.id;
+        input.value = el.querySelector('span').textContent.replace('👤', '').trim();
+        close();
+      });
+      document.addEventListener('click', (e) => { if (!list.contains(e.target) && e.target !== input) close(); });
+      window.addEventListener('scroll', (e) => {
+        if (list.style.display === 'block' && !list.contains(e.target)) close();
+      }, true);
+    })();
+
+    // ---------- چک‌های پنل: افزودن به ردیف‌های سند + فهرست در انتظار (بدون ذخیره) ----------
+    function renderPending() {
+      document.getElementById('pendingChequesData').value = JSON.stringify(PENDING_CHEQUES.map(({ cid, ...rest }) => rest));
+      const tb = document.querySelector('#pendingChequesTable tbody');
+      tb.innerHTML = PENDING_CHEQUES.map((c, i) => `
+        <tr>
+          <td class="num">${i + 1}</td>
+          <td>${c.direction === 'paid' ? 'پرداختی' : 'دریافتی'}</td>
+          <td class="num">${c.number}</td>
+          <td class="num">${Number(String(c.amount).replace(/,/g, '')).toLocaleString('en-US')}</td>
+          <td class="num">${c.due || '—'}</td>
+          <td>👤 ${c.person_name || '—'}</td>
+          <td><button type="button" class="acc-btn sm danger" data-del-chk="${i}">🗑</button></td>
+        </tr>`).join('');
+      document.getElementById('pendingChequesWrap').style.display = PENDING_CHEQUES.length ? 'block' : 'none';
+    }
+    document.getElementById('pendingChequesTable').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-del-chk]');
+      if (!b) return;
+      const i = +b.dataset.delChk;
+      // ردیفِ همان چک در جدول سند هم حذف شود (ردیف‌های چک data-cheque-id دارند)
+      const cid = PENDING_CHEQUES[i].cid;
+      const tr = document.querySelector(`#linesBody tr[data-cheque-id="${cid}"]`);
+      if (tr) tr.remove();
+      PENDING_CHEQUES.splice(i, 1);
+      renumber(); recalc(); renderPending();
+    });
+    function addChequeToLines() {
+      const number = document.getElementById('ch_number').value.trim();
+      if (!number) { alert('شماره چک را وارد کنید.'); document.getElementById('ch_number').focus(); return; }
+      const personId = document.getElementById('ch_person_id').value;
+      const personName = document.getElementById('ch_person').value.trim();
+      if (!personId || !personName) { alert('صاحب چک را از فهرست اشخاص انتخاب کنید.'); document.getElementById('ch_person').focus(); return; }
+      const amount = parseAmount(document.getElementById('ch_amount').value);
+      if (amount <= 0) { alert('مبلغ چک باید مثبت باشد.'); document.getElementById('ch_amount').focus(); return; }
+      const due = document.getElementById('ch_due').value.trim();
+      if (!due) { alert('سررسید چک را وارد کنید.'); document.getElementById('ch_due').focus(); return; }
+      const direction = document.getElementById('ch_direction').value;
+      const cid = 'c' + Date.now() + Math.random().toString(36).slice(2, 6);
+      const deposit = document.getElementById('ch_deposit').value;
+      PENDING_CHEQUES.push({
+        cid, direction, number, amount: String(amount), due,
+        sayad: document.getElementById('ch_sayad').value.trim(),
+        bank: document.getElementById('ch_bank').value.trim(),
+        person_id: personId, person_name: personName,
+        deposit,
+        desc: document.getElementById('ch_desc').value.trim(),
+      });
+      const label = (direction === 'paid' ? 'چک پرداختی ' : 'چک دریافتی ') + number;
+      const descRow = (document.getElementById('ch_desc').value.trim() || label) + ' — صاحب چک: ' + personName + ' (سررسید ' + due + ')';
+      addLine({
+        cheque: { cid, direction, number, amount, personId, personName, deposit, due },
+        debit: direction === 'paid' ? amount.toLocaleString('en-US') : '',
+        credit: direction === 'received' ? amount.toLocaleString('en-US') : '',
+        desc: descRow,
+      });
+      ['ch_number', 'ch_amount', 'ch_sayad', 'ch_bank', 'ch_person', 'ch_desc'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('ch_person_id').value = '';
+      document.getElementById('ch_deposit').value = '';
+      renderPending();
+      recalc();
+    }
+    document.getElementById('chAddRow').addEventListener('click', addChequeToLines);
+
+    // ---------- بارگذاری اولیه: سند جدید یا ردیف‌های سند در حال ویرایش ----------
+    (function init() {
+      // بازپرکردن فرم پس از خطای ثبت: مقادیر تایپ‌شدهٔ کاربر حفظ می‌شود
+      const fd = FORM_DATA ? (typeof FORM_DATA === 'string' ? JSON.parse(FORM_DATA) : FORM_DATA) : null;
+      if (fd && fd.rows && fd.rows.length && !EDIT_LINES.length) {
+        fd.rows.forEach(r => addLine({
+          account: r.account || null,
+          person: r.person || null,
+          debit: r.debit || '',
+          credit: r.credit || '',
+          desc: r.desc || '',
+        }));
+        document.getElementById('id_date').value = fd.date || document.getElementById('id_date').value;
+        document.getElementById('id_desc').value = fd.description || '';
+        // چک‌های در انتظار: مقادیرشان در ردیف‌ها هست؛ فقط فهرست بازگردانده شود
+        (fd.pending_cheques || []).forEach(c => PENDING_CHEQUES.push({
+          cid: 'r' + Math.random().toString(36).slice(2, 8),
+          direction: c.direction || 'received', number: c.number || '',
+          amount: String(parseAmount(c.amount)), due: c.due || '',
+          sayad: c.sayad || '', bank: c.bank || '',
+          person_id: c.person_id || '', person_name: c.person_name || '',
+          deposit: c.deposit || '', desc: c.desc || '',
+        }));
+        renderPending();
+      } else if (EDIT_LINES.length) {
+        EDIT_LINES.forEach(ln => addLine(ln));
+      } else {
+        addLine(); addLine();
+      }
+      recalc();
+      // فوکوس خودکار روی فیلد مقصر پس از خطای ثبت سند/چک
+      const ef = ERROR_FOCUS ? (typeof ERROR_FOCUS === 'string' ? JSON.parse(ERROR_FOCUS) : ERROR_FOCUS) : null;
+      if (ef && ef.panel) {
+        setTimeout(() => {
+          let target = null;
+          if (ef.panel === 'lines') {
+            const tr = document.querySelectorAll('#linesBody tr')[ef.row - 1];
+            if (tr) {
+              if (ef.field === 'acc') {
+                target = tr.querySelector('input.acc-combo-input');
+              } else {
+                target = tr.querySelector('[name^="' + ef.field + '_"]');
+              }
+              // ردیف مقصر پررنگ شود تا کاربر همان را ببیند
+              tr.classList.add('acc-row-error');
+              setTimeout(() => tr.classList.remove('acc-row-error'), 4000);
+            }
+          } else if (ef.panel === 'cheque') {
+            const panel = document.getElementById('chequePanel');
+            if (panel) panel.open = true;
+            target = document.getElementById(ef.field);
+          } else if (ef.panel === 'entry') {
+            target = document.getElementById(ef.field);
+          }
+          if (target) {
+            target.scrollIntoView({behavior: 'smooth', block: 'center'});
+            try { target.focus({preventScroll: true}); } catch (e) { target.focus(); }
+            target.classList.add('acc-field-error');
+            setTimeout(() => target.classList.remove('acc-field-error'), 4000);
+          }
+        }, 120);
+      }
+    })();
+
+    // ---------- تقویم شمسی ----------
+    const CAL = {
+      year: {{ calendar_year }},
+      month: {% if editing_entry %}{{ editing_entry.date|jmonth }}{% else %}{{ calendar_months.0.n }}{% endif %},
+      months: ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+               "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"],
+      lengths: [{% for m in calendar_months %}{{ m.days }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    };
+
+    function faNum(x) { return String(x).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]); }
+
+    // ---------- تقویم شمسی عمومی: برای تاریخ سند و سررسید چک ----------
+    // cfg = {toggleId, calId, titleId, daysId, prevId, nextId, inputId}
+    function makeCalendar(cfg) {
+      const cal = document.getElementById(cfg.calId);
+      const input = document.getElementById(cfg.inputId);
+      const toggle = document.getElementById(cfg.toggleId);
+      const st = { year: CAL.year, month: CAL.month };
+      function render() {
+        document.getElementById(cfg.titleId).textContent = `${CAL.months[st.month - 1]} ${faNum(st.year)}`;
+        const grid = document.getElementById(cfg.daysId);
+        grid.innerHTML = '';
+        function j2g(jy, jm, jd) {
+          let jy2 = jy - 979, jm2 = jm - 1, jd2 = jd - 1;
+          let jdn = 365 * jy2 + Math.floor(jy2 / 33) * 8 + Math.floor(((jy2 % 33) + 3) / 4);
+          jdn += (jm2 < 7) ? jm2 * 31 : jm2 * 30 + 6;
+          jdn += jd2 + 79;
+          let gy = 1600 + 400 * Math.floor(jdn / 146097);
+          jdn %= 146097;
+          let leap = true;
+          if (jdn >= 36525) { jdn--; gy += 100 * Math.floor(jdn / 36524); jdn %= 36524; if (jdn >= 365) jdn++; else leap = false; }
+          gy += 4 * Math.floor(jdn / 1461); jdn %= 1461;
+          if (jdn >= 366) { leap = false; jdn--; gy += Math.floor(jdn / 365); jdn %= 1461; }
+          let gd = jdn + 1;
+          const mp = [31, (leap ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+          let gm = 0;
+          for (let i = 0; i < 12; i++) { if (gd <= mp[i]) { gm = i + 1; break; } gd -= mp[i]; }
+          return [gy, gm, gd];
+        }
+        const [gy, gm, gd] = j2g(st.year, st.month, 1);
+        let startCol = new Date(gy, gm - 1, gd).getDay();
+        startCol = (startCol + 1) % 7; // شنبه=۰
+        for (let i = 0; i < startCol; i++) grid.appendChild(document.createElement('span'));
+        const len = CAL.lengths[st.month - 1];
+        const current = input.value.trim();
+        for (let d = 1; d <= len; d++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'acc-btn sm outline';
+          b.style.padding = '.25rem 0';
+          b.textContent = faNum(d);
+          const valueFa = `${faNum(st.year)}/${faNum(String(st.month).padStart(2, '0'))}/${faNum(String(d).padStart(2, '0'))}`;
+          if (current === valueFa) { b.style.background = 'var(--acc-primary)'; b.style.color = '#fff'; }
+          b.onclick = () => { input.value = valueFa; cal.style.display = 'none'; };
+          grid.appendChild(b);
+        }
+      }
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // اگر فیلد تاریخِ شمسی دارد، تقویم از همان ماه باز شود
+        const m = faToEnDigits(input.value.trim()).match(/^(\d{4})\/(\d{1,2})/);
+        if (m) { st.year = +m[1]; st.month = +m[2]; }
+        const show = cal.style.display === 'none';
+        cal.style.display = show ? 'block' : 'none';
+        if (show) render();
+      });
+      document.addEventListener('click', (e) => {
+        if (!cal.contains(e.target) && e.target !== toggle) cal.style.display = 'none';
+      });
+      document.getElementById(cfg.prevId).onclick = () => { st.month--; if (st.month < 1) { st.month = 12; st.year--; } render(); };
+      document.getElementById(cfg.nextId).onclick = () => { st.month++; if (st.month > 12) { st.month = 1; st.year++; } render(); };
+    }
+
+    // تاریخ سند و سررسید چک — هر دو با تقویم شمسی
+    makeCalendar({toggleId: 'calToggle', calId: 'jalaliCalendar', titleId: 'calTitle', daysId: 'calDays', prevId: 'calPrevMonth', nextId: 'calNextMonth', inputId: 'id_date'});
+    makeCalendar({toggleId: 'chDueToggle', calId: 'chDueCalendar', titleId: 'chDueTitle', daysId: 'chDueDays', prevId: 'chDuePrev', nextId: 'chDueNext', inputId: 'ch_due'});
+
+  </script>
+{% endblock %}

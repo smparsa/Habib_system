@@ -1,0 +1,109 @@
+{% load static %}<!DOCTYPE html>
+<html lang='fa' dir='rtl'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>تتریس - HabibHub</title>
+  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>
+  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>
+  <link href='{% static "games/css/games.css" %}?v=1' rel='stylesheet'>
+  <style>
+    .t-layout { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+    .t-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 120px; }
+    .t-panel {
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      text-align: center;
+    }
+    .t-panel-label { font-size: 0.68rem; color: #94a3b8; margin-bottom: 0.4rem; letter-spacing: 0.05em; }
+    .t-stage { position: relative; }
+    #g-tetris-canvas {
+      display: block;
+      border: 2px solid rgba(168, 85, 247, 0.4);
+      border-radius: 0.75rem;
+      background: #0f172a;
+      box-shadow: 0 0 40px rgba(168, 85, 247, 0.15);
+    }
+    @media (max-width: 720px) {
+      #g-tetris-canvas { width: min(92vw, 300px); height: auto; }
+    }
+  </style>
+</head>
+<body class='g-body'>
+  <a class='g-back' href="{% url 'games:home' %}"><i class='bi bi-arrow-right'></i> منو</a>
+
+  <div class='g-page'>
+    <header style='text-align:center;'>
+      <h1 class='g-page-title t-cyan'>🧱 تتریس</h1>
+      <p class='g-page-sub'>← → حرکت • ↑ چرخش • ↓ نرم • Space سخت • C ذخیره • P توقف</p>
+    </header>
+
+    <div class='t-layout'>
+      <div class='t-side'>
+        <div class='t-panel'>
+          <div class='t-panel-label'>ذخیره (C)</div>
+          <canvas id='g-tetris-hold' width='88' height='88'></canvas>
+        </div>
+        <div class='t-panel'>
+          <div class='t-panel-label'>بعدی</div>
+          <canvas id='g-tetris-next' width='88' height='240'></canvas>
+        </div>
+        <div class='t-panel'>
+          <div class='t-panel-label'>امتیاز</div>
+          <div class='g-stat-value c-cyan' id='g-tetris-score'>۰</div>
+        </div>
+        <div class='t-panel'>
+          <div class='t-panel-label'>سطح</div>
+          <div class='g-stat-value c-purple' id='g-tetris-level'>۱</div>
+        </div>
+        <div class='t-panel'>
+          <div class='t-panel-label'>خطوط</div>
+          <div class='g-stat-value c-green' id='g-tetris-lines'>۰</div>
+        </div>
+        <div class='t-panel'>
+          <div class='t-panel-label'>رکورد</div>
+          <div class='g-stat-value c-yellow' id='g-tetris-best'>۰</div>
+        </div>
+      </div>
+
+      <div class='t-stage'>
+        <canvas id='g-tetris-canvas' width='300' height='600'></canvas>
+        <div class='g-overlay' id='g-tetris-overlay'>
+          <div class='g-overlay-emoji' id='g-tetris-overlay-emoji'>🧱</div>
+          <h2 class='g-overlay-title' id='g-tetris-overlay-title'>آماده بازی؟</h2>
+          <button class='g-btn g-btn-cyan' id='g-tetris-overlay-btn'>شروع بازی</button>
+          <p class='g-overlay-note' id='g-tetris-overlay-note'>یا Enter را بزنید</p>
+        </div>
+      </div>
+    </div>
+
+    <div class='g-panel-row'>
+      <div>
+        <select class='g-select' id='g-tetris-difficulty' aria-label='سطح دشواری'>
+          <option value='easy'>آسان</option>
+          <option value='normal' selected>معمولی</option>
+          <option value='hard'>سخت</option>
+        </select>
+      </div>
+      <button class='g-btn g-btn-ghost' id='g-tetris-restart'>بازی مجدد</button>
+    </div>
+
+    <div class='g-mobile-controls'>
+      <button class='g-mc-btn' data-tetris-action='hold' aria-label='ذخیره'>⇄</button>
+      <button class='g-mc-btn' data-tetris-action='left' aria-label='چپ'>←</button>
+      <button class='g-mc-btn' data-tetris-action='rotate' aria-label='چرخش'>⟳</button>
+      <button class='g-mc-btn' data-tetris-action='right' aria-label='راست'>→</button>
+      <button class='g-mc-btn' data-tetris-action='down' aria-label='پایین'>↓</button>
+      <button class='g-mc-btn' data-tetris-action='drop' aria-label='رها کردن'>⤓</button>
+    </div>
+  </div>
+
+  <script src='{% static "games/js/tetris.js" %}?v=1'></script>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+{% include "core/_please_wait.html" %}
+</body>
+</html>

@@ -1,0 +1,295 @@
+/* استایل ماژول حسابداری — مستقل از داشبورد، RTL، فونت وزیرمتن با fallback سیستمی */
+
+:root {
+  --acc-bg: #eef1f5;
+  --acc-panel: #ffffff;
+  --acc-ink: #1d2733;
+  --acc-muted: #6b7684;
+  --acc-line: #d9dfe7;
+  --acc-primary: #0f4c81;
+  --acc-primary-ink: #ffffff;
+  --acc-gold: #c9a227;
+  --acc-danger: #c0392b;
+  --acc-success: #2ea043;
+  --acc-warn: #b7791f;
+  --acc-radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--acc-bg);
+  color: var(--acc-ink);
+  font-family: "Vazirmatn", "Vazir", "IRANSans", Tahoma, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+a { color: var(--acc-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- Topbar ---------- */
+.acc-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--acc-primary);
+  color: var(--acc-primary-ink);
+  padding: 0 1rem;
+  min-height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+.acc-topbar .brand { font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; gap: .5rem; }
+.acc-topbar .brand small { opacity: .8; font-weight: 400; }
+.acc-menu { display: flex; flex-wrap: wrap; gap: .1rem; margin-inline-start: 1rem; }
+.acc-menu > .item { position: relative; }
+.acc-menu .label {
+  display: inline-block;
+  padding: .55rem .8rem;
+  color: #e8eef5;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  white-space: nowrap;
+}
+.acc-menu .label:hover, .acc-menu .item:hover .label { background: rgba(255,255,255,.12); }
+.acc-menu .dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  background: var(--acc-panel);
+  color: var(--acc-ink);
+  min-width: 200px;
+  border: 1px solid var(--acc-line);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+  padding: .35rem;
+  z-index: 40;
+}
+.acc-menu .item:hover .dropdown, .acc-menu .item:focus-within .dropdown { display: block; }
+.acc-menu .dropdown a {
+  display: block;
+  padding: .5rem .75rem;
+  color: var(--acc-ink);
+  border-radius: 6px;
+  font-size: .92rem;
+}
+.acc-menu .dropdown a:hover { background: #eef4fa; text-decoration: none; }
+.acc-topbar .spacer { flex: 1; }
+.acc-topbar .who { font-size: .85rem; opacity: .95; display: flex; align-items: center; gap: .6rem; }
+.acc-topbar .who .fy { background: rgba(255,255,255,.15); padding: .25rem .6rem; border-radius: 20px; }
+
+/* ---------- Layout ---------- */
+.acc-wrap { max-width: 1280px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+.acc-page-title { display: flex; align-items: center; gap: .6rem; margin: .25rem 0 1rem; font-size: 1.25rem; }
+.acc-page-title .sub { color: var(--acc-muted); font-size: .85rem; }
+
+.acc-grid { display: grid; gap: 1rem; }
+.acc-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.acc-grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+.acc-card {
+  background: var(--acc-panel);
+  border: 1px solid var(--acc-line);
+  border-radius: var(--acc-radius);
+  padding: 1rem 1.1rem;
+}
+.acc-card h3 { margin: 0 0 .75rem; font-size: 1rem; display: flex; align-items: center; gap: .5rem; }
+
+/* ---------- Stat tiles (تصویر ۳) ---------- */
+.acc-stat { text-align: center; padding: 1rem; }
+.acc-stat .t { color: var(--acc-muted); font-size: .85rem; margin-bottom: .5rem; }
+.acc-stat .v { font-size: 1.02rem; font-weight: 700; color: var(--acc-danger); direction: rtl; }
+.acc-stat .v.blue { color: var(--acc-primary); }
+
+/* ---------- Tables ---------- */
+.acc-table-wrap { overflow-x: auto; }
+table.acc {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--acc-panel);
+  font-size: .92rem;
+}
+table.acc th, table.acc td {
+  border: 1px solid var(--acc-line);
+  padding: .5rem .65rem;
+  text-align: right;
+  white-space: nowrap;
+}
+table.acc thead th { background: #f4f6f9; font-weight: 700; }
+table.acc tbody tr:hover { background: #f8fafc; }
+table.acc td.num { direction: ltr; text-align: right; font-family: "Vazirmatn", Tahoma, monospace; }
+table.acc .pos { color: var(--acc-success); }
+table.acc .neg { color: var(--acc-danger); }
+table.acc .lvl1 { font-weight: 800; background: #fff8e6; }
+table.acc .lvl2 { font-weight: 600; background: #fdfefe; }
+table.acc tfoot td { font-weight: 800; background: #f4f6f9; }
+
+/* ---------- Forms & buttons ---------- */
+.acc-input, select.acc-input, textarea.acc-input {
+  width: 100%;
+  padding: .5rem .7rem;
+  border: 1px solid var(--acc-line);
+  border-radius: 8px;
+  font: inherit;
+  background: #fff;
+  color: var(--acc-ink);
+}
+.acc-input:focus { outline: 2px solid rgba(15,76,129,.25); border-color: var(--acc-primary); }
+.acc-field { margin-bottom: .75rem; }
+.acc-field > label { display: block; margin-bottom: .3rem; font-size: .85rem; color: var(--acc-muted); }
+.acc-btn {
+  display: inline-block;
+  background: var(--acc-primary);
+  border: 1px solid transparent;
+  color: var(--acc-primary-ink);
+  padding: .5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .92rem;
+}
+.acc-btn:hover { filter: brightness(1.08); text-decoration: none; }
+.acc-btn.outline { background: transparent; color: var(--acc-primary); border-color: var(--acc-primary); }
+.acc-btn.danger { background: var(--acc-danger); }
+.acc-btn.success { background: var(--acc-success); }
+.acc-btn.sm { padding: .3rem .7rem; font-size: .82rem; }
+.acc-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* ---------- Badges & messages ---------- */
+.acc-badge {
+  display: inline-block;
+  padding: .15rem .6rem;
+  border-radius: 20px;
+  font-size: .78rem;
+  border: 1px solid var(--acc-line);
+  background: #f4f6f9;
+}
+.acc-badge.ok { background: rgba(46,160,67,.12); color: var(--acc-success); border-color: transparent; }
+.acc-badge.warn { background: rgba(183,121,31,.12); color: var(--acc-warn); border-color: transparent; }
+.acc-badge.err { background: rgba(192,57,43,.1); color: var(--acc-danger); border-color: transparent; }
+.acc-badge.info { background: rgba(15,76,129,.1); color: var(--acc-primary); border-color: transparent; }
+
+.acc-messages { margin-bottom: 1rem; }
+.acc-msg { padding: .6rem .9rem; border-radius: 8px; margin-bottom: .5rem; font-size: .9rem; }
+.acc-msg.success { background: rgba(46,160,67,.12); color: var(--acc-success); }
+.acc-msg.error { background: rgba(192,57,43,.1); color: var(--acc-danger); }
+.acc-msg.info, .acc-msg.warning { background: rgba(183,121,31,.12); color: var(--acc-warn); }
+
+/* ---------- Login card ---------- */
+.acc-auth {
+  max-width: 420px;
+  margin: 8vh auto;
+}
+.acc-auth .card { padding: 1.5rem; }
+.acc-auth h2 { margin-top: 0; }
+
+/* ---------- Login modal-like ---------- */
+.acc-modal-note { color: var(--acc-muted); font-size: .85rem; margin-top: .75rem; }
+
+/* ---------- Tree indent ---------- */
+.ind-1 { padding-inline-start: 0; }
+.ind-2 { padding-inline-start: 1.4rem; }
+.ind-3 { padding-inline-start: 2.8rem; }
+.ind-4 { padding-inline-start: 4.2rem; }
+
+/* ---------- جستجوی تایپی حساب / شخص (فرم سند) ---------- */
+.acc-combo { position: relative; }
+.acc-combo-input { width: 100%; }
+.acc-combo-clear {
+  position: absolute; left: .3rem; top: 50%; transform: translateY(-50%);
+  border: none; background: none; cursor: pointer;
+  color: var(--acc-muted); font-size: .85rem; padding: .15rem .3rem;
+}
+.acc-combo-clear:hover { color: var(--acc-danger); }
+.acc-combo-list {
+  position: fixed; z-index: 60; /* top/left/width موقعیت از render() ست می‌شود */
+  min-width: 190px;
+  max-height: 260px; overflow-y: auto;
+  background: var(--acc-panel); border: 1px solid var(--acc-line);
+  border-radius: var(--acc-radius); box-shadow: 0 8px 24px rgba(0,0,0,.15);
+}
+.acc-combo-item {
+  display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+  padding: .45rem .6rem; cursor: pointer; font-size: .82rem;
+  border-bottom: 1px solid var(--acc-line);
+}
+.acc-combo-item:last-child { border-bottom: none; }
+.acc-combo-item:hover, .acc-combo-item.active { background: rgba(15,76,129,.08); }
+.acc-combo-item .code { color: var(--acc-muted); font-size: .75rem; white-space: nowrap; }
+.acc-combo-item b { font-weight: 700; }
+.acc-combo-item .grp { color: var(--acc-muted); font-size: .72rem; }
+.acc-combo-item .mark { color: var(--acc-primary); background: rgba(201,162,39,.25); border-radius: 3px; }
+.acc-line-account .acc-person-chip { margin-top: .25rem; }
+.acc-line-account .acc-combo { margin-bottom: .25rem; }
+.acc-combo-empty { padding: .6rem; font-size: .8rem; color: var(--acc-muted); text-align: center; }
+.acc-combo-tag {
+  display: inline-flex; align-items: center; gap: .3rem;
+  background: rgba(15,76,129,.08); border: 1px solid var(--acc-line);
+  border-radius: 999px; padding: .1rem .55rem; font-size: .75rem;
+}
+.acc-combo-tag button { border: none; background: none; cursor: pointer; color: var(--acc-danger); font-size: .8rem; padding: 0; }
+
+/* ---------- صورتحساب: درخت حساب‌ها، فهرست اشخاص و چاپ ---------- */
+.stmt-branch {
+  display: flex; align-items: center; gap: .35rem;
+  width: 100%; text-align: start;
+  border: none; background: none; cursor: pointer;
+  padding: .35rem .5rem; font-size: .85rem; border-radius: 6px;
+  color: inherit; font-family: inherit;
+}
+button.stmt-branch:hover { background: rgba(15,76,129,.08); }
+.stmt-toggle { display: inline-block; width: 1em; color: var(--acc-muted); }
+.stmt-node { display: flex; align-items: center; }
+.stmt-link {
+  display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+  flex: 1;
+  padding: .35rem .5rem; border-radius: 6px; font-size: .85rem;
+  color: inherit; text-decoration: none;
+}
+.stmt-link:hover { background: rgba(15,76,129,.08); }
+.stmt-link .code, .stmt-person-row .code { color: var(--acc-muted); font-size: .75rem; }
+.stmt-link .stmt-label, .stmt-branch .stmt-label { flex: 1; }
+.stmt-link .code.pos, .stmt-branch .code.pos, .stmt-person-row .code.pos { color: var(--acc-success, #1a7f37); font-weight: 600; }
+.stmt-link .code.neg, .stmt-branch .code.neg, .stmt-person-row .code.neg { color: var(--acc-danger, #c62828); font-weight: 600; }
+.stmt-person-row {
+  display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+  padding: .45rem .6rem; font-size: .85rem; color: inherit; text-decoration: none;
+  border-bottom: 1px solid var(--acc-line);
+}
+.stmt-person-row:last-child { border-bottom: none; }
+.stmt-person-row:hover { background: rgba(15,76,129,.08); }
+.stmt-printbar { display: flex; gap: .5rem; }
+
+/* چاپ: در حالت «ریز صورتحساب» فقط کارت نتیجه چاپ می‌شود */
+@media print {
+  body.stmt-printing .acc-topbar,
+  body.stmt-printing .stmt-printbar { display: none !important; }
+  body.stmt-printing.stmt-print-result-only .acc-wrap > *:not(#stmtResult),
+  body.stmt-printing.stmt-print-result-only #stmtPickers { display: none !important; }
+  body.stmt-printing #stmtResult { box-shadow: none !important; }
+}
+
+/* ---------- هایلایت فیلد/ردیف خطادار پس از ثبت ناموفق ---------- */
+.acc-field-error {
+  outline: 2px solid var(--acc-danger, #c62828) !important;
+  background: rgba(198, 40, 40, 0.06) !important;
+}
+tr.acc-row-error > td {
+  background: rgba(198, 40, 40, 0.07) !important;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 760px) {
+  .acc-menu { display: none; }
+  .acc-topbar .who .fy { display: none; }
+}
+
+/* نوار «اخبار فوری» هدر حسابداری (همان ماژول هدر اصلی) */
+.acc-topbar .hb-news-ticker{height:34px;max-width:420px;background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.25);}
+.acc-topbar .hb-news-ticker-text{color:#fff;line-height:34px;font-size:0.82rem;}
+.acc-topbar .hb-news-ticker-badge{background:#fff;color:#1b2a4a;}

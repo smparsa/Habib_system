@@ -1,0 +1,145 @@
+{% include "tickets/_top.html" with page_title="تیکت جدید" %}
+<div class='tkt-wrap tkt-narrow'>
+  {% if messages %}
+    {% for message in messages %}
+      <div class='tkt-server-msg {{ message.tags }}'><i class='bi bi-info-circle'></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class='tkt-head'>
+    <div>
+      <h1><i class='bi bi-plus-circle'></i> تیکت جدید</h1>
+      <p>در چهار گام: نوع ← مخاطب ← اطلاعات ← بازبینی و ارسال.</p>
+    </div>
+  </div>
+
+  <form method='post' class='tkt-wiz' id='tkt-create-form'>{% csrf_token %}
+
+    <section class='tkt-step'>
+      <div class='tkt-step-num'>۱</div>
+      <div class='tkt-step-body'>
+        <h3>نوع تیکت</h3>
+        <div class='tkt-cats'>
+          {% for c in categories %}
+            <label class='tkt-cat'>
+              <input type='radio' name='category' value='{{ c.code }}' {% if forloop.first %}checked{% endif %}>
+              <i class='bi {{ c.icon }}'></i><span>{{ c.name_fa }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class='tkt-step'>
+      <div class='tkt-step-num'>۲</div>
+      <div class='tkt-step-body'>
+        <h3>مخاطب هدف</h3>
+        <p class='tkt-hint'>جامعهٔ هدف را انتخاب کنید؛ تیکت به‌صورت انبوه برای همهٔ واجدین شرایط ارسال می‌شود
+          و در «تیکت‌های فرستاده» وضعیت ارسال (✓) و دیده‌شدن (✓✓) هر گیرنده قابل پیگیری است.
+        </p>
+        <select name='audience' id='tkt-audience' data-is-staff='{{ is_staff|yesno:"1,0" }}'>
+          <option value=''>کارکنان / پشتیبانی (یک‌به‌یک)</option>
+          {% if saved_audiences %}
+            <optgroup label='جوامع هدف تعریف‌شده توسط ادمین (ارسال انبوه)'>
+              {% for aud in saved_audiences %}
+                <option value='saved:{{ aud.id }}'>{{ aud.name }}{% if aud.description %} — {{ aud.description }}{% endif %}</option>
+              {% endfor %}
+            </optgroup>
+          {% endif %}
+          <optgroup label='انتخاب دستی'>
+          {% if is_staff %}
+            <option value='all_users'>همهٔ کاربران</option>
+            <option value='job'>بر اساس شغل</option>
+            <option value='country'>بر اساس کشور</option>
+            <option value='province'>بر اساس استان</option>
+            <option value='city'>بر اساس شهر</option>
+            <option value='radius'>شعاع جغرافیایی</option>
+            <option value='mobile_prefix'>شروع شماره موبایل</option>
+            <option value='age'>بازهٔ سنی</option>
+            <option value='group'>گروه کاربری</option>
+            <option value='level'>سطح کاربر</option>
+            <option value='score'>امتیاز کاربر</option>
+          {% endif %}
+          <option value='specific_users'>کاربران مشخص (کد ملی)</option>
+          </optgroup>
+        </select>
+        <div class='tkt-aud-note' id='tkt-aud-note' hidden></div>
+
+        <div class='tkt-aud-fields' data-aud='geo' hidden>
+          <div data-hb-geo-pick data-hb-geo-kind='country'>
+            <input type='hidden' name='geo_values' value=''>
+          </div>
+          <small class='tkt-hint'>نام محل را از فهرست مرجع (کشور/استان/شهرستان) انتخاب کنید؛ می‌توانید چند نام را پشت‌سر هم اضافه کنید تا تیکت برای همهٔ آن‌ها ارسال شود.</small>
+        </div>
+        <div class='tkt-aud-fields' data-aud='job' hidden>
+          <input type='text' name='jobs' placeholder='مثال: مهندس، معمار'>
+        </div>
+        <div class='tkt-aud-fields' data-aud='radius' hidden>
+          <div style='display:flex;gap:0.5rem;flex-wrap:wrap;'>
+            <input type='text' name='lat' placeholder='عرض (lat)'>
+            <input type='text' name='lng' placeholder='طول (lng)'>
+            <select name='km'>
+              {% for val, label in radius_choices %}<option value='{{ val }}'>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <small class='tkt-hint'>شعاع در دیتابیس و با haversine روی مختصات ذخیره‌شدهٔ پروفایل‌ها اعمال می‌شود.</small>
+        </div>
+        <div class='tkt-aud-fields' data-aud='mobile_prefix' hidden>
+          <input type='text' name='location' placeholder='پیشوندها را با کاما جدا کنید؛ مثال: 0912, 0935' dir='ltr'>
+        </div>
+        <div class='tkt-aud-fields' data-aud='age' hidden>
+          <div style='display:flex;gap:0.5rem;flex-wrap:wrap;'>
+            <input type='number' name='age_min' min='0' placeholder='حداقل سن'>
+            <input type='number' name='age_max' min='0' placeholder='حداکثر سن'>
+          </div>
+        </div>
+        <div class='tkt-aud-fields' data-aud='level' hidden>
+          <input type='number' name='level' min='1' placeholder='حداقل سطح'>
+        </div>
+        <div class='tkt-aud-fields' data-aud='score' hidden>
+          <input type='number' name='score' min='0' placeholder='حداقل امتیاز'>
+        </div>
+        <div class='tkt-aud-fields' data-aud='group' hidden>
+          <select name='groups' multiple size='4'>
+            {% for g in groups %}<option value='{{ g.code }}'>{{ g.name }} ({{ g.members.count }})</option>{% endfor %}
+          </select>
+        </div>
+        <div class='tkt-aud-fields' data-aud='specific_users' hidden>
+          <textarea name='nids' rows='3' placeholder='کد ملی هر عضو را در یک خط وارد کنید'></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class='tkt-step'>
+      <div class='tkt-step-num'>۳</div>
+      <div class='tkt-step-body'>
+        <h3>اطلاعات تیکت</h3>
+        <input type='text' name='subject' maxlength='200' placeholder='موضوع *' required value='{{ form.subject.value|default_if_none:"" }}'>
+        <textarea name='description' rows='5' placeholder='شرح کامل…'>{{ form.description.value|default_if_none:"" }}</textarea>
+        <div class='tkt-grid2'>
+          <select name='priority'>
+            {% for val, label in priority_choices %}<option value='{{ val }}' {% if form.priority.value == val %}selected{% endif %}>اولویت: {{ label }}</option>{% endfor %}
+          </select>
+          <input type='date' name='due_date' title='مهلت (اختیاری)'>
+        </div>
+      </div>
+    </section>
+
+    <section class='tkt-step'>
+      <div class='tkt-step-num'>۴</div>
+      <div class='tkt-step-body'>
+        <h3>بازبینی و ارسال</h3>
+        <div class='tkt-review' id='tkt-review'>
+          <div><span>گیرندگان تقریبی:</span><b id='tkt-est'>—</b></div>
+          <div><span>دسته / اولویت:</span><b id='tkt-sel'>—</b></div>
+        </div>
+        <button type='button' class='hb-btn hb-btn-outline hb-btn-sm' id='tkt-estimate'><i class='bi bi-calculator'></i> برآورد تعداد گیرندگان</button>
+        <div class='tkt-composer-actions' style='margin-top:1rem;'>
+          <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-send-fill'></i> ارسال تیکت</button>
+        </div>
+      </div>
+    </section>
+
+  </form>
+</div>
+{% include "tickets/_bottom.html" %}

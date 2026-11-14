@@ -1,0 +1,79 @@
+/* ==========================================================================
+   بازی مگنت — استایل صفحهٔ بازی
+   ========================================================================== */
+
+.m-board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  width: min(92vw, 460px);
+  aspect-ratio: 1;
+  background: #1e293b;
+  border: 2px solid rgba(192, 132, 252, 0.35);
+  border-radius: 0.75rem;
+  padding: 4px;
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.12);
+  direction: ltr;
+}
+.m-cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: rgba(30, 41, 59, 0.55);
+  transition: background 0.15s;
+}
+.m-cell-alt { background: rgba(30, 41, 59, 0.85); }
+.m-cell-move { background: rgba(74, 222, 128, 0.18); cursor: pointer; }
+.m-cell-move:hover { background: rgba(74, 222, 128, 0.32); }
+.m-cell-capture { border: 2px solid rgba(248, 113, 113, 0.8); cursor: pointer; animation: mPulse 1s ease infinite; }
+@keyframes mPulse {
+  0%, 100% { border-color: rgba(248, 113, 113, 0.9); }
+  50% { border-color: rgba(248, 113, 113, 0.4); }
+}
+.m-move-dot {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 26%;
+  height: 26%;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.6);
+  animation: mPulseDot 1.2s ease infinite;
+}
+@keyframes mPulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; }
+}
+.m-magnet {
+  position: absolute;
+  inset: 8%;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.m-magnet-player { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+.m-magnet-ai { background: linear-gradient(135deg, #f87171, #dc2626); }
+.m-magnet-selected { outline: 2px solid #facc15; outline-offset: 1px; transform: scale(1.1); }
+.m-pole { line-height: 1; }
+.m-pole-bar { width: 55%; height: 3px; margin-top: 2px; border-radius: 2px; }
+.m-bar-n { background: #fecaca; }
+.m-bar-s { background: #bfdbfe; }
+
+.m-turn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  min-width: 220px;
+  text-align: center;
+}

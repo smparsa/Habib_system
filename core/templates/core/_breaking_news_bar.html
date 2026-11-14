@@ -1,0 +1,13 @@
+{% comment %} نوار «اخبار فوری» هدر (فقط‌خواندنی) — در همهٔ هدرهای کاربرانِ واردشده،
+   بالا و کنار فیلد جستجو نمایش داده می‌شود. متن‌ها از پنل مدیریت (ماژول «اخبار فوری»)
+   می‌آیند و در بازهٔ زمانی تعیین‌شده، به‌ترتیب پشت‌سرهم با سرعتِ هر خبر، به‌صورت
+   خطی و متحرک (حرکت از چپ به راست) پخش می‌شوند. {% endcomment %}
+{% if breaking_news %}
+{{ breaking_news|json_script:"hb-news-data" }}
+<div class='hb-news-ticker' data-news-ticker aria-live='off' title='اخبار فوری'>
+  <span class='hb-news-ticker-badge'><i class='bi bi-broadcast-pin'></i> خبر فوری</span>
+  <div class='hb-news-ticker-viewport'>
+    <span class='hb-news-ticker-text' data-news-text></span>
+  </div>
+</div>
+{% endif %}

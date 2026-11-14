@@ -1,0 +1,32 @@
+{% comment %} منوی سایدبار مشترک — با nav_active حالت فعال سمت سرور مشخص می‌شود
+   مثال: {% include "core/_sidebar_nav.html" with nav_active="wallet" %} {% endcomment %}
+<ul class='hb-sidebar-nav'>
+  <li class='hb-sidebar-item hb-nav-group'>
+    <a href="{% url 'core:dashboard' %}" class='hb-sidebar-link{% if nav_active == "dashboard" %} active{% endif %} hb-nav-group-toggle'>
+      <i class='bi bi-speedometer2'></i><span data-i18n='dashboard'>داشبورد</span>
+      <i class='bi bi-chevron-down hb-nav-caret' title='باز کردن زیرمنو'></i>
+    </a>
+    <ul class='hb-nav-submenu'>
+      <li class='hb-nav-subitem'><a href="{% url 'core:profile' %}" class='hb-nav-sublink{% if nav_active == "profile" %} active{% endif %}'><i class='bi bi-person'></i><span data-i18n='profile_resume'>پروفایل من-رزومه</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'wallet:dashboard' %}" class='hb-nav-sublink{% if nav_active == "wallet" %} active{% endif %}'><i class='bi bi-wallet2'></i><span>کیف پول و سکه</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'wallet:history' %}" class='hb-nav-sublink{% if nav_active == "wallet_history" %} active{% endif %}'><i class='bi bi-clock-history'></i><span>تاریخچهٔ تراکنش‌ها</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'tickets:center' %}" class='hb-nav-sublink{% if nav_active == "tickets" %} active{% endif %}'><i class='bi bi-chat-left-dots'></i><span>مرکز تیکت</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'accounting:index' %}" class='hb-nav-sublink{% if nav_active == "accounting" %} active{% endif %}'><i class='bi bi-graph-up'></i><span data-i18n='accounting'>حسابداری</span></a></li>
+      {% if request.user.is_staff %}<li class='hb-nav-subitem'><a href="{% url 'tickets:staff' %}" class='hb-nav-sublink{% if nav_active == "tickets_staff" %} active{% endif %}'><i class='bi bi-clipboard-data'></i><span>مدیریت تیکت‌ها</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'adminpanel:dashboard' %}" class='hb-nav-sublink{% if nav_active == "admin" %} active{% endif %}'><i class='bi bi-sliders2-vertical'></i><span>پنل مدیریت</span></a></li>{% endif %}
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-people'></i><span data-i18n='hr'>منابع انسانی</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-handshake'></i><span data-i18n='crm'>مدیریت ارتباط با مشتری</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'ads:home' %}" class='hb-nav-sublink{% if nav_active == "ads" %} active{% endif %}'><i class='bi bi-megaphone'></i><span data-i18n='ads'>تبلیغات</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'cloudstorage:home' %}" class='hb-nav-sublink{% if nav_active == "cloud" %} active{% endif %}'><i class='bi bi-cloud-arrow-up'></i><span>فضای ذخیره‌سازی ابری</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-building'></i><span data-i18n='office'>دفتر</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-box-seam'></i><span data-i18n='inventory'>انبار</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-cart-check'></i><span data-i18n='sales'>فروش</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-currency-dollar'></i><span data-i18n='finance'>مالی</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-file-earmark-text'></i><span data-i18n='documents'>اسناد</span></a></li>
+      <li class='hb-nav-subitem'><a href="{% url 'calendar_converter:converter' %}" class='hb-nav-sublink{% if nav_active == "calendar" %} active{% endif %}'><i class='bi bi-calendar-event'></i><span>تقویم و ساعت جاری</span></a></li>
+      <li class='hb-nav-subitem'><a href='#' class='hb-nav-sublink'><i class='bi bi-cpu'></i><span data-i18n='ai_assistant'>دستیار هوشمند</span></a></li>
+    </ul>
+  </li>
+  <li class='hb-sidebar-item'><a href="{% url 'magazine:list' %}" class='hb-sidebar-link{% if nav_active == "magazine" %} active{% endif %}'><i class='bi bi-newspaper'></i><span>مجله دانستنی‌ها</span></a></li>
+  <li class='hb-sidebar-item'><a href="{% url 'games:home' %}" class='hb-sidebar-link{% if nav_active == "games" %} active{% endif %}'><i class='bi bi-controller'></i><span>مرکز بازی</span></a></li>
+</ul>

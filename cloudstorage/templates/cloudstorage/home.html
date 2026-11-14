@@ -1,0 +1,820 @@
+{% extends "cloudstorage/base_cloud.html" %}
+{% load core_extras %}
+{% block title %}فضای ذخیره‌سازی ابری - HabibHub{% endblock %}
+{% block cloud_content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-cloud-arrow-up'></i> فضای ذخیره‌سازی ابری (Cloud Object Storage)</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    عملیات <b>همگام‌سازی (Sync)</b> بین پوشه دستگاه شما و فضای ابری. می‌توانید هم‌زمان آپلود و دانلود انجام دهید.
+    هزینه پیش از انجام عملیات نمایش داده می‌شود و پرداخت از کیف پول سکه انجام می‌گردد.
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;max-width:1000px;'>
+  {% if messages %}
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;{% if message.tags == "success" %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == "error" %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if message.tags == "success" %}bi-check-circle{% elif message.tags == "error" %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+        {% if "goto-wallet" in message.tags %}<a href="{% url 'wallet:dashboard' %}" style='margin-inline-start:0.5rem;font-weight:700;'>رفتن به کیف پول</a>{% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if recovery %}
+  <div class='hb-card' style='border:1px solid #d4a017;background:rgba(200,140,20,0.08);'>
+    <div style='display:flex;align-items:center;gap:1rem;flex-wrap:wrap;'>
+      <i class='bi bi-exclamation-triangle' style='color:var(--hb-gold-300);font-size:1.3rem;'></i>
+      <div style='flex:1;min-width:220px;'>
+        <b>یک عملیات آپلود نیمه‌کاره دارید</b> ({{ recovery.get_status_display }} — «{{ recovery.folder_name }}»).
+        وضعیت پرداخت و آپلود پس از قطع ارتباط قابل بازیابی است؛ پوشه را دوباره انتخاب کنید تا ادامه یابد.
+      </div>
+      <a class='hb-btn hb-btn-primary hb-btn-sm' href="{% url 'cloudstorage:session_detail' recovery.token %}" style='text-decoration:none;'>ادامه عملیات</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- سهمیه -->
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-hdd-stack'></i> فضای مصرفی شما</div>
+      <a href="{% url 'cloudstorage:browse' %}" style='font-size:0.85rem;'>فضای ابری من <i class='bi bi-arrow-left'></i></a>
+    </div>
+    <div style='display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;'>
+      <div style='flex:1;min-width:220px;'>
+        <div style='height:12px;background:var(--hb-navy-800);border-radius:8px;overflow:hidden;border:1px solid var(--hb-border);'>
+          <div style='height:100%;width:{{ used_pct }}%;background:linear-gradient(90deg,var(--hb-gold-400),var(--hb-gold-300));'></div>
+        </div>
+        <div style='font-size:0.78rem;color:var(--hb-text-muted);margin-top:0.4rem;'>
+          {{ account.files_count }} فایل در {{ account.folders_count }} پوشه —
+          مصرف {{ account.used_bytes|filesizeformat }} از {{ account.quota_bytes|filesizeformat }}
+        </div>
+      </div>
+      <div style='font-size:0.8rem;color:var(--hb-text-muted);text-align:center;'></div>
+    </div>
+
+    <!-- مدیریت فضای ابری (پیش‌فرض 25MB + خرید بیشتر) -->
+    <div id='spaceMgmt' style='margin-top:0.9rem;border-top:1px solid var(--hb-border);padding-top:0.7rem;'>
+      <div style='font-size:0.8rem;margin-bottom:0.45rem;'>
+        <i class='bi bi-hdd-stack'></i> مدیریت فضای ابری —
+        پیش‌فرض: <b>{{ free_mb }} مگابایت</b> |
+        خریداری‌شده: <b id='spcPurchased'>{{ purchased_gb|floatformat:2 }}</b> GB (فعال)
+        {% if wallet_balance is not None %} | موجودی سکهٔ شما: <b id='walletBalanceVal' style='color:var(--hb-gold-300);'>{{ wallet_balance|floatformat:2 }}</b> سکه{% endif %}
+        | <a href="{% url 'wallet:dashboard' %}" style='color:var(--hb-gold-300);text-decoration:underline;white-space:nowrap;'><i class='bi bi-wallet2'></i> کیف پول و سکه</a>
+      </div>
+              {% if purchase_rows %}
+      <div style='font-size:0.75rem;margin-bottom:0.5rem;'>
+        <div style='color:var(--hb-text-muted);margin-bottom:0.25rem;'><i class='bi bi-clock-history'></i> وضعیت فضای ابری خریداری‌شدهٔ شما:</div>
+        {% for row in purchase_rows %}
+        <div style='border:1px solid var(--hb-border);border-radius:8px;padding:0.35rem 0.6rem;margin-bottom:0.3rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center;'>
+          <span><i class='bi bi-hdd'></i> <b>{{ row.gb|floatformat:2 }}</b> GB</span>
+          <span style='color:var(--hb-text-muted);'>معتبر تا:</span> <b dir='ltr'>{{ row.until|date:'Y-m-d H:i' }}</b>
+          <span style='color:var(--hb-gold-300);'><i class='bi bi-hourglass-split'></i> باقی‌مانده: {{ row.days_left }} روز و {{ row.hours_left }} ساعت</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if space_price %}
+      <div style='display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;font-size:0.78rem;'>
+        <label>فضا (GB):
+          <input type='number' id='spcGb' min='0.25' max='2048' step='0.25' value='1' class='hb-form-control' style='width:95px;margin-top:0.2rem;'>
+        </label>
+        <label>مدت (روز):
+          <select id='spcDays' class='hb-form-control' style='width:120px;margin-top:0.2rem;'>
+            <option value='7'>۷ روز</option>
+            <option value='30' selected>۳۰ روز</option>
+            <option value='90'>۹۰ روز</option>
+            <option value='180'>۱۸۰ روز</option>
+            <option value='365'>۳۶۵ روز</option>
+          </select>
+        </label>
+        <div style='min-width:150px;'>هزینهٔ برآوردی: <b id='spcCost' style='color:var(--hb-gold-300);'>—</b> سکه</div>
+        <button type='button' id='btnBuySpace' class='hb-btn hb-btn-primary hb-btn-sm' data-price='{{ space_price }}'>
+          <i class='bi bi-cart-plus'></i> خرید فضای ابری
+        </button>
+      </div>
+      <div style='font-size:0.7rem;color:var(--hb-text-muted);margin-top:0.35rem;'>
+        سقف فعلی شما: {{ account.quota_bytes|filesizeformat }}
+      </div>
+      <div id='spcMsg' style='display:none;margin-top:0.4rem;font-size:0.78rem;'></div>
+      {% else %}
+      <div style='font-size:0.75rem;color:#e74c3c;'><i class='bi bi-exclamation-triangle'></i> تعرفهٔ خرید فضای ابری در پنل مدیریت فعال نشده است؛ فعلاً فقط پیش‌فرض 25 مگابایت در دسترس است.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- گام ۱: انتخاب مبدأ -->
+  <div class='hb-card'>
+    <div style='font-weight:700;margin-bottom:0.6rem;'>۱. مبدأ را انتخاب کنید</div>
+    <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;margin-top:0.75rem;'>
+      <label style='font-size:0.8rem;'>مبدأ (مقصد به‌صورت خودکار تعیین می‌شود):
+        <select id='syncDirection' class='hb-form-control' style='margin-top:0.25rem;'>
+          <option value='upload'>دستگاه ← فضای ابری (آپلود و Sync)</option>
+          <option value='download'>فضای ابری ← دستگاه (دانلود و Sync)</option>
+        </select>
+      </label>
+      <label style='font-size:0.8rem;display:none;' id='cloudSourceWrap'>پوشهٔ مبدأ در فضای ابری (از قبل موجود):
+        <select id='cloudSourceFolder' class='hb-form-control' style='margin-top:0.25rem;'>
+          <option value=''>— پوشهٔ مبدأ را از فضای ابری انتخاب کنید —</option>
+          {% for f in existing_folders %}<option value='{{ f.uid }}'>{{ f.name }}</option>{% endfor %}
+        </select>
+        <div style='font-size:0.7rem;color:var(--hb-text-muted);margin-top:0.3rem;'>فهرست پوشه‌های فضای ابری شما از سرور خوانده می‌شود؛ پوشهٔ هم‌نام در دستگاه باید موجود باشد.</div>
+      </label>
+    </div>
+  </div>
+
+  <!-- گام ۲: پوشهٔ دستگاه (غیرفعال می‌ماند تا خرید مجدد فضای ابری) -->
+  <div class='hb-card' id='pickStepCard' style='display:none;margin-top:0.75rem;'>
+    <div style='font-weight:700;margin-bottom:0.5rem;'>۲. پوشهٔ دستگاه</div>
+    <div id='pickStatus' style='font-size:0.78rem;color:var(--hb-text-muted);margin-bottom:0.5rem;'>—</div>
+    <div id='folderDisabled' style='display:none;font-size:0.78rem;color:#e74c3c;'></div>
+    <button type='button' id='btnPickDir' class='hb-btn hb-btn-primary hb-btn-sm'>
+      <i class='bi bi-folder-plus'></i> انتخاب پوشهٔ دستگاه
+    </button>
+    <input type='file' id='dirInput' webkitdirectory directory multiple style='display:none;'>
+  </div>
+
+  <!-- پیش‌نمایش و پیش‌فاکتور -->
+  <div class='hb-card' id='previewCard' style='display:none;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-clipboard-check'></i> ۳. تأیید پیش از همگام‌سازی</div>
+    </div>
+    <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;font-size:0.83rem;'>
+      <div><span style='color:var(--hb-text-muted);'>پوشه:</span> <b id='pvName'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>مسیر منطقی:</span> <b dir='ltr' id='pvPath'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>فایل / زیرپوشه:</span> <b id='pvCounts'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>حجم کل:</span> <b id='pvTotal'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>جدید / بدون تغییر / تغییرکرده:</span> <b id='pvStates'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>تکراری / خطا:</span> <b id='pvDup'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>اتصال به پوشهٔ هم‌نام:</span> <b id='pvAttach'>—</b></div>
+      <div><span style='color:var(--hb-text-muted);'>فضای فعلی شما:</span> <b>{{ account.used_bytes|filesizeformat }} / {{ account.quota_bytes|filesizeformat }}</b></div>
+      <div><span style='color:var(--hb-text-muted);'>هزینهٔ برآوردی:</span> <b style='color:var(--hb-gold-300);' id='pvCost'>—</b></div>
+    </div>
+    <div id='pvInvalid' style='display:none;margin-top:0.6rem;padding:0.6rem 0.8rem;border-radius:8px;background:rgba(192,57,43,0.12);color:#e74c3c;font-size:0.8rem;'></div>
+
+    <div style='display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:1rem;align-items:flex-end;'>      <label id='folderNameWrap' style='font-size:0.8rem;'>نام پوشه در فضای ابری:
+        <input type='text' id='folderName' class='hb-form-control' style='margin-top:0.25rem;min-width:200px;'>
+      </label>
+      <button type='button' id='btnPay' class='hb-btn hb-btn-primary'>
+        <i class="bi bi-wallet2"></i> یکسان‌سازی (Sync)
+      </button>
+    </div>
+
+    <div id='progressWrap' style='display:none;margin-top:1rem;'>
+      <div style='height:12px;background:var(--hb-navy-800);border-radius:8px;overflow:hidden;border:1px solid var(--hb-border);'>
+        <div id='progressBar' style='height:100%;width:0%;background:linear-gradient(90deg,var(--hb-gold-400),var(--hb-gold-300));transition:width .3s;'></div>
+      </div>
+      <div id='progressText' style='font-size:0.78rem;color:var(--hb-text-muted);margin-top:0.35rem;'>—</div>
+    </div>
+    <div id='doneWrap' style='display:none;margin-top:0.75rem;'></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var CSRF = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1] || '';
+  var JSON_HEADERS = {'Content-Type':'application/json','X-CSRFToken':CSRF,'X-Requested-With':'XMLHttpRequest'};
+  var pickedFiles = {};   // relpath -> File
+  var pickedFolders = []; // مسیر نسبی زیرپوشه‌ها (شامل خالی‌ها)
+  var source = null;
+  var manifestCache = [];
+  var deviceRootName = null; // نام پوشهٔ انتخاب‌شده از دستگاه (برای کنترل هم‌نامی با مبدأ ابری)
+  // «اتصال به پوشهٔ هم‌نام» حالا همیشه خودکار است؛ پیش‌فرض از لینک «Sync دستی» (؟target=uid) حفظ می‌شود
+  var presetTargetUid = '{{ request.GET.target|default:"" }}';
+
+  // ---------- «Please Wait…» برای هر فرایند بیش از 2 ثانیه ----------
+  // اورلیِ جداگانهٔ این صفحه حذف شد: کل برنامه یک اورلیِ واحد دارد (core/js/please_wait.js؛ سکهٔ
+  // حبیب‌هاب) تا با اورلی سراسری هم‌زمان دو اورلی نمایش داده نشود. beginWait/endWait فقط واسطه‌اند؛
+  // window.hbWait هم از همان فایل ساخته می‌شود (برای اسکریپت‌های بعدیِ صفحه مثل خرید فضای ابری).
+  function beginWait(label){ var P = window.hbPleaseWait; if(P){ P.begin(label); } }
+  function endWait(){ var P = window.hbPleaseWait; if(P){ P.end(); } }
+
+  // ---------- نمایش/مخفی کردن پوشهٔ مبدأ ابری بر اساس مبدأ ----------
+  var selDir = document.getElementById('syncDirection');
+  var cloudWrap = document.getElementById('cloudSourceWrap');
+  // در حالت دانلود کنترل‌های آپلود پنهان و دکمهٔ «لغو» به «انتخاب پوشهٔ هم‌نام از دستگاه» تبدیل می‌شود
+  function refreshPreviewControls(){
+    var isDownload = currentDirection() === 'download';
+    var fnW = document.getElementById('folderNameWrap');
+    if(fnW){ fnW.style.display = isDownload ? 'none' : ''; }
+  }
+  function refreshOriginUI(){
+    if(!selDir || !cloudWrap){ return; }
+    var isDownload = selDir.value === 'download';
+    cloudWrap.style.display = isDownload ? 'block' : 'none';
+    if(!isDownload){ document.getElementById('cloudSourceFolder').value = ''; }
+    refreshPreviewControls();
+    // گام بعدی در ادامهٔ همین صفحه — بدون دکمهٔ جداگانه
+    var pickCard = document.getElementById('pickStepCard');
+    if(pickCard){ pickCard.style.display = 'block'; }
+    var b = document.getElementById('btnPickDir');
+    var st = document.getElementById('pickStatus');
+    var cs = document.getElementById('cloudSourceFolder');
+    var cloudOk = !isDownload || !!(cs && cs.value);
+    var adminEnabled = {% if sts.folder_upload_enabled %}true{% else %}false{% endif %};
+    b.disabled = !adminEnabled || !cloudOk;
+    b.innerHTML = isDownload
+      ? '<i class="bi bi-folder-plus"></i> انتخاب پوشهٔ هم‌نام از دستگاه'
+      : '<i class="bi bi-folder-plus"></i> انتخاب پوشهٔ دستگاه';
+    st.textContent = !adminEnabled
+      ? 'انتخاب پوشه از طرف مدیر غیرفعال شده است.'
+      : isDownload
+        ? (cloudOk ? 'پوشهٔ هم‌نامِ پوشهٔ ابری انتخابی را از دستگاه انتخاب کنید.' : 'ابتدا پوشهٔ مبدأ را از فضای ابری انتخاب کنید.')
+        : 'پوشهٔ دستگاه را انتخاب کنید؛ پیش‌نمایش در ادامهٔ همین صفحه می‌آید.';
+  }
+  // مبدأ انتخاب‌شده بعد از رفرش حفظ شود (فهرست پوشه‌های ابری هر بار تازه از سرور خوانده می‌شود)
+  if(selDir){
+    try{
+      var qOrigin = new URLSearchParams(window.location.search).get('origin');
+      if(qOrigin === 'upload' || qOrigin === 'download'){ selDir.value = qOrigin; }
+    }catch(e){}
+    selDir.addEventListener('change', function(){
+      // با هر تغییر مبدأ، صفحه رفرش می‌شود تا «پوشهٔ مبدأ در فضای ابری» کامل و به‌روز نمایش یابد
+      var u = new URL(window.location.href);
+      u.searchParams.set('origin', selDir.value);
+      u.searchParams.set('_', Date.now());
+      window.location.href = u.toString();
+    });
+    refreshOriginUI();
+  }
+
+  // مبدأ ابری: در حالت دانلود، پوشهٔ ابری انتخابی مبدأ (و مقصدِ اتصال) است
+  function currentDirection(){ return selDir ? selDir.value : 'upload'; }
+  function currentTargetUid(){
+    if(currentDirection() === 'download'){
+      return document.getElementById('cloudSourceFolder').value || '';
+    }
+    // حالت آپلود: اتصال پوشهٔ هم‌نام خودکار است؛ پیش‌فرض فقط از لینک «Sync دستی»
+    return presetTargetUid || '';
+  }
+  // نام پوشهٔ مبدأ ابری (برچسبِ گزینهٔ انتخاب‌شده)
+  function cloudSourceName(){
+    if(currentDirection() !== 'download') return null;
+    var sel = document.getElementById('cloudSourceFolder');
+    if(!sel || !sel.value) return null;
+    var opt = sel.options[sel.selectedIndex];
+    return opt ? (opt.textContent || '').trim() : '';
+  }
+  // «کنترل درست» نام‌ها: نام پوشهٔ دستگاه باید با نام پوشهٔ مبدأ ابری یکی باشد
+  function folderNamesMatch(){
+    var c = cloudSourceName(), d = deviceRootName;
+    return !!(c && d && d.trim() && c.toLowerCase() === d.trim().toLowerCase());
+  }
+  document.getElementById('cloudSourceFolder').addEventListener('change', function(){
+    refreshOriginUI();
+    // تغییر پوشهٔ مبدأ ابری در حالت دانلود → کنترل نام‌ها و برنامهٔ تازه
+    if(currentDirection() === 'download' && Object.keys(pickedFiles).length){ startQuote(deviceRootName || ''); }
+  });
+
+  function fmtBytes(n){ if(n<1024) return n+' B'; var u=['KB','MB','GB','TB'];var i=-1;do{n/=1024;i++;}while(n>=1024&&i<u.length-1);return n.toFixed(1)+' '+u[i]; }
+
+  function show(html){ var el=document.getElementById('previewCard'); el.style.display='block'; refreshPreviewControls(); try{ el.scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(e){} }
+
+  // ---------- انتخاب پوشه ----------
+  var btnDir = document.getElementById('btnPickDir');
+  var dirInput = document.getElementById('dirInput');
+  var hasFA = ('showDirectoryPicker' in window);
+  var hasWebkitDir = ('webkitdirectory' in document.createElement('input'));
+  if({% if sts.folder_upload_enabled %}true{% else %}false{% endif %} && !(hasFA || hasWebkitDir)){
+    btnDir.disabled = true;
+    var msg = document.getElementById('folderDisabled');
+    msg.style.display='block';
+    msg.textContent = 'انتخاب پوشه در این مرورگر/دستگاه پشتیبانی نمی‌شود (ISO/فایل‌سیستم محدود). از مرورگر یا دستگاه سازگار استفاده کنید.';
+  }
+  btnDir.addEventListener('click', function(){
+    if(btnDir.disabled) return;
+    if(hasFA){ beginWait('در حال آماده‌سازی انتخاب پوشهٔ دستگاه…'); pickDirectoryFA(); } else { dirInput.click(); }
+  });
+  dirInput.addEventListener('change', function(){
+    pickedFiles = {}; pickedFolders = [];
+    var files = Array.prototype.slice.call(dirInput.files);
+    if(!files.length) return;
+    beginWait('بررسی فایل‌های پوشهٔ دستگاه…');
+    // در مرورگرهای رایج webkitRelativePath = نام_پوشه/مسیر/فایل
+    var root = (files[0].webkitRelativePath||'').split('/')[0];
+    if(!root){ endWait(); alertBox('ساختار پوشه شناسایی نشد — مرورگر maybe فقط فایل‌های سطحی برگردانده. دوباره تلاش کنید.'); return; }
+    files.forEach(function(f){
+      var rel = (f.webkitRelativePath||f.name);
+      if(rel.indexOf(root+'/')===0) rel = rel.slice(root.length+1);
+      pickedFiles[rel] = f;
+      var parts = rel.split('/'); parts.pop();
+      for(var i=1;i<=parts.length;i++){ var d=parts.slice(0,i).join('/'); if(pickedFolders.indexOf(d)<0) pickedFolders.push(d); }
+    });
+    deviceRootName = root;
+    source = 'folder';
+    showPickResult(root);
+    startQuote(root);
+  });
+
+  async function pickDirectoryFA(){
+    try{
+      var handle = await window.showDirectoryPicker({mode: currentDirection() === 'download' ? 'readwrite' : 'read'});
+      // پس از تأیید کاربر، اسکن کل درخت پوشه می‌تواند طولانی باشد → پیام Wait آماده می‌شود
+      beginWait('در حال اسکن پوشهٔ دستگاه…');
+      // دستگیرهٔ همان انتخاب اول نگه داشته می‌شود تا هنگام ذخیرهٔ فایل‌ها پنجرهٔ انتخاب پوشه دوباره باز نشود
+      dirFSHandle = handle;
+      pickedFiles = {}; pickedFolders = [];
+      await walkDir(handle, '');
+      deviceRootName = handle.name;
+      source = 'folder';
+      showPickResult(handle.name);
+      startQuote(handle.name);
+    }catch(e){ endWait(); /* کاربر انصراف داد یا مجوز رد شد */ }
+  }
+  async function walkDir(handle, prefix){
+    for await (var entry of handle.values()){
+      var rel = prefix ? prefix+'/'+entry.name : entry.name;
+      if(entry.kind === 'directory'){
+        pickedFolders.push(rel);
+        await walkDir(entry, rel);
+      } else {
+        var file = await entry.getFile();
+        pickedFiles[rel] = file;
+      }
+    }
+  }
+  // پس از شناسایی پوشهٔ دستگاه: فهرست ساختار در گام ۲ + اسکرول به گام ۳
+  function showPickResult(root){
+    var st = document.getElementById('pickStatus');
+    var n = Object.keys(pickedFiles).length, f = pickedFolders.length;
+    st.innerHTML = 'پوشهٔ «<b>' + root + '</b>» انتخاب شد — ' + n + ' فایل / ' + f + ' زیرپوشه. ' +
+      '<a href="#previewCard" style="margin-inline-start:0.3rem;">برو به پیش‌نمایش ↓</a>';
+    var pc = document.getElementById('previewCard');
+    if(pc){ try{ pc.scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(e){} }
+  }
+
+  // ---------- گالری (حذف شده) ----------
+
+  // ---------- برآورد (پیش‌فاکتور سمت سرور) ----------
+  function startQuote(defaultName){
+    if(currentDirection() === 'download'){ return startDownloadPlan(); }
+    beginWait('محاسبهٔ پیش‌فاکتور…');
+    // برآورد تازه → پیغام خطای قبلی پاک شود
+    var inv = document.getElementById('pvInvalid');
+    inv.style.display = 'none'; inv.textContent = '';
+    show(); // قدم بعدی همواره درست نمایش داده شود و خطا هم در داخل آن مرئی باشد
+    document.getElementById('folderName').value = defaultName;
+    document.getElementById('pvName').textContent = defaultName;
+    document.getElementById('pvPath').textContent = defaultName + '/';
+    var names = Object.keys(pickedFiles);
+    var total = names.reduce(function(s,k){ return s + (pickedFiles[k].size||0); }, 0);
+    document.getElementById('pvCounts').textContent = names.length + ' فایل / ' + pickedFolders.length + ' زیرپوشه';
+    document.getElementById('pvTotal').textContent = fmtBytes(total);
+    document.getElementById('progressWrap').style.display='none';
+    document.getElementById('doneWrap').style.display='none';
+    (function(){ // انتخابِ جدید → دکمه دوباره نمایش داده شود با متن اصلی
+      var pb = document.getElementById('btnPay');
+      pb.style.display = '';
+      pb.innerHTML = '<i class="bi bi-wallet2"></i> یکسان‌سازی (Sync)';
+    })();
+    document.getElementById('btnPay').disabled = true;
+    document.getElementById('pvCost').textContent = 'در حال محاسبه…';
+    // اگر گرید انتخاب شده پس از برآورد، می‌توانست پیش‌نمایش نام/هدف را از سرور بگیرد — اما اینجا فقط ذخیره می‌شود
+    document.getElementById('pvAttach').style.display = 'none';
+    document.getElementById('pvAttach').textContent = '';
+    if(currentDirection() === 'download' && !currentTargetUid()){
+      alertBox('برای مبدأ «فضای ابری» ابتدا پوشهٔ مبدأ را از فضای ابری خود انتخاب کنید.');
+      document.getElementById('pvCost').textContent = '—';
+      endWait();
+      return;
+    }
+
+    var payload = {
+      source: source,
+      direction: currentDirection(),
+      folder_name: defaultName,
+      files: names.map(function(k){ return {relpath:k, size: pickedFiles[k].size, mtime: pickedFiles[k].lastModified}; }),
+      folders: pickedFolders.slice(),
+      target_uid: currentTargetUid()
+    };
+    fetch('{% url "cloudstorage:api_quote" %}', {method:'POST', headers:JSON_HEADERS, body:JSON.stringify(payload)})
+      .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+      .then(function(res){
+        if(!res.data.ok){ alertBox(res.data.error||'خطا در برآورد'); document.getElementById('pvCost').textContent='—'; console.log('quote err', res.data); endWait(); return; }
+        manifestCache = res.data.manifest || [];
+        var st = res.data.stats;
+        document.getElementById('pvCounts').textContent = st.files_count + ' فایل / ' + st.folders_count + ' زیرپوشه';
+        document.getElementById('pvTotal').textContent = fmtBytes(st.bytes_total);
+        document.getElementById('pvStates').textContent = st.new_count + ' / ' + st.unchanged_count + ' / ' + st.changed_count;
+        document.getElementById('pvDup').textContent = st.duplicate_count + ' تکراری';
+        document.getElementById('pvCost').textContent = (st.total_cost != null && st.total_cost !== '' ? (st.total_cost + ' سکه (ذخیره‌سازی ' + st.storage_cost + ' + انتقال ' + st.transfer_cost + ')') : 'رسیده — پوشه بدون فایل ( mencionBot تنها ساختار ثبت می‌شود)');
+        var inv = document.getElementById('pvInvalid');
+        if(st.invalid && st.invalid.length){ inv.style.display='block'; inv.textContent = st.invalid.join(' | '); document.getElementById('btnPay').disabled = true; document.getElementById('btnPay').classList.add('hb-btn-disabled'); }
+        else { inv.style.display='none'; document.getElementById('btnPay').disabled = false; document.getElementById('btnPay').classList.remove('hb-btn-disabled'); }
+        var att = document.getElementById('pvAttach');
+        if(res.data.attached){
+          att.style.display='block';
+          att.textContent = 'به پوشهٔ ابری «' + (res.data.attached_name||'') + '» متصل شدید؛ فقط فایل‌های جدید/تغییرکرده آپلود و هزینه می‌بینند (فقط Sync).';
+          document.getElementById('pvPath').textContent = res.data.attached_path || (defaultName + '/');
+        } else {
+          att.style.display='none';
+        }
+        document.getElementById('btnPay').disabled = false;
+        document.getElementById('btnPay').dataset.token = res.data.token;
+        endWait();
+      })
+      .catch(function(){ endWait(); alertBox('خطای شبکه در برآورد؛ دوباره تلاش کنید.'); });
+  }
+
+  function alertBox(t){
+    var inv = document.getElementById('pvInvalid');
+    inv.style.display='block'; inv.textContent = t;
+  }
+
+  // ---------- فاز دانلود (ابر ← دستگاه): برنامهٔ سمت سرور + انتقال واقعی فایل‌ها ----------
+  async function startDownloadPlan(){
+    var uid = currentTargetUid();
+    var btn = document.getElementById('btnPay');
+    if(!uid){
+      show();
+      alertBox('برای مبدأ «فضای ابری» ابتدا پوشهٔ مبدأ را از فضای ابری خود انتخاب کنید.');
+      endWait();
+      return;
+    }
+    // جلوگیری از خطا: پوشهٔ دستگاه باید انتخاب و هم‌نامِ پوشهٔ مبدأ ابری باشد
+    if(!deviceRootName){
+      show();
+      alertBox('ابتدا پوشهٔ هم‌نام را از دستگاه انتخاب کنید (دکمهٔ «انتخاب پوشهٔ هم‌نام از دستگاه»).');
+      btn.disabled = true;
+      endWait();
+      return;
+    }
+    if(!folderNamesMatch()){
+      show();
+      btn.disabled = true;
+      delete btn.dataset.downloadPlan;
+      var cName0 = cloudSourceName();
+      var att0 = document.getElementById('pvAttach');
+      att0.style.display = 'block';
+      att0.textContent = 'نام‌ها یکی نیستند: دستگاه «' + deviceRootName + '» ≠ ابر «' + cName0 + '»';
+      alertBox('نام پوشهٔ دستگاه («' + deviceRootName + '») با نام پوشهٔ مبدأ در فضای ابری («' + cName0 + '») یکی نیست — با دکمهٔ گام ۲ پوشهٔ هم‌نام را برگزینید.');
+      endWait();
+      return;
+    }
+    // نام‌ها هم‌اکنون درست است → پیغام خطای قبلی (عدم تطابق) پاک شود
+    document.getElementById('pvInvalid').style.display = 'none';
+    show();
+    document.getElementById('pvCost').textContent = 'در حال آماده‌سازی…';
+    beginWait('تهیهٔ برنامهٔ دانلود از فضای ابری…');
+    // سینک کامل ابر ← دستگاه: همهٔ محتوای ابر باید به دستگاه منتقل شود؛
+    // مانیفست محلی خالی می‌فرستیم تا سرور همهٔ فایل‌های ابری را «new» ببیند و دانلود کند
+    var payload = {files: []};
+    try{
+      var r = await fetch('{% url "cloudstorage:sync_download_plan" "UID" %}'.replace('UID', uid),
+        {method:'POST', headers:JSON_HEADERS, body:JSON.stringify(payload)});
+      var d = await r.json();
+      if(!d.ok){ alertBox(d.error||'خطا در برنامهٔ دانلود'); endWait(); return; }
+      var st = d.stats;
+      document.getElementById('pvName').textContent = d.folder || '—';
+      document.getElementById('pvPath').textContent = (d.folder || '') + '/';
+      document.getElementById('pvCounts').textContent = st.files_download + ' فایل برای دانلود / ' + st.folders_to_create + ' زیرپوشه';
+      document.getElementById('pvTotal').textContent = fmtBytes(st.bytes_download);
+      document.getElementById('pvStates').textContent = st.files_new + ' / ۰ / ' + st.files_changed;
+      document.getElementById('pvDup').textContent = '0 تکراری';
+      document.getElementById('pvCost').textContent = (parseFloat(st.total_cost) || 0).toFixed(2) + ' سکه';
+      // نام‌ها درست شد → پیغام عدم تطابق قبلی پاک شود و وضعیت اتصال نشان داده شود
+      var att = document.getElementById('pvAttach');
+      att.style.display = 'block';
+      att.textContent = 'پوشهٔ دستگاه «' + deviceRootName + '» متصل به پوشهٔ ابری «' + (d.folder || cloudSourceName()) + '» ✓';
+      document.getElementById('pvInvalid').style.display = 'none';
+      document.getElementById('btnPay').disabled = false;
+      document.getElementById('btnPay').dataset.downloadPlan = JSON.stringify(d);
+      endWait();
+    }catch(e){
+      endWait();
+      alertBox('خطای شبکه در برنامهٔ دانلود؛ دوباره تلاش کنید.');
+    }
+  }
+
+  var lastDownloadCharge = null;
+  async function runDownloadPlan(plan, folderLocalName){
+    var btn = document.getElementById('btnPay');
+    btn.disabled = true;
+    var items = (plan.items||[]);
+    var dirs = (plan.folders||[]);
+    var done = 0, total = items.length;
+    var wrap = document.getElementById('progressWrap');
+    wrap.style.display='block';
+    function text(t){ document.getElementById('progressText').textContent = t; }
+    if(total === 0){
+      text('همهٔ فایل‌ها از قبل به‌روز هستند — چیزی برای دانلود نبود.');
+      document.getElementById('progressBar').style.width='100%';
+      showDownloadDone(plan, folderLocalName, items);
+      return;
+    }
+    for(var i=0; i<total; i++){
+      var m = items[i];
+      text('در حال دانلود ' + (i+1) + ' از ' + total + ': ' + m.relpath);
+      document.getElementById('progressBar').style.width = ((i)*100/Math.max(total,1))+'%';
+      try{
+        // دانلود از سرور (مالک-محدود) و ذخیره در دیسک دستگاه — بدون API key، فقط سشنِ لاگین کاربر
+        var resp = await fetch(m.url, {credentials:'same-origin'});
+        if(!resp.ok){ throw new Error('HTTP ' + resp.status); }
+        var blob = await resp.blob();
+        var outName = (folderLocalName ? folderLocalName + '/' : '') + m.relpath;
+        // مقصد، خود پوشهٔ انتخابی کاربر است — ریشهٔ ذخیره همان پوشهٔ هم‌نام است؛ پوشهٔ تکراری درون آن ساخته نشود
+        var relOnly = m.relpath;
+        try{
+          if(window.showDirectoryPicker || dirInput.webkitdirectory){ await saveToDevice(blob, relOnly, folderLocalName); }
+          else { triggerManualDownload(blob, outName.split('/').pop()); }
+        }catch(e){
+          // ذخیرهٔ خودکار ناموفق بود؛ به‌جای شکستن کل سشن، فایل را دستی می‌دهیم
+          triggerManualDownload(blob, outName.split('/').pop());
+        }
+        done++;
+        document.getElementById('progressBar').style.width = (done*100/total)+'%';
+        text(done + ' از ' + total + ' فایل دانلود شد');
+      }catch(e){
+        document.getElementById('progressText').innerHTML =
+          'دانلود متوقف شد در «' + m.relpath + '»: ' + (e&&e.message?e.message:'خطای شبکه') +
+          ' — دوباره تلاش کنید یا از صفحهٔ مرور، فایل را تک‌تک دانلود کنید.';
+        return;
+      }
+    }
+    document.getElementById('progressBar').style.width='100%';
+    text('همهٔ ' + total + ' فایل دانلود و روی دستگاه ذخیره شد. ✓');
+    // در پایان حلقه همهٔ فایل‌ها موفق دانلود شده‌اند؛ همان items معیار تأیید روی دستگاه است
+    showDownloadDone(plan, folderLocalName, items);
+  }
+
+  // پیغام پایانِ جهت «فضای ابری ← دستگاه» + لینک «رفتن به پوشهٔ دستگاه»
+  function showDownloadDone(plan, folderLocalName, items){
+    var dm = document.getElementById('doneWrap');
+    dm.style.display='block';
+    dm.innerHTML = '<span style="color:var(--hb-success);font-weight:700;">عملیات یکسان‌سازی دانلود کامل شد.</span> ' + (lastDownloadCharge && parseFloat(lastDownloadCharge.amount) > 0 ? 'مبلغ ' + lastDownloadCharge.amount + ' سکه از کیف پول شما کسر شد (موجودی: ' + lastDownloadCharge.balance + ' سکه) و به ادمین و شما اطلاع‌رسانی شد. ' : '') + ' <a href="#" id="goDeviceFolder" style="margin-inline-start:0.5rem;">رفتن به پوشهٔ دستگاه</a>';
+    document.getElementById('goDeviceFolder').addEventListener('click', async function(e){
+      e.preventDefault();
+      beginWait('در حال بازکردن پوشهٔ دستگاه…');
+      var handle = dirFSHandle;
+      // اگر دستگیرهٔ انتخاب اول از دست رفته، همان لحظه با انتخاب کاربر دوباره گرفته می‌شود
+      if(!handle && window.showDirectoryPicker){
+        try{ handle = await window.showDirectoryPicker({mode:'read'}); dirFSHandle = handle; }
+        catch(err){ return; } // کاربر انصراف داد
+      }
+      openDeviceFolder(handle, items, folderLocalName);
+    });
+  }
+
+  // باز کردن/بازبینی پوشهٔ دستگاهِ مقصد (لینکِ فعال پیغام دانلود)
+  async function openDeviceFolder(handle, items, folderLocalName){
+    if(!handle || !window.showDirectoryPicker){
+      endWait();
+      alertBox('این مرورگر بازکردن پوشهٔ دستگاه را پشتیبانی نمی‌کند؛ فایل‌ها با دانلود عادی مرورگر ذخیره شدند.');
+      return;
+    }
+    try{
+      // درخواست دسترسی به پوشهٔ انتخاب‌شدهٔ قبلی کاربر (پنجرهٔ انتخاب پوشهٔ دستگاه)
+      if((await handle.queryPermission({mode:'read'})) !== 'granted'){
+        if((await handle.requestPermission({mode:'read'})) !== 'granted'){
+          endWait();
+          alertBox('دسترسی خواندن پوشهٔ دستگاه داده نشد.');
+          return;
+        }
+      }
+      // تأیید فایل‌های دانلودشده روی خود دستگاه
+      var okN = 0, missing = [];
+      for(var i=0; i<items.length; i++){
+        var parts = (items[i].relpath||'').split('/');
+        var fname = parts.pop(); var cur = handle;
+        try{
+          for(var j=0; j<parts.length; j++){ cur = await cur.getDirectoryHandle(parts[j], {create:false}); }
+          await cur.getFileHandle(fname, {create:false});
+          okN++;
+        }catch(e){ missing.push(items[i].relpath); }
+      }
+      var dm = document.getElementById('doneWrap');
+      var txt = items.length
+        ? 'پوشهٔ دستگاه «' + (folderLocalName||handle.name) + '» — ' + okN + ' از ' + items.length + ' فایل روی دستگاه تأیید شد.'
+        : 'پوشهٔ دستگاه «' + (folderLocalName||handle.name) + '» باز شد — همهٔ فایل‌ها از قبل به‌روز بودند.';
+      if(missing.length){ txt += ' یافت‌نشده: ' + missing.slice(0,10).join('، ') + (missing.length>10 ? ' …' : ''); }
+      dm.innerHTML = '<span style="color:var(--hb-success);font-weight:700;">' + txt + '</span>';
+      endWait();
+    }catch(e){
+      endWait();
+      alertBox('بازکردن پوشهٔ دستگاه ممکن نشد؛ دوباره تلاش کنید.');
+    }
+  }
+
+  async function saveToDevice(blob, fullPath, rootName){
+    // ذخیره در مسیر پوشهٔ انتخابی کاربر (فقط File System Access API capacité تنبل)
+    if(window.showDirectoryPicker){
+      var dirHandle = dirFSHandle || await window.showDirectoryPicker({mode:'readwrite'});
+      dirFSHandle = dirHandle;
+      var parts = fullPath.split('/');
+      var fname = parts.pop();
+      var cur = dirHandle;
+      for(var i=0; i<parts.length; i++){
+        cur = await cur.getDirectoryHandle(parts[i], {create:true});
+      }
+      var fh = await cur.getFileHandle(fname, {create:true});
+      var w = await fh.createWritable();
+      await w.write(blob); await w.close();
+      return;
+    }
+    throw new Error('unsupported');
+  }
+  var dirFSHandle = null;
+
+  function triggerManualDownload(blob, name){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+  }
+
+  // تغییر نام/پوشهٔ هدف → برآورد مجدد
+  ['folderName'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', function(){
+      if(Object.keys(pickedFiles).length) startQuote(document.getElementById('folderName').value || 'پوشهٔ جدید');
+    });
+  });
+
+  // ---------- پرداخت → آپلود → تسویه ----------
+  document.getElementById('btnPay').addEventListener('click', function(){
+    var btn = this, token = btn.dataset.token;
+    // فاز دانلود (ابر ← دستگاه): مسیر جدا — بدون پرداخت، انتقال واقعی فایل‌ها
+    var planJson = btn.dataset.downloadPlan;
+    if(currentDirection() === 'download' && planJson){
+      delete btn.dataset.downloadPlan;
+      var plan0 = JSON.parse(planJson);
+      var rootName = plan0.folder || document.getElementById('folderName').value || 'cloud-download';
+      btn.disabled = true;
+      beginWait('در حال کسر هزینه و آماده‌سازی دانلود…');
+      // هزینه سمت سرور (تعرفهٔ Download ادمین × حجم) از کیف پول کسر می‌شود؛ سپس دانلود شروع می‌شود
+      fetch('{% url "cloudstorage:sync_download_charge" "UID" %}'.replace('UID', plan0.folder_uid),
+        {method:'POST', headers:JSON_HEADERS, body:JSON.stringify({
+          // مانیفست پوشهٔ دستگاه: سرور فقط تفاوت‌ها (جدید/حجم متفاوت/Modify) را محاسبه و دانلود می‌کند
+          files: Object.keys(pickedFiles).map(function(k){ return {relpath:k, size:pickedFiles[k].size, mtime:pickedFiles[k].lastModified}; })
+        })})
+        .then(function(r){ return r.json(); })
+        .then(function(c){
+          if(!c.ok) throw new Error(c.error || 'کسر هزینه ناموفق بود');
+          endWait();
+          lastDownloadCharge = {amount: c.amount, balance: c.balance};
+          var bv = document.getElementById('walletBalanceVal');
+          if(bv && c.balance != null){ bv.textContent = (parseFloat(c.balance) || 0).toFixed(2); }
+          runDownloadPlan(c, rootName);
+        })
+        .catch(function(e){
+          endWait();
+          btn.disabled = false;
+          btn.dataset.downloadPlan = planJson;  // امکان تلاش دوباره
+          alertBox((e && e.message) ? e.message : 'کسر هزینه ناموفق بود؛ دوباره تلاش کنید.');
+        });
+      return;
+    }
+    if(!token) return;
+    var cName = document.getElementById('folderName').value;
+    // نام نهایی ممکن است تغییر کرده باشد → برآورد تازه اگر نام/هدف عوض شده
+    btn.disabled = true; btn.textContent = 'در حال پرداخت…';
+    beginWait('در حال پرداخت و آپلود…');
+    fetch('{% url "cloudstorage:api_quote" %}'.replace('/api/quote/','/api/quote/'), {method:'POST', headers:JSON_HEADERS,
+      body: JSON.stringify({source:source, folder_name:cName,
+        direction: currentDirection(),
+        files: Object.keys(pickedFiles).map(function(k){ return {relpath:k, size:pickedFiles[k].size, mtime:pickedFiles[k].lastModified}; }),
+        folders: pickedFolders.slice(), target_uid: currentTargetUid()})})
+      .then(function(r){ return r.json(); })
+      .then(function(q){
+        if(!q.ok) throw new Error(q.error||'خطا');
+        token = q.token;
+        manifestCache = q.manifest || manifestCache;
+        var st = q.stats;
+        if(parseFloat(st.total_cost) <= 0){ return uploadPhase(token, st); }
+        return fetch('{% url "cloudstorage:api_pay" "TOKEN" %}'.replace('TOKEN', token), {method:'POST', headers:JSON_HEADERS})
+          .then(function(r){ return r.json(); })
+          .then(function(p){ if(!p.ok) throw new Error(p.error||'پرداخت ناموفق بود'); return uploadPhase(token, st); });
+      })
+      .catch(function(e){
+        endWait();
+        btn.disabled=false; btn.innerHTML='<i class="bi bi-wallet2"></i> یکسان‌سازی (Sync)';
+        alertBox((e && e.message) ? e.message : 'پرداخت ناموفق؛ دوباره تلاش کنید.');
+      });
+  });
+
+  function uploadPhase(token, st){
+    endWait(); // نوار پیشرفت آپلود جایگزین پیام Wait می‌شود
+    var btn = document.getElementById('btnPay');
+    var toUpload = (manifestCache.length ? manifestCache : []).filter(function(m){ return m.state==='new'||m.state==='changed'; });
+    // مانیفست از برآوردِ همین کلیک است:
+    var wrap = document.getElementById('progressWrap');
+    wrap.style.display='block';
+    document.getElementById('btnPay').disabled = true;
+    var done = 0, total = toUpload.length;
+    function step(){
+      if(done >= total){ return finalize(token); }
+      var m = toUpload[done];
+      var file = pickedFiles[m.relpath];
+      if(!file){ done++; return step(); } // فایل محلی در دسترس نیست (قطع) — ادامهٔ بعدی
+      var fd = new FormData();
+      fd.append('file', file, m.relpath.split('/').pop());
+      fd.append('relpath', m.relpath);
+      fetch('{% url "cloudstorage:api_upload" "TOKEN" %}'.replace('TOKEN', token), {method:'POST', headers:{'X-CSRFToken':CSRF,'X-Requested-With':'XMLHttpRequest'}, body:fd})
+        .then(function(r){ return r.json().then(function(d){ if(!r.ok||!d.ok) throw new Error(d.error||'خطای آپلود'); return d; }); })
+        .then(function(){ done++; document.getElementById('progressBar').style.width = (done*100/Math.max(total,1))+'%';
+          document.getElementById('progressText').textContent = done+' از '+total+' فایل آپلود شد'; step(); })
+        .catch(function(e){
+          document.getElementById('progressText').innerHTML =
+            'آپلود متوقف شد: '+(e&&e.message?e.message:'خطای شبکه')+
+            ' — <a href="{% url "cloudstorage:session_detail" "x" %}'.replace('x',token)+'">ادامه از صفحهٔ عملیات</a>';
+        });
+    }
+    if(total === 0){
+      document.getElementById('progressText').textContent = 'ساختار پوشه (بدون فایل جدید) ثبت می‌شود…';
+      finalize(token);
+    } else { step(); }
+  }
+
+  function finalize(token){
+    beginWait('تسویهٔ نهایی…');
+    fetch('{% url "cloudstorage:api_finalize" "TOKEN" %}'.replace('TOKEN', token), {method:'POST', headers:JSON_HEADERS})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var wrap = document.getElementById('doneWrap');
+        wrap.style.display='block';
+        if(!d.ok){ wrap.innerHTML = '<span style="color:#e74c3c;">خطا در تسویه: '+(d.error||'')+'</span>'; endWait(); return; }
+        document.getElementById('progressBar').style.width='100%';
+        wrap.innerHTML = '<span style="color:var(--hb-success);font-weight:700;">عملیات کامل شد.</span> '
+          + (parseFloat(d.refunded)>0 ? 'مبلغ ' + d.refunded + ' سکه بابت بخش انجام‌نشده بازگردانده شد. ' : '')
+          + '<a href="/cloud-storage/folder/'+d.folder_uid+'/" style="margin-inline-start:0.5rem;">رفتن به پوشهٔ ابری</a>';
+        // عملیات تمام شد → دکمهٔ «در حال پرداخت…» دیگر لازم نیست؛ حذف از نمایش
+        var payBtn = document.getElementById('btnPay');
+        payBtn.style.display = 'none';
+        delete payBtn.dataset.token;
+        endWait();
+      })
+      .catch(function(e){
+        endWait();
+        document.getElementById('doneWrap').style.display='block';
+        document.getElementById('doneWrap').innerHTML = '<span style="color:#e74c3c;">اتصال قطع شد؛ وضعیت ذخیره است — از صفحهٔ عملیات ادامه دهید.</span>';
+      });
+  }
+})();
+</script>
+
+<script>
+(function(){
+  var btn = document.getElementById('btnBuySpace');
+  if(!btn) return;
+  var price = parseFloat(btn.getAttribute('data-price')) || 0;
+  var gbEl = document.getElementById('spcGb');
+  var daysEl = document.getElementById('spcDays');
+  var costEl = document.getElementById('spcCost');
+  var msg = document.getElementById('spcMsg');
+  function fmt(n){ return Number(n).toFixed(2); }
+  function upCost(){
+    var gb = parseFloat(gbEl.value) || 0, d = parseInt(daysEl.value, 10) || 0;
+    costEl.textContent = (price && gb > 0 && d > 0) ? fmt(price * gb * d) : '—';
+  }
+  if(gbEl) gbEl.addEventListener('input', upCost);
+  if(daysEl) daysEl.addEventListener('change', upCost);
+  upCost();
+  function say(t, ok){
+    if(!msg) return;
+    msg.style.display = 'block';
+    msg.style.color = ok ? 'var(--hb-success)' : '#e74c3c';
+    if(!ok && String(t).indexOf('سکه بخرید') !== -1){
+      // پیام موجودی ناکافی: «سکه بخرید» به ماژول «کیف پول و سکه» لینک می‌شود
+      var esc = String(t).replace(/[&<>"']/g, function(c){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+      });
+      esc = esc.replace('سکه بخرید', '<a href="{% url 'wallet:dashboard' %}" style="color:var(--hb-gold-300);text-decoration:underline;">سکه بخرید</a>');
+      msg.innerHTML = esc;
+    } else {
+      msg.textContent = t;
+    }
+  }
+  btn.addEventListener('click', function(){
+    var gb = parseFloat(gbEl.value) || 0, days = parseInt(daysEl.value, 10) || 0;
+    if(gb < 0.25 || days < 1){
+      say('مقدار فضا (حداقل ۰٫۲۵ گیگابایت) و مدت (حداقل ۱ روز) را درست وارد کنید.', false);
+      return;
+    }
+    var W = window.hbWait;
+    if(W) W.begin('در حال خرید فضای ابری…');
+    btn.disabled = true;
+    var CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+    fetch("{% url 'cloudstorage:api_purchase_space' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ gb: gb, days: days })
+    })
+      .then(function(r){ return r.json().then(function(d){ return { status: r.status, d: d }; }); })
+      .then(function(res){
+        if(W) W.end();
+        if(res.d && res.d.ok){
+          say('خرید انجام شد — ' + fmt(res.d.purchased_gb) + ' GB فضای خریداری‌شدهٔ فعال؛ سقف جدید: ' + (res.d.quota_bytes / (1024*1024*1024)).toFixed(2) + ' GB. صفحه تازه‌سازی می‌شود…', true);
+          setTimeout(function(){ window.location.reload(); }, 1400);
+        } else {
+          say((res.d && res.d.error) || 'خرید ناموفق بود؛ دوباره تلاش کنید.', false);
+          btn.disabled = false;
+        }
+      })
+      .catch(function(){
+        if(W) W.end();
+        say('خطای شبکه در خرید فضای ابری؛ دوباره تلاش کنید.', false);
+        btn.disabled = false;
+      });
+  });
+})();
+</script>
+{% endblock %}

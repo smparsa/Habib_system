@@ -1,0 +1,74 @@
+{% load static accounting_extras %}<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}حسابداری{% endblock %} | HabibHub</title>
+  <link rel="stylesheet" href="{% static 'accounting/css/accounting.css' %}">
+</head>
+<body>
+
+  <!-- Topbar منوی اصلی مطابق تصویر ۵ -->
+  <nav class="acc-topbar">
+    <span class="brand">📊 حسابداری <small>HabibHub</small></span>
+
+    <div class="acc-menu">
+      <div class="item">
+        <span class="label">حسابداری</span>
+        <div class="dropdown">
+          <a href="{% url 'accounting:entry_create' %}">سند جدید</a>
+          <a href="{% url 'accounting:entries' %}">لیست اسناد</a>
+          <a href="{% url 'accounting:report_trial_balance' %}">دفتر کل / تراز آزمایشی</a>
+          <a href="{% url 'accounting:accounts' %}">پلان حساب‌ها</a>
+        </div>
+      </div>
+      <div class="item">
+        <span class="label">اشخاص</span>
+        <div class="dropdown">
+          <a href="{% url 'accounting:persons' %}">فهرست اشخاص (کاربران)</a>
+          <a href="{% url 'accounting:accounts' %}?q=61">حساب‌های اشخاص</a>
+        </div>
+      </div>
+      <div class="item">
+        <span class="label">گزارش</span>
+        <div class="dropdown">
+          <a href="{% url 'accounting:report_trial_balance' %}">تراز آزمایشی</a>
+          <a href="{% url 'accounting:report_income' %}">صورت سود و زیان</a>
+          <a href="{% url 'accounting:report_balance' %}">ترازنامه</a>
+          <a href="{% url 'accounting:report_statement' %}">صورتحساب</a>
+          <a href="{% url 'accounting:cheques' %}">گزارش چک‌ها</a>
+        </div>
+      </div>
+      <div class="item">
+        <span class="label">سیستم</span>
+        <div class="dropdown">
+          <a href="{% url 'accounting:settings' %}">تنظیمات و سال مالی</a>
+          <a href="{% url 'accounting:guide' %}">راهنما / آموزش استفاده</a>
+          <a href="{% url 'accounting:logout' %}">خروج از حسابداری</a>
+        </div>
+      </div>
+    </div>
+
+    <span class="spacer"></span>
+    <span class="who">
+      <span class="fy">📅 {{ fy.name }} · {{ today_fa|fa_digits }}</span>
+      <span>👤 {% if acc_user %}{{ acc_user.full_name|default:acc_user.username }}{% else %}کاربر اصلی{% endif %}</span>
+      <a href="{% url 'core:dashboard' %}" style="color:#fff;" title="بازگشت به داشبورد سایت">⬅ سایت</a>
+    </span>
+  </nav>
+
+  <div class="acc-wrap">
+    {% if messages %}
+      <div class="acc-messages">
+        {% for message in messages %}
+          <div class="acc-msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+{% include "core/_please_wait.html" %}
+</body>
+</html>

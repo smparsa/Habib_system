@@ -1,0 +1,265 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}داشبورد مدیریت — HabibHub{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-sliders2-vertical'></i> پنل مدیریت</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>خوش آمدید، {{ request.user.profile.full_name }} — مدیریت و تنظیمات کل برنامه از این بخش انجام می‌شود.</p>
+</div>
+
+<!-- آمار کاتالوگ -->
+<div class='hb-stats-grid'>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-layers'></i></div>
+    <div class='hb-stat-value'>{{ counts.sector }}</div>
+    <div class='hb-stat-label'>حوزه‌ها</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon blue'><i class='bi bi-building-gear'></i></div>
+    <div class='hb-stat-value'>{{ counts.industry }}</div>
+    <div class='hb-stat-label'>صنایع</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon green'><i class='bi bi-collection'></i></div>
+    <div class='hb-stat-value'>{{ counts.category }}</div>
+    <div class='hb-stat-label'>دسته‌ها</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon red'><i class='bi bi-card-heading'></i></div>
+    <div class='hb-stat-value'>{{ counts.title }}</div>
+    <div class='hb-stat-label'>عناوین</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-person-badge'></i></div>
+    <div class='hb-stat-value'>{{ counts.specialization }}</div>
+    <div class='hb-stat-label'>تخصص‌های مرتبط</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon blue'><i class='bi bi-briefcase'></i></div>
+    <div class='hb-stat-value'>{{ job_count }}</div>
+    <div class='hb-stat-label'>شغل‌های ثبت‌شدهٔ کاربران</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon blue'><i class='bi bi-people'></i></div>
+    <div class='hb-stat-value'>{{ user_count }}</div>
+    <div class='hb-stat-label'>کاربران</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon red'><i class='bi bi-person-slash'></i></div>
+    <div class='hb-stat-value'>{{ inactive_user_count }}</div>
+    <div class='hb-stat-label'>کاربران غیرفعال</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-person-vcard'></i></div>
+    <div class='hb-stat-value'>{{ first_name_count }}</div>
+    <div class='hb-stat-label'>نام‌ها (مرجع پروفایل)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-people'></i></div>
+    <div class='hb-stat-value'>{{ family_name_count }}</div>
+    <div class='hb-stat-label'>نام‌های خانوادگی (مرجع)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-globe2'></i></div>
+    <div class='hb-stat-value'>{{ country_count }}</div>
+    <div class='hb-stat-label'>کشور (مرجع مکانی)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-map'></i></div>
+    <div class='hb-stat-value'>{{ province_count }}</div>
+    <div class='hb-stat-label'>استان‌ها (مرجع مکانی)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-buildings'></i></div>
+    <div class='hb-stat-value'>{{ city_count }}</div>
+    <div class='hb-stat-label'>شهرستان‌ها (مرجع مکانی)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon red'><i class='bi bi-shield-lock'></i></div>
+    <div class='hb-stat-value'>{{ national_code_reserved_count }}</div>
+    <div class='hb-stat-label'>کد ملی رزروشده ({{ national_code_reserved_active }} فعال)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon red'><i class='bi bi-shield-exclamation'></i></div>
+    <div class='hb-stat-value'>{{ word_active_count }}</div>
+    <div class='hb-stat-label'>واژهٔ حساس فعال</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-shield-x'></i></div>
+    <div class='hb-stat-value'>{{ blocked_count }}</div>
+    <div class='hb-stat-label'>جلوگیری از ارسال</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon green'><i class='bi bi-crosshair'></i></div>
+    <div class='hb-stat-value'>{{ audience_active_count }}</div>
+    <div class='hb-stat-label'>جامعهٔ هدف فعال</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-tags'></i></div>
+    <div class='hb-stat-value'>{{ ticket_type_active_count }}</div>
+    <div class='hb-stat-label'>نوع تیکت فعال</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-coin'></i></div>
+    <div class='hb-stat-value'>{{ coin_rate }}</div>
+    <div class='hb-stat-label'>نرخ هر سکه (ریال)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon green'><i class='bi bi-wallet2'></i></div>
+    <div class='hb-stat-value'>{{ total_coins }}</div>
+    <div class='hb-stat-label'>سکه در گردش ({{ wallet_count }} کیف پول)</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon red'><i class='bi bi-bag-clock'></i></div>
+    <div class='hb-stat-value'>{{ pending_order_count }}</div>
+    <div class='hb-stat-label'>سفارش در انتظار بررسی</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon blue'><i class='bi bi-coin'></i></div>
+    <div class='hb-stat-value'>{{ feature_cost_count }}</div>
+    <div class='hb-stat-label'>هزینهٔ سکهٔ فعال ماژول</div>
+  </div>
+  <div class='hb-stat-card'>
+    <div class='hb-stat-icon gold'><i class='bi bi-gift'></i></div>
+    <div class='hb-stat-value'>{{ reward_rule_count }}</div>
+    <div class='hb-stat-label'>تعرفه فعال (از {{ reward_rule_total }})</div>
+  </div>
+  <div class='hb-stat-card' style='{% if last_backup.stale %}border-color:rgba(231,76,60,0.6);background:linear-gradient(145deg, rgba(231,76,60,0.10), var(--hb-navy-700));{% endif %}'>
+    <div class='hb-stat-icon {% if last_backup.stale %}red{% else %}green{% endif %}'><i class='bi bi-database-check'></i></div>
+    <div class='hb-stat-value' style='font-size:1.05rem;' dir='ltr'>
+      {% if last_backup.exists %}{{ last_backup.created_at|jdatetime }}{% else %}—{% endif %}
+    </div>
+    <div class='hb-stat-label'>آخرین پشتیبان موفق
+      {% if last_backup.exists and last_backup.kind == "auto" %}<span class='hb-badge hb-badge-info' style='margin-inline-start:0.25rem;'>خودکار</span>{% endif %}
+      {% if last_backup.stale %}
+      <div style='color:#e74c3c;font-size:0.78rem;font-weight:700;margin-top:0.25rem;display:flex;align-items:center;gap:0.3rem;'>
+        <i class='bi bi-exclamation-triangle-fill'></i>
+        {% if last_backup.exists %}بیش از {{ last_backup.warn_days }} روز پیش{% else %}هیچ نسخه‌ای گرفته نشده{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ماژول‌های مدیریتی -->
+<div style='padding:1.5rem 2rem;'>
+  <h2 style='font-size:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;'>
+    <i class='bi bi-grid-3x3-gap' style='color:var(--hb-gold-300);'></i>
+    ماژول‌های مدیریتی
+  </h2>
+  <div class='hb-modules-grid'>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:catalog_home' %}">
+      <div class='hb-module-icon'><i class='bi bi-diagram-3'></i></div>
+      <div class='hb-module-title'>کاتالوگ مشاغل</div>
+      <div class='hb-module-desc'>مدیریت سلسله‌مراتب: حوزه ← صنعت ← دسته ← عنوان ← تخصص‌های مرتبط</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:users_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-people'></i></div>
+      <div class='hb-module-title'>کاربران و پروفایل‌ها</div>
+      <div class='hb-module-desc'>جستجو، فعال/غیرفعال‌کردن و ویرایش کاربران و پروفایل‌ها</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:names_list' %}?kind=first">
+      <div class='hb-module-icon'><i class='bi bi-person-vcard'></i></div>
+      <div class='hb-module-title'>اسامی (نام و نام خانوادگی)</div>
+      <div class='hb-module-desc'>تکمیل دیتابیسِ نام‌ها؛ کاربران در پروفایل از همین فهرست انتخاب می‌کنند</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:education_home' %}">
+      <div class='hb-module-icon'><i class='bi bi-mortarboard'></i></div>
+      <div class='hb-module-title'>اطلاعات تحصیلی</div>
+      <div class='hb-module-desc'>مدیریت مراکز دانشگاهی، گروه‌های امتحانی، رشته‌های تحصیلی و گرایش‌های زیرمجموعه</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:locations_list' %}?kind=country">
+      <div class='hb-module-icon'><i class='bi bi-geo-alt'></i></div>
+      <div class='hb-module-title'>اطلاعات مکانی (کشور/استان/شهرستان)</div>
+      <div class='hb-module-desc'>تکمیل دیتابیسِ مکان محل سکونت؛ کاربران در پروفایل از همین فهرست انتخاب می‌کنند</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:national_codes_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-shield-lock'></i></div>
+      <div class='hb-module-title'>کنترل کد ملی</div>
+      <div class='hb-module-desc'>رزرو کدهای ملیِ خاص؛ کدهای اختصاصی فقط در انحصار ادمین می‌مانند</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:words_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-shield-exclamation'></i></div>
+      <div class='hb-module-title'>پالایش محتوا (کلمات حساس)</div>
+      <div class='hb-module-desc'>ثبت واژه‌های رکیک و عبارات حساس؛ رد خودکار تیکت‌های متخلف با تذکر</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:audiences_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-crosshair'></i></div>
+      <div class='hb-module-title'>مخاطبین هدف تیکت</div>
+      <div class='hb-module-desc'>تعریف جوامع هدف برای ارسال انبوه: شهر، GPS، شغل، کد ملی، موبایل، سن</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:breaking_news_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-broadcast-pin'></i></div>
+      <div class='hb-module-title'>اخبار فوری</div>
+      <div class='hb-module-desc'>متن خبر (حداکثر ۵۰۰ کاراکتر) با بازهٔ نمایش از تاریخ/ساعت تا تاریخ/ساعت — پخش متحرک در هدر همهٔ کاربران</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:ads_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-megaphone'></i></div>
+      <div class='hb-module-title'>تبلیغات</div>
+      <div class='hb-module-desc'>مدیریت تبلیغ‌های لوگویی کاربران: بازهٔ نمایش/سرعت/ترتیب، تأیید، توقف و حذف — پخش در نوار متحرک پایین داشبورد</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:ticket_types_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-tags'></i></div>
+      <div class='hb-module-title'>انواع تیکت</div>
+      <div class='hb-module-desc'>تعریف نوع تیکت: درخواست کالا/خدمات، تبلیغات، ارتباط با ادمین و ...</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:wallet_settings' %}">
+      <div class='hb-module-icon'><i class='bi bi-wallet2'></i></div>
+      <div class='hb-module-title'>سکه و کیف پول</div>
+      <div class='hb-module-desc'>نرخ هر سکه به ریال، خرید/فروش، انتقال سکه و بانک مبادلات</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:wallet_orders' %}">
+      <div class='hb-module-icon'><i class='bi bi-bag'></i></div>
+      <div class='hb-module-title'>سفارش‌های خرید/فروش سکه</div>
+      <div class='hb-module-desc'>تأیید یا ابطال سفارش‌ها؛ نتیجه با تیکت به کاربر اعلام می‌شود</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:wallet_transfers' %}">
+      <div class='hb-module-icon'><i class='bi bi-send'></i></div>
+      <div class='hb-module-title'>انتقال‌های سکه</div>
+      <div class='hb-module-desc'>پیگیری انتقال‌های سکه بین کاربران</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:wallet_wallets' %}">
+      <div class='hb-module-icon'><i class='bi bi-piggy-bank'></i></div>
+      <div class='hb-module-title'>کیف پول کاربران</div>
+      <div class='hb-module-desc'>موجودی همهٔ کاربران + تنظیم دستی سکه</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:feature_costs_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-coin'></i></div>
+      <div class='hb-module-title'>هزینهٔ سکهٔ ماژول‌ها</div>
+      <div class='hb-module-desc'>تعریف سکه‌ای که برای هر بخش از برنامه از کاربر کسر می‌شود</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:reward_rules_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-gift'></i></div>
+      <div class='hb-module-title'>تعرفه امتیازها</div>
+      <div class='hb-module-desc'>عنوان و میزان امتیاز هر فعالیت: معرفی هر نفر، ماندن/مطالعه در مجله و ...</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:backup_home' %}">
+      <div class='hb-module-icon'><i class='bi bi-database-check'></i></div>
+      <div class='hb-module-title'>پشتیبان‌گیری و بازیابی دیتابیس</div>
+      <div class='hb-module-desc'>گرفتن نسخهٔ پشتیبان دستی/خودکار از دیتابیس و بازیابی در صورت نیاز</div>
+    </div>
+    <div class='hb-module-card' style='opacity:0.55;'>
+      <div class='hb-module-icon'><i class='bi bi-chat-left-dots'></i></div>
+      <div class='hb-module-title'>مدیریت تیکت‌ها</div>
+      <div class='hb-module-desc'>پیگیری و پاسخ‌گویی به تیکت‌های کاربران — به‌زودی</div>
+    </div>
+    <div class='hb-module-card' style='opacity:0.55;'>
+      <div class='hb-module-icon'><i class='bi bi-newspaper'></i></div>
+      <div class='hb-module-title'>مدیریت مجله</div>
+      <div class='hb-module-desc'>نویسندگان، مطالب و اشتراک‌گذاری — به‌زودی</div>
+    </div>
+    <div class='hb-module-card' style='opacity:0.55;'>
+      <div class='hb-module-icon'><i class='bi bi-gear'></i></div>
+      <div class='hb-module-title'>تنظیمات کل سیستم</div>
+      <div class='hb-module-desc'>پیکربندی عمومی برنامه — به‌زودی</div>
+    </div>
+    {% if request.user.is_superuser %}
+    <div class='hb-module-card' data-href="/admin/">
+      <div class='hb-module-icon'><i class='bi bi-terminal'></i></div>
+      <div class='hb-module-title'>مدیریت فنی (Django Admin)</div>
+      <div class='hb-module-desc'>دسترسی پیشرفتهٔ سوپریوزر به تمام مدل‌ها</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

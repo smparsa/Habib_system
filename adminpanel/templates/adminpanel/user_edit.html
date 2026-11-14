@@ -1,0 +1,136 @@
+{% extends "adminpanel/base.html" %}
+{% load adminpanel_extras %}
+{% load core_extras %}
+{% block title %}ویرایش {{ label }} — کاربران و پروفایل‌ها{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-pencil-square'></i> ویرایش کاربر</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:users_list' %}" style='color:var(--hb-gold-300);'>کاربران و پروفایل‌ها</a>
+    › ویرایش «{{ label }}»
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <!-- نوار اطلاعات کاربر -->
+  <div class='hb-card' style='margin-bottom:1.25rem;'>
+    <div style='display:flex;align-items:center;gap:1rem;flex-wrap:wrap;'>
+      {% if profile.avatar %}
+        <img src='{{ profile.avatar.url }}' alt='آواتار' style='width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--hb-gold-400);'>
+      {% else %}
+        <div style='width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--hb-gold-500),var(--hb-gold-300));color:var(--hb-navy-900);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.4rem;'>{{ label|first }}</div>
+      {% endif %}
+      <div style='flex:1;min-width:200px;'>
+        <div style='font-size:1.15rem;font-weight:700;'>{{ label }}</div>
+        <div style='color:var(--hb-text-muted);font-size:0.85rem;' dir='ltr'>{{ user.mobile_number }}</div>
+      </div>
+      <div style='display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;'>
+        {% if user.is_active %}<span class='hb-badge hb-badge-success'>حساب فعال</span>{% else %}<span class='hb-badge hb-badge-danger'>حساب غیرفعال</span>{% endif %}
+        {% if user.is_staff %}<span class='hb-badge hb-badge-warning'><i class='bi bi-shield-lock'></i> ادمین</span>{% endif %}
+        {% if user.is_superuser %}<span class='hb-badge hb-badge-danger'><i class='bi bi-star'></i> سوپریوزر</span>{% endif %}
+        <span class='hb-badge hb-badge-info'><i class='bi bi-calendar3'></i> عضویت: {{ user.date_joined|jdate }}</span>
+      </div>
+      <a href="{% url 'adminpanel:users_list' %}" class='hb-btn hb-btn-outline hb-btn-sm' style='margin-inline-start:auto;'><i class='bi bi-arrow-right'></i> بازگشت به فهرست</a>
+    </div>
+  </div>
+
+  <div style='display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:1.25rem;align-items:start;'>
+    <!-- ستون اصلی: فرم پروفایل (بخش‌بندی‌شده) -->
+    <form method='post' novalidate>
+      {% csrf_token %}
+      <input type='hidden' name='submit' value='profile'>
+      <input type='hidden' name='next' value='{{ next_url }}'>
+      {% if pform.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ pform.non_field_errors }}</div>
+      {% endif %}
+      {% for section in sections %}
+      <div class='hb-section-card {% if forloop.first %}active{% endif %}'>
+        <div class='hb-section-header'>
+          <h3><i class='bi {{ section.icon }}'></i> {{ section.title }}</h3>
+          <span class='hb-section-toggle'><i class='bi bi-chevron-down'></i></span>
+        </div>
+        <div class='hb-section-body'>
+          <div class='hb-form-row'>
+            {% for name in section.fields %}
+              {% form_field pform name as f %}
+              <div class='hb-form-group'>
+                {% if f.errors %}
+                  <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ f.errors }}</div>
+                {% endif %}
+                <label class='hb-form-label' for='{{ f.id_for_label }}'>{{ f.label }}{% if f.field.required %} <span class='required'>*</span>{% endif %}</label>
+                {{ f }}
+                {% if f.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ f.help_text }}</small>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary'><i class='bi bi-check-lg'></i> ذخیرهٔ پروفایل</button>
+        <a href="{% url 'adminpanel:users_list' %}" class='hb-btn hb-btn-dark'>انصراف</a>
+      </div>
+    </form>
+
+    <!-- ستون کناری: حساب کاربری + مشاغل ثبت‌شده -->
+    <div style='display:flex;flex-direction:column;gap:1.25rem;'>
+      <div class='hb-card'>
+        <div class='hb-card-header'>
+          <div class='hb-card-title'><i class='bi bi-person-gear'></i> حساب کاربری</div>
+        </div>
+        {% if is_self %}
+          <div style='font-size:0.85rem;color:var(--hb-text-secondary);'>
+            <p style='margin-bottom:0.75rem;'>شما در حال مشاهدهٔ حساب خودتان هستید؛ برای جلوگیری از قفل‌شدن پنل، تغییر وضعیت فعال/ادمین/سوپریوزر حسابِ خودتان در همین صفحه ممکن نیست.</p>
+            <div style='display:flex;gap:0.35rem;flex-wrap:wrap;'>
+              {% if user.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% endif %}
+              {% if user.is_staff %}<span class='hb-badge hb-badge-warning'>ادمین</span>{% endif %}
+              {% if user.is_superuser %}<span class='hb-badge hb-badge-danger'>سوپریوزر</span>{% endif %}
+            </div>
+          </div>
+        {% else %}
+          <form method='post' novalidate>
+            {% csrf_token %}
+            <input type='hidden' name='submit' value='account'>
+            <input type='hidden' name='next' value='{{ next_url }}'>
+            {% if uform.non_field_errors %}
+              <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ uform.non_field_errors }}</div>
+            {% endif %}
+            {% for field in uform %}
+            <div style='margin-bottom:1rem;'>
+              {% if field.errors %}
+                <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+              {% endif %}
+              <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ field.help_text }}</small>{% endif %}
+            </div>
+            {% endfor %}
+            <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' style='width:100%;'><i class='bi bi-check-lg'></i> ذخیرهٔ حساب کاربری</button>
+          </form>
+        {% endif %}
+      </div>
+
+      <div class='hb-card'>
+        <div class='hb-card-header'>
+          <div class='hb-card-title'><i class='bi bi-briefcase'></i> مشاغل ثبت‌شده <span style='color:var(--hb-text-muted);font-size:0.8rem;'>({{ profile.jobs.count }})</span></div>
+        </div>
+        {% if profile.jobs.all %}
+          {% for job in profile.jobs.all %}
+          <div style='padding:0.75rem 0;border-bottom:1px solid var(--hb-border);{% if forloop.last %}border-bottom:none;{% endif %}'>
+            <div style='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;'>
+              <strong style='font-size:0.9rem;'>{{ job.title }}</strong>
+              {% if job.job_code %}<span class='hb-badge hb-badge-warning' style='font-family:ui-monospace,Consolas,monospace;' dir='ltr'>{{ job.job_code }}</span>{% endif %}
+              {% if job.is_current %}<span class='hb-badge hb-badge-success'>فعلی</span>{% endif %}
+            </div>
+            {% if job.organization %}<div style='color:var(--hb-text-muted);font-size:0.8rem;margin-top:0.25rem;'>{{ job.organization }}{% if job.department %} — {{ job.department }}{% endif %}</div>{% endif %}
+            {% if job.catalog_breadcrumb %}<div style='color:var(--hb-text-muted);font-size:0.75rem;margin-top:0.25rem;'><i class='bi bi-diagram-2'></i> {{ job.catalog_breadcrumb }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style='color:var(--hb-text-muted);font-size:0.85rem;'>هیچ شغلی برای این کاربر ثبت نشده است.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

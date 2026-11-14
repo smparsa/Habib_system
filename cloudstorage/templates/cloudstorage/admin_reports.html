@@ -1,0 +1,115 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}گزارش فضای ابری — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-graph-up-arrow'></i> گزارش مصرف و هزینهٔ فضای ابری</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    مصرف فضای کاربران، صورتحساب‌ها و تراکنش‌های مالی ماژول (همه از دفتر کل سکه).
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;'>
+  <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem;margin-bottom:1rem;'>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.2rem;font-weight:800;color:var(--hb-gold-300);'>{{ total_charged|floatformat:0 }}</div><div style='font-size:0.72rem;color:var(--hb-text-muted);'>کل سکهٔ کسرشده (آرشیو+آپلود)</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.2rem;font-weight:800;color:var(--hb-success);'>{{ total_refunded|floatformat:0 }}</div><div style='font-size:0.72rem;color:var(--hb-text-muted);'>کل بازپرداختی</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.2rem;font-weight:800;color:var(--hb-gold-300);'>{{ invoices|length }}</div><div style='font-size:0.72rem;color:var(--hb-text-muted);'>آخرین صورتحساب‌ها (حداکثر ۵۰)</div></div>
+  </div>
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-people'></i> مصرف کاربران</div>
+      <form method='get' style='display:flex;gap:0.4rem;'>
+        <input type='text' name='q' value='{{ q }}' placeholder='جستجوی شماره موبایل' class='hb-form-control' style='font-size:0.78rem;min-width:170px;'>
+        <button type='submit' class='hb-btn hb-btn-sm hb-btn-outline'>جستجو</button>
+      </form>
+    </div>
+    <div style='overflow-x:auto;'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.78rem;min-width:720px;'>
+      <thead><tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+        <th style='padding:0.5rem;text-align:right;'>کاربر</th>
+        <th style='padding:0.5rem;text-align:right;'>فضای مصرفی</th>
+        <th style='padding:0.5rem;text-align:right;'>سقف</th>
+        <th style='padding:0.5rem;text-align:right;'>فایل / پوشه</th>
+        <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>هزینهٔ امروز</th>
+        <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>هزینهٔ این ماه</th>
+      </tr></thead>
+      <tbody>
+      {% for a in page_obj %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.5rem;' dir='ltr'>{{ a.user.mobile_number }}</td>
+          <td style='padding:0.5rem;'>{{ a.used_bytes|filesizeformat }}</td>
+          <td style='padding:0.5rem;'>{{ a.quota_override_gb|default:"—" }} GB</td>
+          <td style='padding:0.5rem;text-align:center;'>{{ a.files_count }} / {{ a.folders_count }}</td>
+          <td style='padding:0.5rem;'>{{ a.daily_spent|floatformat:0 }}</td>
+          <td style='padding:0.5rem;'>{{ a.monthly_spent|floatformat:0 }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan='6' style='padding:1rem;text-align:center;color:var(--hb-text-muted);'>هنوز حساب فضایی ثبت نشده است.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div style='display:flex;gap:0.5rem;justify-content:center;margin-top:0.75rem;'>
+      {% if page_obj.has_previous %}<a class='hb-btn hb-btn-sm hb-btn-outline' href='?page={{ page_obj.previous_page_number }}&q={{ q }}' style='text-decoration:none;'>قبلی</a>{% endif %}
+      <span style='font-size:0.78rem;align-self:center;'>صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class='hb-btn hb-btn-sm hb-btn-outline' href='?page={{ page_obj.next_page_number }}&q={{ q }}' style='text-decoration:none;'>بعدی</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;'>
+    <div class='hb-card'>
+      <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-receipt'></i> صورتحساب‌ها</div></div>
+      <table style='width:100%;border-collapse:collapse;font-size:0.75rem;'>
+        <thead><tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+          <th style='padding:0.4rem;text-align:right;'>شماره</th>
+          <th style='padding:0.4rem;text-align:right;'>کاربر</th>
+          <th style='padding:0.4rem;text-align:right;'>مبلغ</th>
+          <th style='padding:0.4rem;text-align:right;'>واقعی</th>
+          <th style='padding:0.4rem;text-align:right;'>بازگشت</th>
+          <th style='padding:0.4rem;text-align:right;'>وضعیت</th>
+        </tr></thead>
+        <tbody>
+        {% for inv in invoices %}
+          <tr style='border-bottom:1px solid var(--hb-border);'>
+            <td style='padding:0.4rem;' dir='ltr'>{{ inv.number }}</td>
+            <td style='padding:0.4rem;' dir='ltr'>{{ inv.account.user.mobile_number }}</td>
+            <td style='padding:0.4rem;'>{{ inv.amount_coins|floatformat:0 }}</td>
+            <td style='padding:0.4rem;'>{{ inv.actual_coins|floatformat:0 }}</td>
+            <td style='padding:0.4rem;'>{{ inv.refunded_coins|floatformat:0 }}</td>
+            <td style='padding:0.4rem;'>{{ inv.get_status_display }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan='6' style='padding:0.6rem;color:var(--hb-text-muted);'>صورتحسابی ثبت نشده است.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class='hb-card'>
+      <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-cash-coin'></i> تراکنش‌های مالی اخیر</div></div>
+      <table style='width:100%;border-collapse:collapse;font-size:0.75rem;'>
+        <thead><tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+          <th style='padding:0.4rem;text-align:right;'>نوع</th>
+          <th style='padding:0.4rem;text-align:right;'>کاربر</th>
+          <th style='padding:0.4rem;text-align:right;'>مبلغ (سکه)</th>
+          <th style='padding:0.4rem;text-align:right;'>توضیح</th>
+        </tr></thead>
+        <tbody>
+        {% for tx in tx_rows %}
+          <tr style='border-bottom:1px solid var(--hb-border);'>
+            <td style='padding:0.4rem;'>{{ tx.get_kind_display }}</td>
+            <td style='padding:0.4rem;' dir='ltr'>{{ tx.account.user.mobile_number }}</td>
+            <td style='padding:0.4rem;'>{{ tx.amount_coins|floatformat:0 }}</td>
+            <td style='padding:0.4rem;'>{{ tx.note|truncatechars:50 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan='4' style='padding:0.6rem;color:var(--hb-text-muted);'>تراکنشی ثبت نشده است.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

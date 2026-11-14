@@ -1,0 +1,148 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}تبلیغات — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-megaphone'></i> تبلیغات (نوار متحرک پایین داشبورد)</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    لوگوی تبلیغاتی کاربران که پس از پرداخت هزینهٔ طبق تعرفهٔ «هزینه‌های سکهٔ ماژول‌ها» ثبت شده‌اند.
+    مدیریت نمایش (بازهٔ زمانی، سرعت، ترتیب، توقف) مشابه ماژول «اخبار فوری» است.
+  </p>
+</div>
+
+<div style='padding:0 2rem 2rem;'>
+  <div class='hb-card'>
+    <div style='overflow-x:auto;'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.8rem;min-width:900px;'>
+      <thead>
+        <tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+          <th style='padding:0.6rem;text-align:right;'>لوگو</th>
+          <th style='padding:0.6rem;text-align:right;'>عنوان / توضیح</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>تبلیغ‌کننده</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>هزینه (سکه)</th>
+          <th style='padding:0.6rem;text-align:right;'>بازهٔ نمایش</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>سرعت</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>ترتیب (بالا/پایین)</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>هرد(های) نمایش</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>شمارندهٔ نمایش</th>
+          <th style='padding:0.6rem;text-align:right;white-space:nowrap;'>وضعیت</th>
+          <th style='padding:0.6rem;text-align:left;white-space:nowrap;'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in items %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.7rem;'>
+            {% if row.obj.logo %}
+              <img src='{{ row.obj.logo.url }}' alt='لوگو' style='width:48px;height:48px;object-fit:contain;border-radius:8px;border:1px solid var(--hb-border);background:#fff;'>
+            {% endif %}
+          </td>
+          <td style='padding:0.7rem;line-height:1.8;'>
+            <b>{{ row.obj.title }}</b>
+            {% if row.obj.description %}<div style='font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.obj.description|truncatechars:90 }}</div>{% endif %}
+            {% if row.obj.link_url %}<div style='font-size:0.72rem;direction:ltr;text-align:right;color:var(--hb-info);'>{{ row.obj.link_url|truncatechars:50 }}</div>{% endif %}
+          </td>
+          <td style='padding:0.5rem 0.4rem;font-size:0.75rem;'>
+            {{ row.obj.advertiser.profile.full_name|default:row.obj.advertiser.mobile_number }}
+          </td>
+          <td style='padding:0.5rem 0.4rem;text-align:center;'>{{ row.obj.coins_paid|floatformat }}</td>
+          <td style='padding:0.5rem 0.4rem;direction:ltr;text-align:right;font-size:0.74rem;color:var(--hb-text-secondary);line-height:1.5;'>
+            {{ row.obj.show_from|jdatetime }} → {{ row.obj.show_until|jdatetime }}
+          </td>
+          <td style='padding:0.7rem 0.5rem;white-space:nowrap;'>{{ row.obj.speed }} ثانیه</td>
+          <td style='padding:0.7rem 0.5rem;white-space:nowrap;'>
+            <span dir='ltr' style='font-size:0.8rem;color:var(--hb-text-secondary);'>{{ row.obj.sort_order }}</span>
+            <form method='post' action="{% url 'adminpanel:ads_move' row.obj.pk 'up' %}" style='display:inline;margin:0 0.15rem;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='padding:0.15rem 0.45rem;font-size:0.7rem;' title='جابه‌جایی به بالا (اولویت بیشتر)'><i class='bi bi-arrow-up'></i></button>
+            </form>
+            <form method='post' action="{% url 'adminpanel:ads_move' row.obj.pk 'down' %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='padding:0.15rem 0.45rem;font-size:0.7rem;' title='جابه‌جایی به پایین (اولویت کمتر)'><i class='bi bi-arrow-down'></i></button>
+            </form>
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;font-size:0.75rem;'>
+            {% if row.obj.header_modules.all %}
+              {% for hm in row.obj.header_modules.all %}
+                <span class='hb-badge hb-badge-info' style='font-size:0.7rem;margin-inline-end:0.3rem;'>{{ hm.title }}</span>
+              {% endfor %}
+            {% else %}
+              <span style='color:var(--hb-text-muted);'>—</span>
+            {% endif %}
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            <span dir='ltr' style='font-size:0.85rem;color:var(--hb-text-secondary);'><i class='bi bi-eye' style='color:var(--hb-gold-300);'></i> {{ row.obj.views|floatformat }}</span>
+            {% if row.obj.views_updated_at %}
+              <div style='font-size:0.68rem;color:var(--hb-text-muted);direction:ltr;text-align:right;'>{{ row.obj.views_updated_at|jdatetime }}</div>
+            {% endif %}
+          </td>
+          <td style='padding:0.7rem;white-space:nowrap;'>
+            {% if row.state == 'live' %}<span class='hb-badge hb-badge-success'><i class='bi bi-broadcast'></i> {{ row.state_label }}</span>
+            {% elif row.state == 'scheduled' %}<span class='hb-badge hb-badge-info'><i class='bi bi-clock'></i> {{ row.state_label }}</span>
+            {% elif row.state == 'paused' %}<span class='hb-badge hb-badge-warning'><i class='bi bi-pause-circle'></i> {{ row.state_label }}</span>
+            {% elif row.state == 'pending' %}<span class='hb-badge hb-badge-warning'><i class='bi bi-hourglass-split'></i> {{ row.state_label }}</span>
+            {% elif row.state == 'rejected' %}<span class='hb-badge hb-badge-danger'><i class='bi bi-x-circle'></i> {{ row.state_label }}</span>
+            {% else %}<span class='hb-badge hb-badge-danger'><i class='bi bi-hourglass-bottom'></i> {{ row.state_label }}</span>{% endif %}
+          </td>
+          <td style='padding:0.7rem;text-align:left;white-space:nowrap;'>
+            <a href="{% url 'adminpanel:ads_edit' row.obj.pk %}" class='hb-btn hb-btn-dark hb-btn-sm' style='text-decoration:none;' title='ویرایش'><i class='bi bi-pencil-square'></i></a>
+            {% if row.obj.status == 'pending' %}
+            <form method='post' action="{% url 'adminpanel:ads_approve' row.obj.pk %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' style='color:var(--hb-success);border-color:rgba(46,160,67,0.5);' title='تأیید'><i class='bi bi-check-lg'></i></button>
+            </form>
+            <form method='post' action="{% url 'adminpanel:ads_reject' row.obj.pk %}" style='display:inline;margin:0;'
+                  onsubmit="return confirm('این تبلیغ رد شود؟');">
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' style='color:#f39c12;border-color:rgba(243,156,18,0.5);' title='رد'><i class='bi bi-x-lg'></i></button>
+            </form>
+            {% else %}
+            <form method='post' action="{% url 'adminpanel:ads_toggle' row.obj.pk %}" style='display:inline;margin:0;'>
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm' title='{% if row.obj.is_active %}توقف پخش{% else %}ادامهٔ پخش{% endif %}'>
+                <i class='bi {% if row.obj.is_active %}bi-pause-circle{% else %}bi-play-circle{% endif %}'></i>
+              </button>
+            </form>
+            {% endif %}
+            <form method='post' action="{% url 'adminpanel:ads_delete' row.obj.pk %}" style='display:inline;margin:0;'
+                  onsubmit="return confirm('این تبلیغ حذف شود؟');">
+              {% csrf_token %}
+              <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm' style='color:#e74c3c;border-color:rgba(231,76,60,0.5);' title='حذف'>
+                <i class='bi bi-trash'></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan='11' style='padding:1.2rem;color:var(--hb-text-muted);'>هنوز تبلیغی ثبت نشده است.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class='hb-card' style='margin-top:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-sliders'></i> تنظیمات ردیف نمایش نوار</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:ads_settings' %}" style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;'>
+      {% csrf_token %}
+      <div class='hb-form-group' style='margin:0;'>
+        <label class='hb-form-label' for='id_max_visible'>حداکثر تبلیغ در ردیف نمایش</label>
+        <input type='number' name='max_visible' id='id_max_visible' min='0' max='50' step='1' inputmode='numeric'
+               class='hb-form-control' dir='ltr' style='max-width:140px;' value='{{ ticker_setting.max_visible }}'>
+      </div>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' style='margin-top:1.3rem;'>
+        <i class='bi bi-check-lg'></i> ذخیره
+      </button>
+      <small style='color:var(--hb-text-muted);font-size:0.75rem;flex-basis:100%;'>
+        مثلاً ۱۰ = فقط ۱۰ تبلیغِ نخستِ صف اولویت (به‌ترتیب «ترتیب پخش» و سپس زمانِ تأیید/تنظیم ادمین) در نوار پخش می‌شوند؛
+        وقتی یکی منقضی یا متوقف شود، تبلیغ بعدیِ صف جانشینِ آن می‌شود. ۰ = بدون سقف.
+      </small>
+      <small style='color:var(--hb-text-muted);font-size:0.75rem;flex-basis:100%;'>
+        سرعت مؤثرِ نوار = <b>{{ effective_speed }} ثانیه</b> برای هر دور — کمترین «سرعت نمایش» بین تبلیغ‌های «در حال پخش»؛
+        برای تغییر، سرعت همان تبلیغ را در «ویرایش» تنظیم کنید (۵ تا ۱۲۰ ثانیه؛ کمتر = سریع‌تر).
+      </small>
+    </form>
+  </div>
+</div>
+{% endblock %}

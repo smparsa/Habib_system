@@ -1,0 +1,128 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}واژه‌ها و عبارت‌های حساس — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-shield-exclamation'></i> پالایش محتوا — واژه‌ها و عبارت‌های حساس</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    کلمات رکیک، عبارات سیاسی/مذهبی حساس و هر آنچه مغایر با اصول اخلاقی است را این‌جا ثبت کنید؛
+    تیکت‌های کاربران هنگام ارسال بررسی و در صورت درگیری، با تذکر «رد» می‌شوند. ({{ active_count }} واژهٔ فعال)
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <!-- آزمون متن -->
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-eyedropper'></i> آزمون متن (بدون ذخیره)</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:words_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;'>
+      {% csrf_token %}
+      <textarea name='test_text' rows='2' class='hb-form-control hb-form-textarea' style='flex:1;min-width:260px;' placeholder='متن نمونه را بنویسید تا بررسی شود با کدام واژه‌های فعال درگیری دارد…'>{% if test_result %}{{ test_result.text }}{% endif %}</textarea>
+      <button type='submit' class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-search'></i> آزمون</button>
+    </form>
+    {% if test_result %}
+    <div style='margin-top:0.6rem;padding:0.6rem 0.9rem;border-radius:8px;font-size:0.85rem;{% if test_result.blocked %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% endif %}'>
+      <i class='bi {% if test_result.blocked %}bi-x-octagon{% else %}bi-check-circle{% endif %}'></i>
+      {{ test_result.message }}
+      {% if test_result.hits %}
+      <div style='margin-top:0.4rem;font-size:0.78rem;color:var(--hb-text-secondary);'>
+        درگیری با: {% for h in test_result.hits %}<span class='hb-badge hb-badge-danger' style='margin-inline-end:0.3rem;'>{{ h.term }} ({{ h.get_mode_display }})</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست واژه‌ها ({{ total }} مورد)</div>
+      <a href="{% url 'adminpanel:word_add' %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-plus-lg'></i> افزودن واژه</a>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:words_list' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:260px;' placeholder='جستجو در واژه‌ها…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      <select name='category' class='hb-form-control hb-form-select' style='max-width:220px;' onchange='this.form.submit()'>
+        <option value=''>دسته: همه</option>
+        {% for value, label in categories %}
+        <option value='{{ value }}' {% if category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name='active' class='hb-form-control hb-form-select' style='max-width:150px;' onchange='this.form.submit()'>
+        <option value=''>وضعیت: همه</option>
+        <option value='1' {% if active == '1' %}selected{% endif %}>فعال</option>
+        <option value='0' {% if active == '0' %}selected{% endif %}>غیرفعال</option>
+      </select>
+      {% if q or category or active %}
+      <a href="{% url 'adminpanel:words_list' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلترها</a>
+      {% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>واژه / عبارت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>حالت تطبیق</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>دستهٔ تخلف</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>توضیح</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.term }}</strong></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);'>{{ row.mode_label }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.category == 'insult' %}<span class='hb-badge hb-badge-danger'>{{ row.category_label }}</span>
+            {% elif row.category == 'political' %}<span class='hb-badge hb-badge-warning'>{{ row.category_label }}</span>
+            {% elif row.category == 'religious' %}<span class='hb-badge hb-badge-info'>{{ row.category_label }}</span>
+            {% elif row.category == 'dignity' %}<span class='hb-badge hb-badge-warning'>{{ row.category_label }}</span>
+            {% else %}<span class='hb-badge'>{{ row.category_label }}</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);color:var(--hb-text-muted);font-size:0.8rem;'>{{ row.note|default:'—' }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% else %}<span class='hb-badge hb-badge-danger'>غیرفعال</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              <a href="{% url 'adminpanel:word_edit' row.pk %}" class='hb-btn hb-btn-sm' style='color:var(--hb-gold-300);'><i class='bi bi-pencil-square'></i> ویرایش</a>
+              <form method='post' action="{% url 'adminpanel:word_toggle' row.pk %}" style='margin:0;'>
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title="{% if row.is_active %}غیرفعال‌کردن پالایش این واژه{% else %}فعال‌کردن پالایش این واژه{% endif %}">
+                  {% if row.is_active %}<i class='bi bi-pause-circle'></i> غیرفعال{% else %}<i class='bi bi-play-circle'></i> فعال{% endif %}
+                </button>
+              </form>
+              <form method='post' action="{% url 'adminpanel:word_delete' row.pk %}" style='margin:0;' onsubmit="return confirm('«{{ row.term }}» برای همیشه حذف شود؟ (برای توقف موقت، غیرفعال کنید)');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title='حذف کامل'><i class='bi bi-trash' style='color:#c0392b;'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>واژه‌ای یافت نشد. با «افزودن واژه» اولین عبارت حساس را ثبت کنید.</p>
+    {% endif %}
+  </div>
+
+  <!-- صفحه‌بندی -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+    <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} واژه)</span>
+    <div style='display:flex;gap:0.35rem;'>
+      {% if page_obj.has_previous %}
+      <a href="{% url 'adminpanel:words_list' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="{% url 'adminpanel:words_list' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

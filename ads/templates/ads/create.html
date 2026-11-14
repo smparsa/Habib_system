@@ -1,0 +1,238 @@
+{% extends "ads/base_ads.html" %}
+{% load core_extras %}
+{% block title %}{% if renew_ad %}تمدید تبلیغ{% else %}ثبت تبلیغ جدید{% endif %} - HabibHub{% endblock %}
+{% block ads_content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-megaphone'></i> {% if renew_ad %}تمدید تبلیغ{% else %}ثبت تبلیغ جدید{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'ads:home' %}" style='color:var(--hb-gold-300);'>تبلیغات</a>
+    › ثبت جدید
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;max-width:760px;'>
+  {% if messages %}
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;{% if 'error' in message.tags %}background:rgba(192,57,43,0.14);border:1px solid rgba(192,57,43,0.45);color:#e74c3c;{% elif 'success' in message.tags %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if 'error' in message.tags %}bi-exclamation-triangle{% elif 'success' in message.tags %}bi-check-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+        {% if 'goto-wallet' in message.tags %}
+          <a href="{% url 'wallet:dashboard' %}" class='hb-btn hb-btn-primary hb-btn-sm' style='margin-right:0.6rem;text-decoration:none;'>
+            <i class='bi bi-wallet2'></i> انتقال به کیف پول و سکه
+          </a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if renew_ad %}
+  <div style='display:flex;align-items:flex-start;gap:0.75rem;padding:0.85rem 1rem;border-radius:10px;margin-bottom:1rem;background:rgba(201,162,39,0.10);border:1px solid rgba(201,162,39,0.4);'>
+    <i class='bi bi-arrow-repeat' style='color:var(--hb-gold-300);font-size:1.2rem;margin-top:0.2rem;'></i>
+    <div style='font-size:0.85rem;line-height:1.9;color:var(--hb-text-primary);'>
+      در حال <b>«تمدید»</b> تبلیغ <b>«{{ renew_ad.title }}»</b> — بازهٔ قبلی:
+      <span style='color:var(--hb-text-muted);'>{{ renew_ad.show_from|jdatetime }} → {{ renew_ad.show_until|jdatetime }}</span>
+      <div style='font-size:0.78rem;color:var(--hb-text-muted);'>
+        متن/لینک/هدرها و لوگوی تبلیغ قبلی پیش‌پُر شده است؛ اگر لوگوی جدیدی بارگذاری نکنید <b>همان تصویر قبلی</b> استفاده می‌شود.
+        فقط تاریخ جدید را از تقویم شمسی انتخاب و هزینهٔ دورهٔ جدید را بپردازید.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li>لوگو + عنوان و توضیح کوتاه وارد کنید؛ با کلیک روی تبلیغ، لینکِ اختیاری باز می‌شود.</li>
+      <li><b>تاریخ شروع و پایان را خودتان تعیین می‌کنید</b> (تقویم شمسی)؛ ساعت شروع و پایان
+        <b>یکی</b> است و همان ساعت برای هر دو به‌کار می‌رود.</li>
+      <li>هزینه برای هر «هدر» جداگانه محاسبه می‌شود:
+        {% if ad_cost %}
+          <b style='color:var(--hb-gold-300);'>هر ۲۴ ساعت × هر هدر = {{ ad_cost.coins|floatformat }} سکه</b>
+        {% else %}
+          <b style='color:#e74c3c;'>تعرفهٔ ثبت تبلیغ فعال نیست</b>
+        {% endif %}
+        — تعداد روزها × تعداد هدرهای انتخابی × این تعرفه، هنگام ثبت از کیف پول شما کسر می‌شود.</li>
+      <li>پس از ثبت و تأیید مدیر، تبلیغ در نوار هدرهای انتخابی پخش می‌شود.</li>
+    </ul>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' enctype='multipart/form-data' novalidate>
+      {% csrf_token %}
+      {% if renew_ad %}<input type='hidden' name='renew_ref' value='{{ renew_ad.pk }}'>{% endif %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      {% for field in form %}
+        {% if field.name == 'start_date' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          <label class='hb-form-label'>تاریخ شروع نمایش *</label>
+          <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='max-width:320px;'>
+            <div class='hb-shamsi-field'>
+              <i class='bi bi-calendar3'></i>
+              <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl' value='{{ field.value|default_if_none:"" }}'>
+              <input type='hidden' name='start_date' data-shamsi-gregorian value='{{ field.value|default_if_none:"" }}'>
+            </div>
+            <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+            <div class='hb-shamsi-info' data-shamsi-info></div>
+          </div>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.3rem;'>{{ field.errors }}</div>{% endif %}
+        </div>
+        {% elif field.name == 'end_date' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          <label class='hb-form-label'>تاریخ پایان نمایش *</label>
+          <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='max-width:320px;'>
+            <div class='hb-shamsi-field'>
+              <i class='bi bi-calendar3'></i>
+              <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl' value='{{ field.value|default_if_none:"" }}'>
+              <input type='hidden' name='end_date' data-shamsi-gregorian value='{{ field.value|default_if_none:"" }}'>
+            </div>
+            <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+            <div class='hb-shamsi-info' data-shamsi-info></div>
+          </div>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.3rem;'>{{ field.errors }}</div>{% endif %}
+        </div>
+        {% elif field.name == 'show_from' or field.name == 'show_until' or field.name == 'speed' or field.name == 'sort_order' %}
+          {# بازهٔ نمایش از تاریخ‌های بالا + ساعتِ واحد ساخته می‌شود؛ سرعت/ترتیب را ادمین تعیین می‌کند. #}
+        {% elif field.name == 'header_modules' %}
+          {# چک‌باکس‌های «هدرهای نوار تبلیغ» — هزینه برای هر هدر جدا محاسبه می‌شود. #}
+        {% else %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>{{ field.help_text }}</small>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      {# چک‌باکس‌های «هدر(های) نوار تبلیغ» + جعبهٔ محاسبهٔ زندهٔ هزینه: روزها × هدرها × تعرفهٔ ۲۴ ساعته #}
+      <div class='hb-form-group' style='margin-bottom:1rem;' data-ad-headers-group>
+        {% if form.header_modules.errors %}
+          <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ form.header_modules.errors }}</div>
+        {% endif %}
+        <label class='hb-form-label'>هدر(های) نوار تبلیغ — محل(های) پخش *</label>
+        <div style='display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;'>
+          {% for pk, choice in form.fields.header_modules.choices %}
+          {% with widget=form.header_modules %}
+          <label style='display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--hb-text-primary);cursor:pointer;background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:8px;padding:0.55rem 0.75rem;'>
+            <input type='checkbox' name='header_modules' value='{{ pk }}' data-ad-header
+              {% if pk|stringformat:"s" in header_checked %}checked{% endif %}>
+            <span><b>{{ choice.title|default:choice }}</b>{% if choice.description %}
+              <small style='display:block;color:var(--hb-text-muted);font-size:0.72rem;'>{{ choice.description }}</small>{% endif %}</span>
+          </label>
+          {% endwith %}
+          {% endfor %}
+        </div>
+        <small style='display:block;margin-top:0.4rem;color:var(--hb-text-muted);font-size:0.75rem;'>
+          برای هر هدر انتخاب‌شده هزینهٔ جداگانه محاسبه می‌شود (روزها × تعداد هدرها).
+        </small>
+      </div>
+
+      {# جعبهٔ محاسبهٔ زندهٔ هزینه: تعداد روزها × تعداد هدرها × تعرفهٔ ۲۴ ساعته #}
+      <div style='margin-top:0.5rem;font-size:0.82rem;background:rgba(201,162,39,0.07);border:1px solid rgba(201,162,39,0.35);border-radius:10px;padding:0.7rem 0.9rem;' data-ad-cost-box>
+        <div style='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;'>
+          <i class='bi bi-calculator' style='color:var(--hb-gold-300);'></i>
+          <span>تعداد روزها: <b data-ad-days>—</b></span>
+          <span style='color:var(--hb-text-muted);'>|</span>
+          <span>هدرهای انتخابی: <b data-ad-headers>۰</b></span>
+          <span style='color:var(--hb-text-muted);'>|</span>
+          <span>هزینهٔ کل: <b style='color:var(--hb-gold-300);' data-ad-total>—</b></span>
+        </div>
+        <div style='font-size:0.73rem;color:var(--hb-text-muted);margin-top:0.3rem;'>
+          هزینه = تعداد روزها × تعداد هدرهای انتخابی × تعرفهٔ ۲۴ ساعته ({{ ad_cost.coins|floatformat:"0"|default:"0" }} سکه برای هر روز-هدر).
+          مبلغ نهایی هنگام ثبت، از کیف پول شما کسر می‌شود.
+        </div>
+      </div>
+
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' data-ad-submit>
+          <i class='bi {% if renew_ad %}bi-arrow-repeat{% else %}bi-plus-lg{% endif %}'></i>
+          {% if renew_ad %}پرداخت و تمدید تبلیغ{% elif ad_cost %}پرداخت و ثبت تبلیغ{% else %}ثبت تبلیغ{% endif %}
+        </button>
+        <a href="{% url 'ads:home' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  // محاسبهٔ زندهٔ هزینه: تعداد روزها (پایان − شروع) × تعداد هدرهای انتخابی
+  // × تعرفهٔ ۲۴ ساعته. تقویم شمسی مقدار تاریخ میلادی را در فیلدهای پنهان
+  // می‌نویسد؛ چک‌باکس‌ها هر تغییر را مستقیم می‌خوانیم تا جعبهٔ هزینه به‌روز شود.
+  var perDay = {{ ad_cost.coins|default:0 }};
+  var startEl = document.querySelector('input[name="start_date"]');
+  var endEl = document.querySelector('input[name="end_date"]');
+  var daysEl = document.querySelector('[data-ad-days]');
+  var headersEl = document.querySelector('[data-ad-headers]');
+  var totalEl = document.querySelector('[data-ad-total]');
+  var btn = document.querySelector('[data-ad-submit]');
+  if (!startEl || !endEl || !daysEl || !totalEl) return;
+  var toFa = function (x) { return String(x).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[+d]; }); };
+  var countHeaders = function () {
+    return document.querySelectorAll('input[name="header_modules"]:checked').length;
+  };
+  var update = function () {
+    var slots = countHeaders();
+    if (headersEl) headersEl.textContent = toFa(slots);
+    var s = startEl.value, e = endEl.value;
+    if (!s || !e) { daysEl.textContent = '—'; totalEl.textContent = '—'; if (btn) btn.disabled = true; return; }
+    if (perDay > 0 && !slots) {
+      if (headersEl) headersEl.textContent = 'هیچ هدری انتخاب نشده';
+    }
+    var days = Math.round((new Date(e) - new Date(s)) / 86400000);
+    if (!(days > 0)) {
+      daysEl.textContent = 'تاریخ پایان باید بعد از تاریخ شروع باشد';
+      totalEl.textContent = '—';
+      if (btn) btn.disabled = true;
+      return;
+    }
+    if (btn) btn.disabled = false;
+    daysEl.textContent = toFa(days) + ' روز';
+    var total = days * slots * perDay;
+    totalEl.textContent = toFa(days) + ' روز × ' + toFa(slots) + ' هدر × ' + toFa(perDay) + ' = ' + toFa(total) + ' سکه';
+    if (btn && perDay > 0) {
+      btn.innerHTML = '<i class="bi bi-plus-lg"></i> پرداخت ' + toFa(total) + ' سکه و ثبت تبلیغ';
+    }
+  };
+  startEl.addEventListener('change', update);
+  endEl.addEventListener('change', update);
+  document.addEventListener('change', function (ev) {
+    if (ev.target && ev.target.name === 'header_modules') update();
+  });
+  document.addEventListener('click', function (ev) {
+    if (ev.target && ev.target.closest && ev.target.closest('[data-shamsi-popup]')) {
+      setTimeout(update, 0);
+    }
+  }, true);
+  setInterval(update, 600); // پوشش تغییرِ بدون رویدادِ تقویم شمسی
+  update();
+})();
+</script>
+<style>
+  .hb-shamsi-picker{position:relative;}
+  .hb-shamsi-field{position:relative;}
+  .hb-shamsi-field>i{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--hb-text-muted);pointer-events:none;}
+  .hb-shamsi-field .hb-shamsi-input{padding-right:2.3rem;}
+  .hb-shamsi-popup{position:absolute;top:calc(100% + 4px);right:0;width:264px;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:12px;padding:0.75rem;box-shadow:0 12px 32px rgba(0,0,0,.45);z-index:60;}
+  .hb-shamsi-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;}
+  .hb-shamsi-nav button{background:none;border:none;color:var(--hb-gold-400);font-size:1.2rem;cursor:pointer;line-height:1;padding:0 0.4rem;}
+  .hb-shamsi-quick{display:flex;gap:0.35rem;margin-bottom:0.55rem;}
+  .hb-shamsi-quick select{flex:1;min-width:0;background:var(--hb-navy-800);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.3rem 0.45rem;font-size:0.8rem;cursor:pointer;}
+  .hb-shamsi-quick select:hover{border-color:var(--hb-gold-400);}
+  .hb-shamsi-quick select:focus{outline:none;border-color:var(--hb-gold-400);box-shadow:0 0 0 2px rgba(201,162,39,0.18);}
+  .hb-shamsi-title{font-size:0.85rem;color:var(--hb-text-primary);font-weight:600;}
+  .hb-shamsi-dow,.hb-shamsi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+  .hb-shamsi-dow span{font-size:0.7rem;color:var(--hb-text-muted);padding:0.2rem 0;}
+  .hb-shamsi-grid span{padding:0.35rem 0;border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--hb-text-secondary);}
+  .hb-shamsi-grid span:hover{background:rgba(201,162,39,0.15);}
+  .hb-shamsi-grid span.off{visibility:hidden;cursor:default;}
+  .hb-shamsi-grid span.day.sel{background:var(--hb-gold-400);color:#0b101d;font-weight:700;}
+  .hb-shamsi-grid span.day.today{outline:1px solid var(--hb-gold-400);}
+  .hb-shamsi-info{margin-top:0.4rem;font-size:0.8rem;color:var(--hb-text-secondary);padding:0.35rem 0.7rem;background:rgba(201,162,39,0.08);border-radius:8px;display:none;}
+</style>
+{% endblock %}

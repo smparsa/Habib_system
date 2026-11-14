@@ -1,0 +1,470 @@
+{% extends "slideshow/base_slideshow.html" %}
+{% load core_extras %}
+{% block title %}{% if renew_slide %}تمدید اسلاید{% else %}ثبت اسلاید جدید{% endif %} - HabibHub{% endblock %}
+{% block slideshow_content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-collection-play'></i> {% if renew_slide %}تمدید اسلاید{% else %}ثبت اسلاید جدید{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'ads:home' %}" style='color:var(--hb-gold-300);'>تبلیغات</a>
+    › اسلایدشوی آمار داشبورد › {% if renew_slide %}تمدید{% else %}ثبت جدید{% endif %}
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;max-width:760px;'>
+  {% if messages %}
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;{% if 'error' in message.tags %}background:rgba(192,57,43,0.14);border:1px solid rgba(192,57,43,0.45);color:#e74c3c;{% elif 'success' in message.tags %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if 'error' in message.tags %}bi-exclamation-triangle{% elif 'success' in message.tags %}bi-check-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+        {% if 'goto-wallet' in message.tags %}
+          <a href="{% url 'wallet:dashboard' %}" class='hb-btn hb-btn-primary hb-btn-sm' style='margin-right:0.6rem;text-decoration:none;'>
+            <i class='bi bi-wallet2'></i> انتقال به کیف پول و سکه
+          </a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if renew_slide %}
+  <div style='display:flex;align-items:flex-start;gap:0.75rem;padding:0.85rem 1rem;border-radius:10px;margin-bottom:1rem;background:rgba(201,162,39,0.10);border:1px solid rgba(201,162,39,0.4);'>
+    <i class='bi bi-arrow-repeat' style='color:var(--hb-gold-300);font-size:1.2rem;margin-top:0.2rem;'></i>
+    <div style='font-size:0.85rem;line-height:1.9;color:var(--hb-text-primary);'>
+      در حال <b>«تمدید»</b> اسلاید <b>«{{ renew_slide.title }}»</b> — بازهٔ قبلی:
+      <span style='color:var(--hb-text-muted);'>{{ renew_slide.show_from|jdatetime }} → {{ renew_slide.show_until|jdatetime }}</span>
+      <div style='font-size:0.78rem;color:var(--hb-text-muted);'>
+        متن/لینک و تصویر اسلاید قبلی پیش‌پُر شده است؛ اگر تصویر جدیدی بارگذاری نکنید <b>همان تصویر قبلی</b> استفاده می‌شود.
+        <b>بازهٔ پیشنهادی</b> از پیش تنظیم شده است: شروع از <b>همین الان</b> و به‌مدتِ <b>{{ renew_days }} روز</b> (همان مدتِ قبلی).
+        اگر مایلید، تاریخ‌ها و ساعت را از تقویم شمسی عوض کنید؛ سپس هزینهٔ دورهٔ جدید را بپردازید.
+      </div>
+      {% if renew_slide.image %}
+      <div style='margin-top:0.7rem;' data-renew-preview>
+        <div style='font-size:0.74rem;color:var(--hb-text-muted);margin-bottom:0.3rem;'>
+          اسلایدِ در حال تمدید — این تصویر در صورت عدم بارگذاری تصویر جدید دوباره نمایش داده می‌شود:
+        </div>
+        {# نسبت ۴:۱ مثل داشبورد؛ تصویرِ قدیمیِ غیر بنری کامل (بدون برش) و وسط‌چین دیده می‌شود #}
+        <div style='aspect-ratio:4/1;width:100%;overflow:hidden;border-radius:10px;border:1px solid var(--hb-border);background:#0b101d;'>
+          <img src='{{ renew_slide.image.url }}' alt='{{ renew_slide.title }}' style='display:block;width:100%;height:100%;object-fit:contain;object-position:center;'>
+        </div>
+        {% if renew_slide.description or renew_slide.link_url %}
+        <div style='font-size:0.76rem;color:var(--hb-text-secondary);margin-top:0.35rem;line-height:1.8;'>
+          {% if renew_slide.description %}{{ renew_slide.description|truncatechars:140 }}{% endif %}
+          {% if renew_slide.link_url %}<span style='direction:ltr;display:inline-block;color:var(--hb-text-muted);'>{{ renew_slide.link_url|truncatechars:60 }}</span>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li><b>تصویر اسلاید با مشخصات مجاز:</b> فرمت PNG/JPG/WEBP • حداکثر <b>۲ مگابایت</b> • ابعاد <b>۱۲۰۰×۳۰۰ تا ۴۸۰۰×۱۲۰۰ پیکسل</b> • نسبت ابعاد ۳٫۵ تا ۴٫۵ (توصیه‌شده <b>۲۴۰۰×۶۰۰ — بنر ۴:۱</b>) — تصویر ناسازگار پذیرفته نمی‌شود. مهم‌ترین بخش تصویر (لوگو/متن/چهره) را در «<b>ناحیهٔ امن مرکزی ۱۲۰۰×۶۰۰</b>» بگذارید: دسکتاپ کل تصویر، تبلت ۷۵٪ مرکز و موبایل ۵۰٪ مرکز را نشان می‌دهد. + عنوان و توضیح کوتاه وارد کنید؛ با کلیک روی اسلاید، لینکِ اختیاری باز می‌شود.</li>
+      <li><b>تاریخ شروع و پایان را خودتان تعیین می‌کنید</b> (تقویم شمسی)؛ ساعت شروع و پایان <b>یکی</b> است.</li>
+      <li>اسلاید در «<b>اسلایدشو A</b>» بالای «ماژول‌های کسب‌وکار» داشبورد پخش می‌شود؛
+        {% if slide_cost %}
+          هزینه = <b style='color:var(--hb-gold-300);'>هر ۲۴ ساعت = {{ slide_cost.coins|floatformat }} سکه</b>
+        {% else %}
+          <b style='color:#e74c3c;'>تعرفهٔ ثبت اسلاید فعال نیست</b>
+        {% endif %}
+        — تعداد روزها × تعرفه، هنگام ثبت از کیف پول شما کسر می‌شود.</li>
+      <li>در اسلایدشو حداکثر <b>۱۰ اسلاید</b> ذخیره می‌شود؛ اسلایدها پس از تأیید، به‌ترتیب و درجا عوض می‌شوند.</li>
+      {% if create_cost %}<li>اگر تصویرتان با مشخصات بالا سازگار نبود، دکمهٔ «<b>ساخت اسلایدشو</b>» ظاهر می‌شود: با <b>{{ create_cost.coins|floatformat:"0" }} سکه (یک‌بار)</b> تصویر شما بدون برش داخل بنر مناسب قرار می‌گیرد؛ پیش‌نمایش را می‌بینید و تأیید می‌کنید.</li>{% endif %}
+      <li>پس از ثبت و <b>تأیید مدیر</b>، اسلاید در داشبورد همهٔ کاربران پخش می‌شود.</li>
+    </ul>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' enctype='multipart/form-data' novalidate>
+      {% csrf_token %}
+      {% if renew_slide %}<input type='hidden' name='renew_ref' value='{{ renew_slide.pk }}'>{% endif %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      {% for field in form %}
+        {% if field.name == 'start_date' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          <label class='hb-form-label'>تاریخ شروع نمایش *</label>
+          <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='max-width:320px;'>
+            <div class='hb-shamsi-field'>
+              <i class='bi bi-calendar3'></i>
+              <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl' value='{{ field.value|default_if_none:"" }}'>
+              <input type='hidden' name='start_date' data-shamsi-gregorian value='{{ field.value|default_if_none:"" }}'>
+            </div>
+            <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+            <div class='hb-shamsi-info' data-shamsi-info></div>
+          </div>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.3rem;'>{{ field.errors }}</div>{% endif %}
+        </div>
+        {% elif field.name == 'end_date' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          <label class='hb-form-label'>تاریخ پایان نمایش *</label>
+          <div class='hb-shamsi-picker' data-shamsi-picker data-shamsi-no-age style='max-width:320px;'>
+            <div class='hb-shamsi-field'>
+              <i class='bi bi-calendar3'></i>
+              <input type='text' class='hb-form-control hb-shamsi-input' placeholder='۱۴۰۵/۰۷/۱۵' readonly data-shamsi-input dir='rtl' value='{{ field.value|default_if_none:"" }}'>
+              <input type='hidden' name='end_date' data-shamsi-gregorian value='{{ field.value|default_if_none:"" }}'>
+            </div>
+            <div class='hb-shamsi-popup' data-shamsi-popup hidden></div>
+            <div class='hb-shamsi-info' data-shamsi-info></div>
+          </div>
+          {% if field.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-top:0.3rem;'>{{ field.errors }}</div>{% endif %}
+        </div>
+        {% elif field.name == 'show_from' or field.name == 'show_until' or field.name == 'sort_order' or field.name == 'ad_time' %}
+          {# بازهٔ نمایش از تاریخ‌های بالا + ساعتِ واحد (پایین) ساخته می‌شود؛ ترتیب/هزینه را کاربر/ادمین تعیین نمی‌کنند. #}
+        {% elif field.name == 'image' %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if not renew_slide %} *{% else %} (اختیاری — در عدمِ بارگذاری، تصویر قبلی استفاده می‌شود){% endif %}</label>
+          {{ field }}
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>{{ field.help_text }}</small>
+          {# بررسی زندهٔ مشخصات فایل انتخابی (فرمت/حجم/ابعاد/نسبت ابعاد) #}
+          <div data-image-check style='display:none;margin-top:0.6rem;border-radius:10px;padding:0.6rem 0.9rem;font-size:0.78rem;line-height:1.9;'></div>
+          {# «ساخت اسلایدشو»: توکن بنرِ ساخته‌شده و تأییدشده + پنل مراحل (تأیید هزینه ← ساخت ← پیش‌نمایش) #}
+          <input type='hidden' name='built_token' value='{{ built.token|default:"" }}' data-built-token data-built-url='{{ built.url|default:"" }}'>
+          <div data-build-panel style='display:none;'></div>
+        </div>
+        {% else %}
+        <div class='hb-form-group' style='margin-bottom:1rem;'>
+          {% if field.errors %}
+            <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+          {% endif %}
+          <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>{{ field.help_text }}</small>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      {# ساعت واحد: شروع و پایان از تقویم شمسی + این ساعت ساخته می‌شود #}
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        {% if form.ad_time.errors %}<div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ form.ad_time.errors }}</div>{% endif %}
+        <label class='hb-form-label' for='id_ad_time'>ساعت شروع و پایان (یکسان) *</label>
+        {{ form.ad_time }}
+        <small style='display:block;margin-top:0.25rem;color:var(--hb-text-muted);font-size:0.75rem;'>{{ form.ad_time.help_text }}</small>
+      </div>
+
+      {# جعبهٔ محاسبهٔ زندهٔ هزینه: تعداد روزها × تعرفهٔ ۲۴ ساعته #}
+      <div style='margin-top:0.5rem;font-size:0.82rem;background:rgba(201,162,39,0.07);border:1px solid rgba(201,162,39,0.35);border-radius:10px;padding:0.7rem 0.9rem;' data-slide-cost-box>
+        <div style='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;'>
+          <i class='bi bi-calculator' style='color:var(--hb-gold-300);'></i>
+          <span>تعداد روزها: <b data-slide-days>—</b></span>
+          <span style='color:var(--hb-text-muted);'>|</span>
+          <span>هزینهٔ کل: <b style='color:var(--hb-gold-300);' data-slide-total>—</b></span>
+        </div>
+        <div style='font-size:0.73rem;color:var(--hb-text-muted);margin-top:0.3rem;'>
+          هزینه = تعداد روزها × تعرفهٔ ۲۴ ساعته ({{ slide_cost.coins|floatformat:"0"|default:"0" }} سکه برای هر روز).
+          مبلغ نهایی هنگام ثبت، از کیف پول شما کسر می‌شود.
+        </div>
+      </div>
+
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm' data-slide-submit{% if renew_slide %} data-renew{% endif %}>
+          <i class='bi {% if renew_slide %}bi-arrow-repeat{% else %}bi-plus-lg{% endif %}'></i>
+          {% if renew_slide %}پرداخت و تمدید اسلاید{% elif slide_cost %}پرداخت و ثبت اسلاید{% else %}ثبت اسلاید{% endif %}
+        </button>
+        <a href="{% url 'ads:home' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+      {# دلیلِ غیرفعال‌بودنِ دکمهٔ پرداخت (تاریخ‌ها/بازهٔ نامعتبر/تصویر ناسازگار) #}
+      <div data-slide-hint style='display:none;margin-top:0.55rem;font-size:0.78rem;line-height:1.8;color:var(--hb-gold-300);'>
+        <i class='bi bi-info-circle'></i> <span></span>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function () {
+  // کنترل زندهٔ مشخصات تصویر انتخاب‌شده (فرمت/حجم/ابعاد/نسبت ابعاد) —
+  // هم‌تای اعتبارسنجی سرور (adminpanel.forms.validate_stat_slide_image)؛
+  // تصویر ناسازگار از همان انتخاب، رد می‌شود و دکمهٔ پرداخت غیرفعال می‌ماند.
+  var SPEC = { max_mb: 2, min_w: 1200, min_h: 300, max_w: 4800, max_h: 1200, rmin: 3.5, rmax: 4.5 };
+  var ALLOWED_MIME = { 'image/png': 'PNG', 'image/jpeg': 'JPG', 'image/webp': 'WEBP' };
+  var input = document.querySelector('input[type="file"][name="image"]');
+  var out = document.querySelector('[data-image-check]');
+  var submitBtn = document.querySelector('[data-slide-submit]');
+  if (!input || !out) return;
+  // «ساخت اسلایدشو» (Create Slideshow)
+  var CREATE = { enabled: {{ create_cost|yesno:"true,false" }}, cost: {{ create_cost.coins|default:0 }},
+                 url: "{% url 'slideshow:build' %}", wallet: "{% url 'wallet:dashboard' %}", maxMb: 8 };
+  var tokenEl = document.querySelector('[data-built-token]');
+  var panel = document.querySelector('[data-build-panel]');
+  var csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
+  var wasRequired = input.hasAttribute('required');
+  var currentFile = null;
+
+  var fa = function (x) {
+    return String(x).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[+d]; });
+  };
+  var LI = 'style="list-style:none;margin:0.25rem 0 0;padding:0;"';
+  var setStatus = function (ok, html) {
+    out.style.display = 'block';
+    out.style.background = ok ? 'rgba(46,160,67,0.12)' : 'rgba(192,57,43,0.12)';
+    out.style.color = ok ? 'var(--hb-success)' : '#e74c3c';
+    out.innerHTML = html;
+    if (submitBtn) {
+      // وضعیت «تصویر ناسازگار» روی خود دکمه ثبت می‌شود تا اسکریپت محاسبهٔ هزینه (که تاریخ‌ها را
+      // هر چند لحظه بررسی می‌کند) دکمه را دوباره فعال نکند.
+      if (ok) {
+        submitBtn.dataset.imageBlocked = '';
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('title');
+        if (window.__hbSlideUpdate) window.__hbSlideUpdate();
+      } else {
+        submitBtn.dataset.imageBlocked = '1';
+        submitBtn.disabled = true;
+        if (window.__hbSlideUpdate) window.__hbSlideUpdate();
+        submitBtn.title = 'تصویر ناسازگار است؛ تصویری با مشخصات مجاز انتخاب کنید یا «ساخت اسلایدشو» را بزنید';
+      }
+    }
+  };
+
+  var checkFile = function (file) {
+    currentFile = file || null;
+    if (!file) { out.style.display = 'none'; if (submitBtn) { submitBtn.dataset.imageBlocked = ''; submitBtn.disabled = false; if (window.__hbSlideUpdate) window.__hbSlideUpdate(); } return; }
+    var okBits = [], badBits = [];
+    var mime = (file.type || '').toLowerCase();
+    if (ALLOWED_MIME[mime]) {
+      okBits.push('<i class="bi bi-check-circle"></i> فرمت: ' + ALLOWED_MIME[mime] + ' (مجاز PNG/JPG/WEBP)');
+    } else {
+      badBits.push('<i class="bi bi-x-circle"></i> فرمت: ' + (mime || 'نامشخص') + ' — مجاز فقط PNG/JPG/WEBP');
+    }
+    var mb = file.size / 1048576;
+    if (mb <= SPEC.max_mb) {
+      okBits.push('<i class="bi bi-check-circle"></i> حجم: ' + fa(mb.toFixed(2)) + ' مگابایت (حداکثر ' + fa(SPEC.max_mb) + ' مگابایت)');
+    } else {
+      badBits.push('<i class="bi bi-x-circle"></i> حجم: ' + fa(mb.toFixed(2)) + ' مگابایت — حداکثر مجاز ' + fa(SPEC.max_mb) + ' مگابایت');
+    }
+    var finish = function (w, h) {
+      if (w === null) {
+        badBits.push('<i class="bi bi-x-circle"></i> ابعاد تصویر خوانده نشد (فایل خراب؟)');
+      } else {
+        var ratio = w / h;
+        var okSize = (w >= SPEC.min_w && h >= SPEC.min_h && w <= SPEC.max_w && h <= SPEC.max_h);
+        var okRatio = (ratio >= SPEC.rmin && ratio <= SPEC.rmax);
+        var dims = '<i class="bi bi-' + (okSize ? 'check' : 'x') + '-circle"></i> ابعاد: ' + fa(w) + '×' + fa(h) +
+          ' (مجاز ' + fa(SPEC.min_w) + '×' + fa(SPEC.min_h) + ' تا ' + fa(SPEC.max_w) + '×' + fa(SPEC.max_h) + ')';
+        var rat = '<i class="bi bi-' + (okRatio ? 'check' : 'x') + '-circle"></i> نسبت ابعاد: ' + fa(ratio.toFixed(2)) +
+          ' (مجاز ۳٫۵ تا ۴٫۵ — توصیه‌شده ۲۴۰۰×۶۰۰)';
+        (okSize ? okBits : badBits).push(dims);
+        (okRatio ? okBits : badBits).push(rat);
+      }
+      var list = '';
+      var i;
+      for (i = 0; i < okBits.length; i++) list += '<li ' + LI + '>' + okBits[i] + '</li>';
+      for (i = 0; i < badBits.length; i++) list += '<li ' + LI + '>' + badBits[i] + '</li>';
+      var cta = '';
+      if (badBits.length && w !== null && ALLOWED_MIME[mime] && file.size <= CREATE.maxMb * 1048576) {
+        var label = CREATE.enabled ? ' — ' + fa(CREATE.cost) + ' سکه' : '';
+        cta = '<div style="margin-top:0.7rem;"><button type="button" class="hb-btn hb-btn-primary hb-btn-sm" data-build-open' +
+          (CREATE.enabled ? '' : ' disabled title="هزینهٔ ساخت هنوز توسط مدیر تعریف/فعال نشده است"') + '>' +
+          '<i class="bi bi-magic"></i> ساخت اسلایدشو (Create Slideshow)' + label + '</button>' +
+          (CREATE.enabled
+            ? '<div style="font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.3rem;">تصویر شما بدون برش داخل بنر ۲۴۰۰×۶۰۰ قرار می‌گیرد و پس‌زمینهٔ اطراف خودکار ساخته می‌شود؛ پیش از ثبت، پیش‌نمایش را می‌بینید و تأیید می‌کنید.</div>'
+            : '<div style="font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.3rem;">ساخت اسلایدشو هنوز فعال نشده است (هزینهٔ آن توسط مدیر تعریف نشده)؛ فعلاً تصویری با مشخصات مجاز انتخاب کنید.</div>') +
+          '</div>';
+      }
+      setStatus(badBits.length === 0,
+        '<b>' + (badBits.length === 0 ? 'تصویر سازگار است ✓' : 'تصویر ناسازگار است — بارگذاری مجاز نیست') + '</b><ul >' + list + '</ul>' + cta);
+    };
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      URL.revokeObjectURL(url);
+      finish(w, h);
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      finish(null, null);
+    };
+    img.src = url;
+  };
+  // ---------------------------------------------------------------- ساخت اسلایدشو
+  var box = function (html) {
+    panel.style.cssText = 'display:block;margin-top:0.6rem;border:1px solid rgba(201,162,39,0.35);background:rgba(201,162,39,0.07);' +
+      'border-radius:10px;padding:0.8rem 0.9rem;font-size:0.8rem;line-height:1.9;';
+    panel.innerHTML = html;
+  };
+  var hidePanel = function () { panel.style.display = 'none'; panel.innerHTML = ''; };
+  var BTN = 'class="hb-btn hb-btn-primary hb-btn-sm"', BTN2 = 'class="hb-btn hb-btn-dark hb-btn-sm"';
+  var frame = function (ratio, maxw, url) {
+    return '<div style="aspect-ratio:' + ratio + ';max-width:' + maxw + ';width:100%;overflow:hidden;border-radius:10px;background:#0b101d;">' +
+      '<img src="' + url + '" alt="" style="display:block;width:100%;height:100%;object-fit:cover;"></div>';
+  };
+  var showConfirm = function () {
+    box('<b><i class="bi bi-magic"></i> ساخت اسلایدشو از تصویر شما</b>' +
+      '<div>هزینهٔ ساخت <b style="color:var(--hb-gold-300);">' + fa(CREATE.cost) + ' سکه</b> از کیف پول شما کسر می‌شود (یک‌بار). ' +
+      'پس از ساخت، هزینه بازگردانده نمی‌شود؛ اما می‌توانید پیش‌نمایش را ببینید و فقط در صورت تأیید از آن استفاده کنید. ' +
+      'نمایش در داشبورد، جدا و هنگام ثبت نهایی (هزینهٔ نمایش + تأیید مدیر) انجام می‌شود.</div>' +
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">' +
+      '<button type="button" ' + BTN + ' data-build-go>ادامه و کسر ' + fa(CREATE.cost) + ' سکه</button>' +
+      '<button type="button" ' + BTN2 + ' data-build-cancel>انصراف</button></div>');
+  };
+  var showError = function (msg, wallet) {
+    box('<div style="color:#e74c3c;"><i class="bi bi-x-circle"></i> ' + msg + '</div>' +
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">' +
+      (wallet ? '<a ' + BTN + ' href="' + CREATE.wallet + '" style="text-decoration:none;"><i class="bi bi-wallet2"></i> کیف پول و سکه</a>' : '') +
+      '<button type="button" ' + BTN2 + ' data-build-cancel>بستن</button></div>');
+  };
+  var showPreview = function (j) {
+    panel.dataset.token = j.token; panel.dataset.url = j.url;
+    box('<b style="color:var(--hb-success);"><i class="bi bi-check-circle"></i> اسلایدشو ساخته شد</b> — ' + fa(j.cost) +
+      ' سکه کسر شد (موجودی: ' + fa(j.balance) + ' سکه)' +
+      '<div style="font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.5rem;">پیش‌نمایش دسکتاپ (۴:۱ — کل بنر)</div>' + frame('4/1', '100%', j.url) +
+      '<div style="font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.5rem;">پیش‌نمایش موبایل (۲:۱ — ۵۰٪ مرکز)</div>' + frame('2/1', '360px', j.url) +
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.7rem;">' +
+      '<button type="button" ' + BTN + ' data-build-accept><i class="bi bi-check-lg"></i> تأیید و استفاده از این اسلایدشو</button>' +
+      '<button type="button" ' + BTN2 + ' data-build-discard>انصراف (هزینهٔ ساخت بازگردانده نمی‌شود)</button></div>');
+  };
+  var showAccepted = function (url) {
+    box('<div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">' +
+      '<img src="' + url + '" alt="" style="height:56px;aspect-ratio:4/1;object-fit:cover;border-radius:8px;border:1px solid var(--hb-border);">' +
+      '<span style="flex:1;min-width:200px;"><b style="color:var(--hb-success);">اسلایدشوی ساخته‌شده انتخاب شد ✓</b><br>' +
+      'با ثبت نهایی (هزینهٔ نمایش + تأیید مدیر) در داشبورد پخش می‌شود.</span>' +
+      '<button type="button" ' + BTN2 + ' data-build-remove>حذف و انتخاب تصویر دیگر</button></div>');
+  };
+  var accept = function () {
+    tokenEl.value = panel.dataset.token || '';
+    tokenEl.setAttribute('data-built-url', panel.dataset.url || '');
+    input.value = '';
+    input.removeAttribute('required');
+    setStatus(true, '<b>اسلایدشوی ساخته‌شده انتخاب شد ✓</b>');
+    showAccepted(panel.dataset.url || '');
+  };
+  var removeBuilt = function () {
+    tokenEl.value = '';
+    tokenEl.setAttribute('data-built-url', '');
+    if (wasRequired) input.setAttribute('required', 'required');
+    out.style.display = 'none';
+    hidePanel();
+  };
+  var build = function () {
+    if (!currentFile) { showError('تصویری انتخاب نشده است.', false); return; }
+    box('<i class="bi bi-hourglass-split"></i> در حال کسر هزینه و ساخت اسلایدشو…');
+    var fd = new FormData();
+    fd.append('image', currentFile);
+    fd.append('csrfmiddlewaretoken', csrfEl ? csrfEl.value : '');
+    fetch(CREATE.url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+      .then(function (res) {
+        if (res.j && res.j.ok) showPreview(res.j);
+        else showError((res.j && res.j.error) || 'ساخت اسلایدشو ناموفق بود.', res.j && res.j.wallet);
+      })
+      .catch(function () { showError('خطای شبکه؛ دوباره تلاش کنید (اگر هزینه کسر شده باشد در تاریخچهٔ کیف پول می‌بینید).', false); });
+  };
+  out.addEventListener('click', function (ev) {
+    if (ev.target.closest('[data-build-open]')) showConfirm();
+  });
+  if (panel) panel.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (t.closest('[data-build-go]')) build();
+    else if (t.closest('[data-build-accept]')) accept();
+    else if (t.closest('[data-build-discard]') || t.closest('[data-build-cancel]')) hidePanel();
+    else if (t.closest('[data-build-remove]')) removeBuilt();
+  });
+  input.addEventListener('change', function () {
+    if (tokenEl && tokenEl.value) removeBuilt();   // انتخاب فایل جدید، بنر ساخته‌شدهٔ قبلی را کنار می‌گذارد
+    checkFile(input.files && input.files[0]);
+  });
+  if (tokenEl && tokenEl.value) {                   // بازگشت فرم با خطا: بنر تأییدشده حفظ شده است
+    input.removeAttribute('required');
+    setStatus(true, '<b>اسلایدشوی ساخته‌شده انتخاب شد ✓</b>');
+    showAccepted(tokenEl.getAttribute('data-built-url'));
+  }
+})();
+</script>
+<script>
+(function () {
+  // محاسبهٔ زندهٔ هزینه: تعداد روزها (پایان − شروع) × تعرفهٔ ۲۴ ساعته.
+  // تقویم شمسی مقدار تاریخ میلادی را در فیلدهای پنهان می‌نویسد.
+  var perDay = {{ slide_cost.coins|default:0 }};
+  var startEl = document.querySelector('input[name="start_date"]');
+  var endEl = document.querySelector('input[name="end_date"]');
+  var daysEl = document.querySelector('[data-slide-days]');
+  var totalEl = document.querySelector('[data-slide-total]');
+  var btn = document.querySelector('[data-slide-submit]');
+  var hintEl = document.querySelector('[data-slide-hint]');
+  if (!startEl || !endEl || !daysEl || !totalEl) return;
+  var toFa = function (x) { return String(x).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[+d]; }); };
+  var isRenew = !!(btn && btn.hasAttribute('data-renew'));
+  var baseHtml = btn ? btn.innerHTML : '';                      // متن اولیهٔ دکمه (ثبت/تمدید)
+  // دکمه فقط با «تاریخ شروع و پایانِ معتبر» و «تصویر سازگار» فعال می‌شود؛ دلیل در hint نوشته می‌شود.
+  var setState = function (reason) {
+    if (btn) btn.disabled = !!reason;
+    if (hintEl) {
+      hintEl.style.display = reason ? '' : 'none';
+      var span = hintEl.querySelector('span');
+      if (span) span.textContent = reason || '';
+    }
+  };
+  var update = function () {
+    var s = startEl.value, e = endEl.value;
+    var imgBlocked = !!(btn && btn.dataset.imageBlocked === '1');
+    if (btn && btn.innerHTML !== baseHtml && (!s || !e)) btn.innerHTML = baseHtml;
+    if (!s || !e) {
+      daysEl.textContent = '—'; totalEl.textContent = '—';
+      setState(imgBlocked
+        ? 'تصویر ناسازگار است؛ تصویری با مشخصات مجاز انتخاب کنید یا «ساخت اسلایدشو» را بزنید.'
+        : 'برای فعال شدن دکمهٔ پرداخت، «تاریخ شروع» و «تاریخ پایان» را از تقویم شمسی انتخاب کنید' +
+          (isRenew ? ' (در تمدید، بازهٔ نمایش باید جدید باشد).' : '.'));
+      return;
+    }
+    var days = Math.round((new Date(e) - new Date(s)) / 86400000);
+    if (!(days > 0)) {
+      daysEl.textContent = 'تاریخ پایان باید بعد از تاریخ شروع باشد';
+      totalEl.textContent = '—';
+      if (btn && btn.innerHTML !== baseHtml) btn.innerHTML = baseHtml;
+      setState('تاریخ پایان باید بعد از تاریخ شروع باشد.');
+      return;
+    }
+    daysEl.textContent = toFa(days) + ' روز';
+    var total = days * perDay;
+    totalEl.textContent = toFa(days) + ' روز × ' + toFa(perDay) + ' = ' + toFa(total) + ' سکه';
+    if (btn && perDay > 0) {
+      btn.innerHTML = '<i class="bi ' + (isRenew ? 'bi-arrow-repeat' : 'bi-plus-lg') + '"></i> پرداخت ' + toFa(total) +
+        ' سکه و ' + (isRenew ? 'تمدید' : 'ثبت') + ' اسلاید';
+    }
+    setState(imgBlocked ? 'تصویر ناسازگار است؛ تصویری با مشخصات مجاز انتخاب کنید یا «ساخت اسلایدشو» را بزنید.' : '');
+  };
+  window.__hbSlideUpdate = update;                              // اسکریپت بررسی تصویر پس از هر تغییر صدایش می‌زند
+  startEl.addEventListener('change', update);
+  endEl.addEventListener('change', update);
+  document.addEventListener('click', function (ev) {
+    if (ev.target && ev.target.closest && ev.target.closest('[data-shamsi-popup]')) {
+      setTimeout(update, 0);
+    }
+  }, true);
+  setInterval(update, 600); // پوشش تغییرِ بدون رویدادِ تقویم شمسی
+  update();
+})();
+</script>
+<style>
+  /* دکمهٔ غیرفعال باید غیرفعال «دیده» شود (قبلاً طلاییِ روشن می‌ماند و گیج‌کننده بود) */
+  [data-slide-submit][disabled]{opacity:0.42;cursor:not-allowed;filter:grayscale(0.6);box-shadow:none;transform:none;}
+  .hb-shamsi-picker{position:relative;}
+  .hb-shamsi-field{position:relative;}
+  .hb-shamsi-field>i{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--hb-text-muted);pointer-events:none;}
+  .hb-shamsi-field .hb-shamsi-input{padding-right:2.3rem;}
+  .hb-shamsi-popup{position:absolute;top:calc(100% + 4px);right:0;width:264px;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:12px;padding:0.75rem;box-shadow:0 12px 32px rgba(0,0,0,.45);z-index:60;}
+  .hb-shamsi-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;}
+  .hb-shamsi-nav button{background:none;border:none;color:var(--hb-gold-400);font-size:1.2rem;cursor:pointer;line-height:1;padding:0 0.4rem;}
+  .hb-shamsi-quick{display:flex;gap:0.35rem;margin-bottom:0.55rem;}
+  .hb-shamsi-quick select{flex:1;min-width:0;background:var(--hb-navy-800);color:var(--hb-text-primary);border:1px solid var(--hb-border);border-radius:8px;padding:0.3rem 0.45rem;font-size:0.8rem;cursor:pointer;}
+  .hb-shamsi-quick select:hover{border-color:var(--hb-gold-400);}
+  .hb-shamsi-quick select:focus{outline:none;border-color:var(--hb-gold-400);box-shadow:0 0 0 2px rgba(201,162,39,0.18);}
+  .hb-shamsi-title{font-size:0.85rem;color:var(--hb-text-primary);font-weight:600;}
+  .hb-shamsi-dow,.hb-shamsi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+  .hb-shamsi-dow span{font-size:0.7rem;color:var(--hb-text-muted);padding:0.2rem 0;}
+  .hb-shamsi-grid span{padding:0.35rem 0;border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--hb-text-secondary);}
+  .hb-shamsi-grid span:hover{background:rgba(201,162,39,0.15);}
+  .hb-shamsi-grid span.off{visibility:hidden;cursor:default;}
+  .hb-shamsi-grid span.day.sel{background:var(--hb-gold-400);color:#0b101d;font-weight:700;}
+  .hb-shamsi-grid span.day.today{outline:1px solid var(--hb-gold-400);}
+  .hb-shamsi-info{margin-top:0.4rem;font-size:0.8rem;color:var(--hb-text-secondary);padding:0.35rem 0.7rem;background:rgba(201,162,39,0.08);border-radius:8px;display:none;}
+</style>
+{% endblock %}

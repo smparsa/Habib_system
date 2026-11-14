@@ -1,0 +1,48 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}اطلاعات تحصیلی — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-mortarboard'></i> اطلاعات تحصیلی</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>مراجع تحصیلی برنامه: مراکز دانشگاهی، گروه‌های امتحانی، رشته‌های تحصیلی و گرایش‌های زیرمجموعه — کاربران در پروفایل از همین فهرست‌ها انتخاب می‌کنند.</p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-modules-grid'>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:education_institutions_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-bank'></i></div>
+      <div class='hb-module-title'>مراکز دانشگاهی</div>
+      <div class='hb-module-desc'>فهرست مراکز دانشگاهی و آموزش عالی ایران: دولتی، آزاد، غیرانتفاعی و ...</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:education_groups_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-collection'></i></div>
+      <div class='hb-module-title'>گروه‌های امتحانی</div>
+      <div class='hb-module-desc'>فنی و مهندسی، علوم پایه، علوم انسانی و هنر، زبان‌های خارجی</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:education_fields_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-journal-bookmark'></i></div>
+      <div class='hb-module-title'>رشته‌های تحصیلی</div>
+      <div class='hb-module-desc'>هر رشته به یک گروه امتحانی وابسته است؛ {{ field_count }} رشته در {{ group_count }} گروه</div>
+    </div>
+    <div class='hb-module-card' data-href="{% url 'adminpanel:education_specializations_list' %}">
+      <div class='hb-module-icon'><i class='bi bi-diagram-3'></i></div>
+      <div class='hb-module-title'>گرایش‌های تحصیلی</div>
+      <div class='hb-module-desc'>هر گرایش به یک رشتهٔ تحصیلی وابسته است؛ در مجموع {{ spec_count }} گرایش</div>
+    </div>
+  </div>
+
+  <div class='hb-card' style='margin-top:1.5rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-diagram-2'></i> سلسله‌مراتب اطلاعات تحصیلی</div>
+    </div>
+    <div style='padding:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;color:var(--hb-text-primary);font-size:0.92rem;'>
+      <span class='hb-badge hb-badge-info'>مرکز دانشگاهی</span>
+      <i class='bi bi-plus-lg' style='color:var(--hb-text-muted);'></i>
+      <span class='hb-badge hb-badge-info'>گروه امتحانی</span>
+      <i class='bi bi-arrow-left' style='color:var(--hb-text-muted);'></i>
+      <span class='hb-badge hb-badge-info'>رشتهٔ تحصیلی</span>
+      <i class='bi bi-arrow-left' style='color:var(--hb-text-muted);'></i>
+      <span class='hb-badge hb-badge-info'>گرایش تحصیلی</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}صف فضای ابری — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-list-task'></i> صف آپلود، Sync و دانلود</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    وضعیت عملیات‌های ماژول فضای ابری و عملیات ناموفق.
+    خطاها در دفتر ممیزی نیز ثبت می‌شوند.
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;'>
+  <div class='hb-card'>
+    <div style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;align-items:center;'>
+      <a class='hb-btn hb-btn-sm {% if kind == "sessions" %}hb-btn-primary{% else %}hb-btn-outline{% endif %}' href="{% url 'adminpanel:storage_queues' %}?kind=sessions" style='text-decoration:none;'>سشن‌های آپلود</a>
+      <a class='hb-btn hb-btn-sm {% if kind == "sync" %}hb-btn-primary{% else %}hb-btn-outline{% endif %}' href="{% url 'adminpanel:storage_queues' %}?kind=sync" style='text-decoration:none;'>Sync</a>
+      <a class='hb-btn hb-btn-sm {% if kind == "archives" %}hb-btn-primary{% else %}hb-btn-outline{% endif %}' href="{% url 'adminpanel:storage_queues' %}?kind=archives" style='text-decoration:none;'>آرشیوها (دانلود)</a>
+      <span style='margin-inline-start:auto;font-size:0.78rem;'>
+        ناموفق‌ها:
+        <b style='color:#e74c3c;'>{{ failures.sessions_failed }}</b> آپلود،
+        <b style='color:#e74c3c;'>{{ failures.sync_failed }}</b> Sync،
+        <b style='color:#e74c3c;'>{{ failures.archives_failed }}</b> آرشیو
+      </span>
+    </div>
+    <form method='get' style='margin-bottom:0.75rem;'>
+      <input type='hidden' name='kind' value='{{ kind }}'>
+      <label style='font-size:0.78rem;'>فیلتر وضعیت
+        <select name='status' class='hb-form-control' style='margin-top:0.25rem;min-width:180px;' onchange='this.form.submit()'>
+          <option value=''>همه</option>
+          {% for s in statuses %}<option value='{{ s }}' {% if status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </label>
+    </form>
+    <div style='overflow-x:auto;'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.78rem;min-width:760px;'>
+      <thead><tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+        <th style='padding:0.5rem;text-align:right;'>شناسه</th>
+        <th style='padding:0.5rem;text-align:right;'>کاربر</th>
+        <th style='padding:0.5rem;text-align:right;'>پوشه</th>
+        <th style='padding:0.5rem;text-align:right;'>منبع</th>
+        <th style='padding:0.5rem;text-align:right;'>وضعیت</th>
+        <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>مبلغ/حجم</th>
+        <th style='padding:0.5rem;text-align:right;white-space:nowrap;'>زمان</th>
+      </tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr style='border-bottom:1px solid var(--hb-border);'>
+          <td style='padding:0.5rem;'>#{{ row.pk }}</td>
+          <td style='padding:0.5rem;'>{{ row.account.user.mobile_number }}</td>
+          <td style='padding:0.5rem;'>{{ row.folder_name|default:row.folder.name|default:"—" }}</td>
+          <td style='padding:0.5rem;'>{% if row.source %}{{ row.get_source_display }}{% else %}—{% endif %}</td>
+          <td style='padding:0.5rem;'>
+            {% if row.status == 'failed' %}<span class='hb-badge hb-badge-danger'>{{ row.get_status_display }}</span>
+            {% elif row.status == 'finished' or row.status == 'done' or row.status == 'ready' %}<span class='hb-badge hb-badge-success'>{{ row.get_status_display }}</span>
+            {% else %}<span class='hb-badge hb-badge-warning'>{{ row.get_status_display }}</span>{% endif %}
+          </td>
+          <td style='padding:0.5rem;white-space:nowrap;'>
+            {% if kind == 'sessions' %}{{ row.stats.total_cost|default:0 }} سکه — {{ row.uploaded_count }} فایل
+            {% elif kind == 'archives' %}{{ row.size_bytes|filesizeformat }} — {{ row.files_count }} فایل
+            {% else %}{{ row.diff|length }} مورد{% endif %}
+          </td>
+          <td style='padding:0.5rem;white-space:nowrap;direction:ltr;text-align:right;'>
+            {% if kind == 'sessions' %}{{ row.priced_at|date:'Y-m-d H:i' }}{% elif kind == 'sync' %}{{ row.started_at|date:'Y-m-d H:i' }}{% else %}{{ row.expires_at|date:'Y-m-d H:i' }}{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan='7' style='padding:1rem;text-align:center;color:var(--hb-text-muted);'>موردی برای نمایش نیست.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

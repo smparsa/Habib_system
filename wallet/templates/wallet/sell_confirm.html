@@ -1,0 +1,69 @@
+{% load static %}
+{% load wallet_extras %}
+<!DOCTYPE html><html lang='fa'><head>  <meta charset='UTF-8'>  <meta name='viewport' content='width=device-width, initial-scale=1.0'>  <title data-page-title='wallet-sell-confirm'>تأیید فروش سکه — HabibHub</title>  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'></head><body><!-- Sidebar --><aside class='hb-sidebar' id='sidebar'>  <button class='hb-sidebar-toggle'><i class='bi bi-chevron-left'></i></button>  <div class='hb-sidebar-header'>    <img src='{% static "core/assets/logo.png" %}' alt='Logo' class='hb-sidebar-logo'>    <div>      <div class='hb-sidebar-brand'>Habib<span>Hub</span></div>      <small style='color:var(--hb-text-muted);font-size:0.7rem;'>سکه و کیف پول</small>    </div>  </div>  {% include "core/_sidebar_nav.html" with nav_active="wallet" %}  <div class='hb-sidebar-footer'>    <div style='display:flex;align-items:center;gap:0.75rem;'>      {% if profile.avatar %}<img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;object-fit:cover;'>{% else %}<img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;'>{% endif %}      <div class='user-info'>        <div style='font-weight:600;font-size:0.85rem;'>{{ profile.full_name }}</div>        <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ request.user.mobile_number }}</div>      </div>      <form method='post' action="{% url 'accounts:logout' %}" style='margin-inline-start:auto;'>{% csrf_token %}<button type='submit' title='خروج' style='background:none;border:none;color:var(--hb-text-muted);cursor:pointer;font-size:1.1rem;'><i class='bi bi-box-arrow-right'></i></button></form>    </div>  </div></aside><!-- Overlay --><div class='hb-overlay'></div><!-- Header --><header class='hb-header'>  <div style='display:flex;align-items:center;gap:1rem;'>
+  {% include "core/_breaking_news_bar.html" %}    <button class='hb-mobile-toggle'><i class='bi bi-list'></i></button>    <div style='display:flex;align-items:center;gap:0.5rem;color:var(--hb-text-muted);font-size:0.85rem;'>      <i class='bi bi-shield-check' style='color:var(--hb-gold-300);'></i>      <span>تأیید نهایی درخواست فروش سکه</span>    </div>  </div>  <div class='hb-header-actions'>    <a class='hb-header-btn' href="{% url 'wallet:dashboard' %}" title='بازگشت به کیف پول' style='text-decoration:none;'><i class='bi bi-wallet2'></i></a>  </div></header><!-- Main Content --><main class='hb-main'>  <div class='hb-page-header'>    <h1><i class='bi bi-bag-dash'></i> تأیید فروش سکه</h1>    <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>موجودی فعلی: <b style='color:var(--hb-gold-300);'>{{ wallet.balance|fa_num }}</b> سکه (ارزش {{ wallet.value_rial|fa_num }} ریال)</p>  </div>
+
+  {% if messages %}
+  <div style='padding:0 2rem;'>
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style='padding:1.5rem 2rem;max-width:640px;'>
+    <div class='hb-card'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-shield-lock' style='color:var(--hb-gold-300);'></i> خلاصهٔ درخواست فروش</div>
+      </div>
+      <div style='display:flex;flex-direction:column;gap:0.6rem;font-size:0.92rem;margin-bottom:1rem;'>
+        <div style='display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;'>
+          <span style='color:var(--hb-text-muted);'>تعداد سکهٔ فروش</span>
+          <span style='font-weight:700;color:var(--hb-gold-300);'>{{ coins|fa_num }}</span>
+        </div>
+        <div style='display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;'>
+          <span style='color:var(--hb-text-muted);'>نرخ هر سکه (در لحظهٔ ثبت)</span>
+          <span dir='ltr'>{{ rate|fa_num }} ریال</span>
+        </div>
+        <div style='display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;'>
+          <span style='color:var(--hb-text-muted);'>مبلغ قابل دریافت</span>
+          <span dir='ltr' style='font-weight:700;'>{{ total_rial|fa_num }} ریال</span>
+        </div>
+        <div style='display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;'>
+          <span style='color:var(--hb-text-muted);'>واریز به شبأ</span>
+          <span dir='ltr' style='font-family:ui-monospace,Consolas,monospace;font-size:0.8rem;'>{{ request.user.profile.iban }}</span>
+        </div>
+      </div>
+
+      <div style='display:flex;align-items:center;gap:0.5rem;background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.3);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.82rem;margin-bottom:0.9rem;'>
+        <i class='bi bi-exclamation-triangle' style='color:#e74c3c;'></i>
+        <span>با ثبت نهایی، سکهٔ یادشده بلافاصله از کیف پول شما رزرو می‌شود و تا تأیید مدیر آزاد نخواهد بود.</span>
+      </div>
+
+      <!-- تأیید دوم پس از تأیید اول (دو مرحلهٔ تأیید پیش از ثبت) -->
+      {% if confirmed %}
+      <div style='display:flex;align-items:center;gap:0.5rem;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.4);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.82rem;margin-bottom:0.9rem;'>
+        <i class='bi bi-shield-check' style='color:var(--hb-gold-300);'></i>
+        <span>مرحلهٔ اول تأیید ثبت شد. برای ثبت نهایی درخواست فروش، مرحلهٔ دوم را تأیید کنید.</span>
+      </div>
+      {% endif %}
+      <form method='post' action="{% url 'wallet:sell_confirm' %}">
+        {% csrf_token %}
+        <div style='display:flex;gap:0.6rem;flex-wrap:wrap;'>
+          {% if confirmed %}
+          <button type='submit' name='confirm2' value='1' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-check2-all'></i> تأیید نهایی و ثبت درخواست فروش</button>
+          {% else %}
+          <button type='submit' name='confirm1' value='1' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-check-lg'></i> تأیید مرحلهٔ اول</button>
+          {% endif %}
+          <button type='submit' name='cancel' value='1' class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> انصراف</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+</main><script src='{% static "core/js/app.js" %}?v=49'></script>{% include "core/_sidebar_nav_script.html" %}</body></html>

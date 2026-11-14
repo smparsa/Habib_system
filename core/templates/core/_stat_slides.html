@@ -1,0 +1,74 @@
+{% load static %}
+{% comment %}
+اسلایدشوی آمار داشبورد — یک اسلایدشو («اسلایدشو A») بالای «ماژول‌های کسب‌وکار».
+تغییر اسلاید بدون حرکت روان و درجا پس از زمان مشخص (ثانیه‌ای) انجام می‌شود.
+اگر اسلایدِ زنده‌ای نباشد، تصویر پیش‌فرض بنری ۲۴۰۰×۶۰۰ (برند حبیب‌هاب) نمایش داده می‌شود.
+{% endcomment %}
+<style>
+  /* قاب اسلایدشو: نسبت ثابت (نه ارتفاع ثابت) تا در همهٔ دستگاه‌ها «Fit» شود.
+     دسکتاپ ۴:۱ (تصویر کامل) • تبلت ۳:۱ • موبایل ۲:۱ — در تبلت/موبایل فقط از دو طرف
+     (حدود ۱۲٫۵٪ و ۲۵٪ هر طرف) تراز مرکز برش می‌خورد؛ محتوای مهم باید در «ناحیهٔ امن» مرکزی باشد. */
+  .hb-stat-card.hb-slideshow-card{padding:0.6rem;}
+  .hb-slideshow-frame,[data-hb-stat-slides]{position:relative;width:100%;aspect-ratio:4/1;border-radius:12px;overflow:hidden;background:#0b101d;}
+  @media (max-width:1023px){.hb-slideshow-frame,[data-hb-stat-slides]{aspect-ratio:3/1;}}
+  @media (max-width:640px){.hb-slideshow-frame,[data-hb-stat-slides]{aspect-ratio:2/1;border-radius:10px;}.hb-stat-card.hb-slideshow-card{padding:0.4rem;}}
+  .hb-slideshow-frame img,[data-hb-stat-slides] img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;}
+  /* اسلایدهای قدیمی (نسبت غیر بنری) برش نمی‌خورند؛ کامل و وسط‌چین نمایش داده می‌شوند. */
+  [data-hb-stat-slides] img.hb-legacy-ratio{object-fit:contain;}
+  [data-hb-stat-slides] .hb-stat-slide{display:none;position:absolute;inset:0;}
+  [data-hb-stat-slides] .hb-stat-slide.hb-stat-slide-active{display:block;}
+  [data-hb-stat-slides] .hb-stat-slide a{display:block;width:100%;height:100%;}
+</style>
+<div class='hb-stats-grid' style='grid-template-columns:1fr;'>
+  <div class='hb-stat-card hb-slideshow-card'>
+    {% if stat_slides_data.stat_tasks %}
+    <div data-hb-stat-slides data-switch-seconds="{{ stat_slides_seconds_by_box.stat_tasks|default:stat_slides_seconds }}">
+      {% for s in stat_slides_data.stat_tasks %}
+      <div class='hb-stat-slide{% if forloop.first %} hb-stat-slide-active{% endif %}'>
+        {% if s.link_url %}<a href='{{ s.link_url }}' target='_blank' rel='noopener'>{% else %}<div style='width:100%;height:100%;position:relative;display:block;'>{% endif %}
+          {% if s.image %}<img src='{{ s.image }}' alt='{{ s.title }}'>{% endif %}
+          {% if s.title or s.description %}
+          <div style='position:absolute;bottom:0;left:0;right:0;padding:0.6rem 0.8rem;display:flex;flex-direction:column;justify-content:flex-end;direction:rtl;background:linear-gradient(to top,rgba(11,16,29,0.72),rgba(11,16,29,0.18));'>
+            <div style='font-weight:700;font-size:0.9rem;color:#fff;line-height:1.6;'>{{ s.title }}</div>
+            {% if s.description %}<div style='font-size:0.72rem;color:rgba(255,255,255,0.85);line-height:1.5;'>{{ s.description }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% if s.link_url %}</a>{% else %}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class='hb-slideshow-frame'>
+    <img src='{% static "core/assets/stat-slide-default-banner.jpg" %}' alt='اسلایدشو A' width='2400' height='600'>
+    <div class='hb-stat-label' style='position:absolute;bottom:0.6rem;right:0.8rem;background:rgba(11,16,29,0.72);color:#fff;padding:0.3rem 0.7rem;border-radius:8px;font-size:0.78rem;font-weight:700;'>اسلایدشو A</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>
+(function(){
+  function initSlideshow(el){
+    var slides = el.querySelectorAll('.hb-stat-slide');
+    if (slides.length < 2) return;
+    var seconds = parseInt(el.dataset.switchSeconds || '6', 10);
+    if (!(seconds >= 3)) seconds = 6;
+    var idx = 0;
+    setInterval(function(){
+      slides[idx].classList.remove('hb-stat-slide-active');
+      idx = (idx + 1) % slides.length;
+      slides[idx].classList.add('hb-stat-slide-active');
+    }, seconds * 1000);
+  }
+  // تصویرِ غیر بنری (نسبت < ۳٫۲، مثل اسلایدهای قدیمیِ ۳:۲) کامل نمایش داده شود، نه برش‌خورده.
+  function markLegacy(img){
+    function check(){ if (img.naturalWidth && img.naturalWidth / img.naturalHeight < 3.2) img.classList.add('hb-legacy-ratio'); }
+    if (img.complete) check(); else img.addEventListener('load', check);
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('[data-hb-stat-slides]').forEach(function(el){
+      el.querySelectorAll('img').forEach(markLegacy);
+      initSlideshow(el);
+    });
+  });
+})();
+</script>

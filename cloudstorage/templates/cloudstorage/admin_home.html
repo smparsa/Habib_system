@@ -1,0 +1,167 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras cloud_extras %}
+{% block title %}فضای ذخیره‌سازی ابری — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-cloud-arrow-up'></i> فضای ذخیره‌سازی ابری (Cloud Object Storage)</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    فعال/غیرفعال‌سازی ماژول و روش‌های آپلود، سقف‌ها، تعرفه‌ها و سیاست‌های نسخه‌بندی/حذف.
+    همهٔ تغییرات حساس با شناسهٔ مدیر، زمان و مقادیر قبل/بعد در دفتر ممیزی ثبت می‌شود.
+  </p>
+</div>
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Create loading overlay element
+    var loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'storage-loading-overlay';
+    loadingOverlay.style = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    `;
+    loadingOverlay.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
+            <div style="color: #666; font-size: 1rem;">در حال پردازش...</div>
+        </div>
+    `;
+    
+    document.body.appendChild(loadingOverlay);
+    
+    // Watch all forms for 2-second timeout
+    var forms = document.querySelectorAll('form');
+    
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            // Set a 2-second timeout to show loading state
+            var timeoutId = setTimeout(function() {
+                loadingOverlay.style.display = 'flex';
+            }, 2000);
+            
+            // When form submits, clear the timeout and hide overlay on success
+            form.addEventListener('load', function() {
+                clearTimeout(timeoutId);
+                loadingOverlay.style.display = 'none';
+            });
+            
+            // Also hide on error
+            form.addEventListener('error', function() {
+                clearTimeout(timeoutId);
+                loadingOverlay.style.display = 'none';
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+
+<div style='padding:0 2rem 2rem;'>
+  <!-- آمار -->
+  <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.75rem;margin-bottom:1rem;'>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:var(--hb-gold-300);'>{{ stats.users }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>کاربر دارای حساب فضایی</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:var(--hb-gold-300);'>{{ stats.used_bytes|filesizeformat }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>حجم کل مصرفی</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:var(--hb-gold-300);'>{{ stats.folders }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>پوشهٔ فعال</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:var(--hb-gold-300);'>{{ stats.objects }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>فایل فعال</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:{% if stats.sessions_failed %}#e74c3c{% else %}var(--hb-success){% endif %};'>{{ stats.sessions_failed }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>آپلود ناموفق</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:{% if stats.sync_failed %}#e74c3c{% else %}var(--hb-success){% endif %};'>{{ stats.sync_failed }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>Sync ناموفق</div></div>
+    <div class='hb-card' style='text-align:center;padding:0.9rem;'><div style='font-size:1.3rem;font-weight:800;color:{% if stats.archives_failed %}#e74c3c{% else %}var(--hb-success){% endif %};'>{{ stats.archives_failed }}</div><div style='font-size:0.75rem;color:var(--hb-text-muted);'>آرشیو ناموفق</div></div>
+  </div>
+
+  <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;'>
+    <!-- فرم تنظیمات -->
+    <div class='hb-card'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-sliders'></i> تنظیمات ماژول</div>
+        <span style='font-size:0.75rem;color:var(--hb-text-muted);'>به‌روزرسانی: {{ settings_obj.updated_at|jdatetime }}</span>
+      </div>
+      <form method='post'>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div style='color:#e74c3c;font-size:0.8rem;'>{{ form.non_field_errors }}</div>{% endif %}
+
+        <div style='font-size:0.82rem;font-weight:700;margin:0.6rem 0 0.35rem;color:var(--hb-gold-300);'>فعال‌سازی</div>
+        {% for name in "module_enabled,folder_upload_enabled,gallery_enabled,sync_enabled,archive_enabled,keep_deleted_files,two_way_delete_enabled"|split:"," %}
+        <label style='display:flex;gap:0.5rem;align-items:center;font-size:0.8rem;padding:0.2rem 0;'>
+          {{ form|get_field:name }} <span style='display:none;'></span>
+        </label>
+        {% endfor %}
+
+        <div style='font-size:0.82rem;font-weight:700;margin:0.8rem 0 0.35rem;color:var(--hb-gold-300);'>سقف‌ها</div>
+        <div style='display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;'>
+          {% for name in "max_folder_files,max_subfolders,max_file_size_mb,max_operation_size_mb,max_folder_size_gb,user_quota_gb,max_archive_files,max_archive_size_gb,archive_retention_hours,daily_cost_limit,monthly_cost_limit,version_keep_count"|split:"," %}
+          <label style='font-size:0.75rem;'>{{ form|field_label:name }}<br>{{ form|get_field:name }}</label>
+          {% endfor %}
+        </div>
+
+        <div style='font-size:0.82rem;font-weight:700;margin:0.8rem 0 0.35rem;color:var(--hb-gold-300);'>تعرفه‌ها (سکه به ازای هر GB) و در هر 24 ساعت</div>
+        <div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;'>
+          {% for name in "storage_coin_per_gb,transfer_coin_per_gb,archive_coin_per_gb"|split:"," %}
+          <label style='font-size:0.75rem;'>{{ form|field_label:name }}<br>{{ form|get_field:name }}</label>
+          {% endfor %}
+        </div>
+
+        <button type='submit' class='hb-btn hb-btn-primary' style='margin-top:1rem;width:100%;'>
+          <i class='bi bi-check-lg'></i> ذخیرهٔ تنظیمات (ثبت در تاریخچه و دفتر ممیزی)
+        </button>
+      </form>
+    </div>
+
+    <!-- تاریخچهٔ تعرفه + پاک‌سازی -->
+    <div>
+      <div class='hb-card'>
+        <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-clock-history'></i> تاریخچهٔ تعرفه‌ها</div></div>
+        <table style='width:100%;border-collapse:collapse;font-size:0.78rem;'>
+          <thead><tr style='border-bottom:1px solid var(--hb-border);color:var(--hb-text-muted);'>
+            <th style='padding:0.4rem;text-align:right;'>مؤثر از</th>
+            <th style='padding:0.4rem;text-align:right;'>ذخیره‌سازی</th>
+            <th style='padding:0.4rem;text-align:right;'>انتقال</th>
+            <th style='padding:0.4rem;text-align:right;'>آرشیو</th>
+            <th style='padding:0.4rem;text-align:right;'>ثبت‌کننده</th>
+          </tr></thead>
+          <tbody>
+          {% for p in pricing_history %}
+            <tr style='border-bottom:1px solid var(--hb-border);'>
+              <td style='padding:0.4rem;direction:ltr;text-align:right;'>{{ p.effective_from|date:'Y-m-d H:i' }} {% if p.is_active %}<span class='hb-badge hb-badge-success'>فعال</span>{% endif %}</td>
+              <td style='padding:0.4rem;'>{{ p.storage_coin_per_gb }}</td>
+              <td style='padding:0.4rem;'>{{ p.transfer_coin_per_gb }}</td>
+              <td style='padding:0.4rem;'>{{ p.archive_coin_per_gb }}</td>
+              <td style='padding:0.4rem;'>{{ p.created_by.mobile_number|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan='5' style='padding:0.6rem;color:var(--hb-text-muted);'>هنوز تغییر تعرفه‌ای ثبت نشده است.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class='hb-card'>
+        <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-trash3'></i> نگهداری فایل موقت</div></div>
+        <div style='font-size:0.8rem;color:var(--hb-text-muted);line-height:1.9;'>
+          آرشیوهای ZIP پس از {{ settings_obj.archive_retention_hours }} ساعت منقضی و به‌صورت خودکار پاک می‌شوند.
+          پاک‌سازی دستی:
+        </div>
+        <form method='post' action="{% url 'adminpanel:storage_purge_archives' %}" style='margin-top:0.6rem;'>
+          {% csrf_token %}
+          <button type='submit' class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-x-octagon'></i> پاک‌سازی آرشیوهای منقضی</button>
+        </form>
+      </div>
+
+      <div class='hb-card'>
+        <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-link-45deg'></i> دسترسی سریع</div></div>
+        <div style='display:flex;gap:0.5rem;flex-wrap:wrap;'>
+          <a class='hb-btn hb-btn-outline hb-btn-sm' href="{% url 'adminpanel:storage_queues' %}" style='text-decoration:none;'>صف آپلود/Sync/دانلود</a>
+          <a class='hb-btn hb-btn-outline hb-btn-sm' href="{% url 'adminpanel:storage_reports' %}" style='text-decoration:none;'>گزارش مصرف و تراکنش‌ها</a>
+          <a class='hb-btn hb-btn-outline hb-btn-sm' href="{% url 'adminpanel:storage_audit' %}" style='text-decoration:none;'>دفتر ممیزی</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

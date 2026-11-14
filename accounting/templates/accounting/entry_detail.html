@@ -1,0 +1,70 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}سند {{ entry.number }}{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">🧾 سند شماره {{ entry.number|fa_digits }}
+    <span class="sub">تاریخ: {{ entry.date|jdate }}</span>
+    {% if entry.status == 'posted' %}<span class="acc-badge ok">ثبت‌شده</span>
+    {% elif entry.status == 'cancelled' %}<span class="acc-badge err">لغو‌شده</span>
+    {% else %}<span class="acc-badge warn">پیش‌نویس</span>{% endif %}
+  </h1>
+
+  <div class="acc-card">
+    {% if entry.description %}<p><b>شرح:</b> {{ entry.description }}</p>{% endif %}
+    {% if entry.auto_code %}<p style="color:var(--acc-muted);">سند خودکار: <code>{{ entry.auto_code }}</code></p>{% endif %}
+
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead>
+          <tr>
+            <th style="width:60px;">ردیف</th>
+            <th>حساب</th>
+            <th style="width:160px;">مبلغ بدهکار (ریال)</th>
+            <th style="width:160px;">مبلغ بستانکار (ریال)</th>
+            <th>توضیحات</th>
+            <th>شخص</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ln in entry.lines.all %}
+            <tr>
+              <td class="num">{{ ln.row_number|fa_digits }}</td>
+              <td><span class="ind-{{ ln.account.level }}">{{ ln.account.code|fa_digits }} - {{ ln.account.name }}</span></td>
+              <td class="num">{% if ln.debit %}{{ ln.debit|rial }}{% else %}—{% endif %}</td>
+              <td class="num">{% if ln.credit %}{{ ln.credit|rial }}{% else %}—{% endif %}</td>
+              <td style="white-space:normal;">{{ ln.description|default:'—' }}</td>
+              <td>{% if ln.person_id %}👤 {{ ln.person.profile.full_name }} <span class="num">({{ ln.person.profile.national_id|fa_digits }})</span>{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">جمع</td>
+            <td class="num">{{ entry.total_debit|rial }}</td>
+            <td class="num">{{ entry.total_credit|rial }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap;">
+      <a class="acc-btn outline sm" href="{% url 'accounting:entries' %}">⬅ لیست اسناد</a>
+      {% if entry.can_edit %}
+        <a class="acc-btn outline sm" href="{% url 'accounting:entry_create' %}?edit={{ entry.pk }}">✏️ ویرایش</a>
+        <form method="post" action="{% url 'accounting:entry_post' entry.id %}">
+          {% csrf_token %}<button class="acc-btn success sm">✔ ثبت سند</button>
+        </form>
+        <form method="post" action="{% url 'accounting:entry_delete' entry.id %}">
+          {% csrf_token %}<button class="acc-btn danger sm">🗑 حذف</button>
+        </form>
+      {% elif entry.status == 'posted' %}
+        <form method="post" action="{% url 'accounting:entry_cancel' entry.id %}">
+          {% csrf_token %}<button class="acc-btn danger sm">✖ لغو سند</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

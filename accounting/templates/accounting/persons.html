@@ -1,0 +1,52 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}اشخاص{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">👥 اشخاص
+    <span class="sub">کاربرانِ سایت با کد ملی ثبت‌شده — قابل استفاده در اسناد (بدهکار/بستانکار) · {{ total_count|fa_digits }} نفر</span>
+  </h1>
+
+  <div class="acc-card">
+    <form method="get" style="display:flex;gap:.5rem;margin-bottom:.75rem;">
+      <input class="acc-input" type="text" name="q" value="{{ q }}" placeholder="جستجو: نام، نام خانوادگی یا کد ملی...">
+      <button class="acc-btn" type="submit">🔍 جستجو</button>
+      {% if q %}<a class="acc-btn outline" href="{% url 'accounting:persons' %}">همه</a>{% endif %}
+    </form>
+
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead>
+          <tr>
+            <th style="width:60px;">ردیف</th>
+            <th>نام</th>
+            <th>نام خانوادگی</th>
+            <th style="width:140px;">کد ملی</th>
+            <th style="width:150px;">عملیات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in persons %}
+            <tr>
+              <td class="num">{{ forloop.counter|fa_digits }}</td>
+              <td>{{ p.first_name }}</td>
+              <td>{{ p.last_name }}</td>
+              <td class="num">{{ p.national_id|fa_digits }}</td>
+              <td>
+                <a class="acc-btn sm outline" href="{% url 'accounting:person_ledger' p.user_id %}">📒 دفتر شخص</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">شخصی یافت نشد. (کاربران باید در پروفایل خود کد ملی ثبت کنند.)</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="acc-modal-note">
+      این فهرست از پروفایل کاربران سایت تغذیه می‌شود؛ برای استفاده از یک شخص در اسناد،
+      هنگام ثبت سند در ستون «شخص» همان فرد را انتخاب کنید تا گردش بدهکار/بستانکارش
+      در «دفتر شخص» ثبت شود.
+    </p>
+  </div>
+{% endblock %}

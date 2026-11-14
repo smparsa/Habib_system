@@ -1,0 +1,55 @@
+{% extends "accounting/base.html" %}
+{% load accounting_extras %}
+
+{% block title %}لیست اسناد{% endblock %}
+
+{% block content %}
+  <h1 class="acc-page-title">📄 لیست اسناد
+    <span class="sub">
+      <a href="?">همه</a> ·
+      <a href="?status=draft">پیش‌نویس</a> ·
+      <a href="?status=posted">ثبت‌شده</a> ·
+      <a href="?status=cancelled">لغو‌شده</a>
+    </span>
+  </h1>
+
+  <div class="acc-card">
+    <div style="margin-bottom:.75rem;">
+      <a class="acc-btn" href="{% url 'accounting:entry_create' %}">➕ سند جدید</a>
+    </div>
+    <div class="acc-table-wrap">
+      <table class="acc">
+        <thead>
+          <tr>
+            <th>شماره</th>
+            <th>تاریخ</th>
+            <th>شرح</th>
+            <th>وضعیت</th>
+            <th>بدهکار (ریال)</th>
+            <th>بستانکار (ریال)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+            <tr>
+              <td class="num">{{ e.number|fa_digits }}</td>
+              <td class="num">{{ e.date|jdate }}</td>
+              <td style="white-space:normal;">{{ e.description|default:'—' }}</td>
+              <td>
+                {% if e.status == 'posted' %}<span class="acc-badge ok">ثبت‌شده</span>
+                {% elif e.status == 'cancelled' %}<span class="acc-badge err">لغو‌شده</span>
+                {% else %}<span class="acc-badge warn">پیش‌نویس</span>{% endif %}
+              </td>
+              <td class="num">{{ e.total_debit|rial }}</td>
+              <td class="num">{{ e.total_credit|rial }}</td>
+              <td><a class="acc-btn sm outline" href="{% url 'accounting:entry_detail' e.id %}">مشاهده</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7">سندی ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

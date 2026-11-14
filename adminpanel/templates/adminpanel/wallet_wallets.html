@@ -1,0 +1,70 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}کیف پول کاربران — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-wallet2'></i> کیف پول کاربران</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    موجودی سکهٔ همهٔ کاربران + تنظیم دستی توسط ادمین. هر تغییر در دفتر کل ثبت و
+    با تیکت به کاربر اطلاع‌رسانی می‌شود.
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> کیف پول‌ها ({{ total }} مورد)</div>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:wallet_wallets' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:260px;' placeholder='موبایل / نام…' autocomplete='off'>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      {% if q %}<a href="{% url 'adminpanel:wallet_wallets' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلتر</a>{% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+      <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کاربر</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>موبایل</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>موجودی (سکه)</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>ارزش (ریال)</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>آخرین به‌روزرسانی</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>تنظیم دستی</th>
+      </tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><strong>{{ row.user_label }}</strong></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{{ row.mobile }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><b style='color:var(--hb-gold-300);'>{{ row.balance }}</b></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.value_rial }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.updated_at|jdatetime }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <form method='post' action="{% url 'adminpanel:wallet_wallets' %}" style='display:flex;gap:0.3rem;align-items:center;flex-wrap:wrap;margin:0;'>
+              {% csrf_token %}<input type='hidden' name='action' value='adjust'><input type='hidden' name='user_id' value='{{ row.user_pk }}'>
+              <input type='number' name='amount' step='0.01' placeholder='+/- سکه' class='hb-form-control' style='width:110px;font-size:0.78rem;' dir='ltr' required>
+              <input type='text' name='note' placeholder='دلیل (اختیاری)' class='hb-form-control' style='width:140px;font-size:0.78rem;'>
+              <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' title='اعمال تنظیم'><i class='bi bi-check-lg'></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>کیف پولی یافت نشد.</p>
+    {% endif %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+    <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+    <div style='display:flex;gap:0.35rem;'>
+      {% if page_obj.has_previous %}<a href="{% url 'adminpanel:wallet_wallets' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>{% endif %}
+      {% if page_obj.has_next %}<a href="{% url 'adminpanel:wallet_wallets' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

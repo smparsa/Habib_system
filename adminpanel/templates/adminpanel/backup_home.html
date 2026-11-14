@@ -1,0 +1,205 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}پشتیبان‌گیری و بازیابی دیتابیس — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-database-down'></i> پشتیبان‌گیری و بازیابی دیتابیس</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    گرفتن نسخهٔ پشتیبان از دیتابیس <b dir='ltr' style='font-family:ui-monospace,Consolas,monospace;'>{{ db_name }}</b>
+    به‌صورت دستی یا خودکار و بازیابی در صورت نیاز. فایل‌ها در پوشهٔ
+    <span dir='ltr' style='font-family:ui-monospace,Consolas,monospace;font-size:0.8rem;'>{{ backup_dir }}</span>
+    نگهداری می‌شوند.
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:1100px;'>
+
+  {% if backup_stats.stale %}
+  <div style='background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.45);border-radius:10px;padding:0.8rem 1rem;margin-bottom:1rem;display:flex;gap:0.6rem;align-items:flex-start;'>
+    <i class='bi bi-exclamation-triangle-fill' style='color:#e74c3c;font-size:1.1rem;'></i>
+    <div style='font-size:0.85rem;line-height:1.8;color:var(--hb-text);'>
+      {% if backup_stats.exists %}
+      <b>هشدار:</b> آخرین پشتیبان موفق <b dir='ltr'>{{ backup_stats.filename }}</b> مربوط به
+      {{ backup_stats.created_at|jdatetime }} است — بیش از <b>{{ backup_stats.warn_days }} روز</b> است که
+      پشتیبان موفق جدیدی گرفته نشده. توصیه می‌شود همین حالا یک نسخه بگیرید.
+      {% else %}
+      <b>هشدار:</b> هنوز هیچ پشتیبان موفقی گرفته نشده است. هرچه زودتر اولین نسخه را بگیرید.
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- پشتیبان دستی -->
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-cloud-plus'></i> پشتیبان‌گیری دستی</div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:backup_now' %}" style='margin:0;'>
+      {% csrf_token %}
+      <div style='display:flex;align-items:center;gap:1rem;flex-wrap:wrap;'>
+        <button type='submit' class='hb-btn hb-btn-primary' style='gap:0.4rem;'>
+          <i class='bi bi-database-add'></i> گرفتن نسخهٔ پشتیبان هم‌اکنون
+        </button>
+        <span style='color:var(--hb-text-muted);font-size:0.82rem;'>
+          یک فایل <span dir='ltr'>.sql</span> کامل از دیتابیس (همهٔ جدول‌ها و داده‌ها) گرفته و در فهرست زیر ثبت می‌شود.
+        </span>
+      </div>
+      <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0.75rem;margin-top:0.9rem;'>
+        <div class='hb-form-group' style='margin:0;'>
+          <label class='hb-form-label'>نام/برچسب دلخواه (اختیاری)</label>
+          <input type='text' name='title' maxlength='200' class='hb-form-control' dir='rtl'
+                 placeholder='مثلاً: پیش از تغییر ساختار جدول‌ها'>
+        </div>
+        <div class='hb-form-group' style='margin:0;'>
+          <label class='hb-form-label'>توضیح (اختیاری)</label>
+          <input type='text' name='note' maxlength='1000' class='hb-form-control' dir='rtl'
+                 placeholder='توضیح کوتاه دربارهٔ این نسخه'>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- تنظیمات خودکار -->
+  <div class='hb-card' style='margin-bottom:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-clock-history'></i> پشتیبان‌گیری خودکار</div>
+      <div style='font-size:0.78rem;color:var(--hb-text-muted);'>
+        {% if setting.last_auto_at %}آخرین نسخهٔ خودکار: {{ setting.last_auto_at|jdatetime }}{% else %}هنوز نسخهٔ خودکاری گرفته نشده{% endif %}
+      </div>
+    </div>
+    <form method='post' action="{% url 'adminpanel:backup_home' %}">
+      {% csrf_token %}
+      <input type='hidden' name='submit' value='settings'>
+      <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;'>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.auto_enabled.label }}</label>
+          {{ form.auto_enabled }}
+          {% if form.auto_enabled.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.auto_enabled.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.interval_minutes.label }}</label>
+          {{ form.interval_minutes }}
+          {% if form.interval_minutes.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.interval_minutes.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.keep_count.label }}</label>
+          {{ form.keep_count }}
+          {% if form.keep_count.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.keep_count.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.folder.label }}</label>
+          {{ form.folder }}
+          {% if form.folder.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.folder.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.sync_folder.label }}</label>
+          {{ form.sync_folder }}
+          {% if form.sync_folder.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.sync_folder.help_text }}</small>{% endif %}
+        </div>
+        <div class='hb-form-group'>
+          <label class='hb-form-label'>{{ form.stale_after_days.label }}</label>
+          {{ form.stale_after_days }}
+          {% if form.stale_after_days.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ form.stale_after_days.help_text }}</small>{% endif %}
+        </div>
+      </div>
+      <div style='margin-top:0.75rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-check-lg'></i> ذخیرهٔ تنظیمات خودکار</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- فهرست نسخه‌ها -->
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-archive'></i> نسخه‌های پشتیبان ({{ rows|length }})</div>
+      <div style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;'>
+        <span style='font-size:0.78rem;color:var(--hb-text-muted);'>حجم کل: {{ total_size|filesizeformat }}</span>
+        {% if rows %}
+        <a href="{% url 'adminpanel:backup_download_all' %}" class='hb-btn hb-btn-sm hb-btn-dark'><i class='bi bi-file-earmark-zip'></i> دانلود همه (فشرده)</a>
+        {% endif %}
+      </div>
+    </div>
+    {% if rows %}
+    <div style='overflow-x:auto;'>
+    <table style='width:100%;border-collapse:collapse;font-size:0.86rem;'>
+      <thead>
+        <tr style='color:var(--hb-text-muted);text-align:right;'>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نام فایل</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نوع</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>اندازه</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+          <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <span dir='ltr' style='font-family:ui-monospace,Consolas,monospace;font-size:0.78rem;'>{{ r.filename }}</span>
+            {% if r.title %}
+            <div style='font-size:0.8rem;font-weight:700;color:var(--hb-gold-300);margin-top:0.15rem;'>
+              <i class='bi bi-tag'></i> {{ r.title }}
+            </div>
+            {% endif %}
+            {% if r.note %}
+            <div style='font-size:0.75rem;color:var(--hb-text-muted);margin-top:0.1rem;white-space:pre-wrap;'>{{ r.note }}</div>
+            {% endif %}
+            {% if r.by %}<div style='font-size:0.72rem;color:var(--hb-text-muted);'>توسط {{ r.by }}</div>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if r.kind == "auto" %}<span class='hb-badge hb-badge-info'>خودکار</span>{% else %}<span class='hb-badge hb-badge-success'>دستی</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ r.created_at|jdatetime }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ r.size_label }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if r.failed %}<span class='hb-badge hb-badge-danger'>ناموفق</span>
+            {% elif not r.exists %}<span class='hb-badge hb-badge-warning'>فایل موجود نیست</span>
+            {% else %}<span class='hb-badge hb-badge-success'>آماده</span>{% endif %}
+            {% if r.error %}<div style='font-size:0.72rem;color:#e74c3c;margin-top:0.2rem;'>{{ r.error }}</div>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <div style='display:flex;gap:0.35rem;align-items:center;flex-wrap:wrap;'>
+              {% if r.exists %}
+              <a href="{% url 'adminpanel:backup_download' r.pk %}" class='hb-btn hb-btn-sm hb-btn-dark'><i class='bi bi-download'></i> دانلود</a>
+              <details style='position:relative;'>
+                <summary class='hb-btn hb-btn-sm' style='list-style:none;cursor:pointer;color:#e67e22;border:1px solid rgba(230,126,34,0.4);'><i class='bi bi-arrow-counterclockwise'></i> بازیابی</summary>
+                <div style='position:absolute;left:0;top:calc(100% + 6px);width:340px;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:10px;padding:0.9rem;z-index:30;box-shadow:0 12px 32px rgba(0,0,0,.5);'>
+                  <div style='font-size:0.85rem;font-weight:700;color:#e74c3c;margin-bottom:0.5rem;display:flex;gap:0.35rem;align-items:center;'>
+                    <i class='bi bi-exclamation-triangle-fill'></i> هشدار: بازیابی کامل دیتابیس
+                  </div>
+                  <div style='font-size:0.78rem;color:var(--hb-text-muted);line-height:1.8;margin-bottom:0.6rem;'>
+                    با بازیابی، وضعیت فعلی دیتابیس <b>به‌طور کامل با این نسخه جایگزین</b> می‌شود و هر داده‌ای که پس از این پشتیبان ثبت شده باشد از بین می‌رود.
+                    برای تأیید، نام فایل را دقیقاً تایپ کنید:
+                  </div>
+                  <form method='post' action="{% url 'adminpanel:backup_restore' r.pk %}" style='margin:0;'>
+                    {% csrf_token %}
+                    <input type='text' name='confirm_text' class='hb-form-control' dir='ltr' autocomplete='off' required
+                           placeholder='{{ r.filename }}' style='font-family:ui-monospace,Consolas,monospace;font-size:0.75rem;margin-bottom:0.6rem;'>
+                    <div style='display:flex;gap:0.4rem;'>
+                      <button type='submit' class='hb-btn hb-btn-sm' style='background:#c0392b;color:#fff;'><i class='bi bi-arrow-counterclockwise'></i> بازیابی کن</button>
+                      <button type='button' class='hb-btn hb-btn-sm hb-btn-dark' onclick="this.closest('details').removeAttribute('open')">انصراف</button>
+                    </div>
+                  </form>
+                </div>
+              </details>
+              {% endif %}
+              <form method='post' action="{% url 'adminpanel:backup_delete' r.pk %}" style='margin:0;' onsubmit="return confirm('نسخهٔ پشتیبان «{{ r.filename }}» حذف شود؟');">
+                {% csrf_token %}
+                <button type='submit' class='hb-btn hb-btn-sm' style='color:#e74c3c;' title='حذف'><i class='bi bi-trash'></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>
+      هنوز نسخه‌ای گرفته نشده است. از دکمهٔ «گرفتن نسخهٔ پشتیبان هم‌اکنون» شروع کنید.
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

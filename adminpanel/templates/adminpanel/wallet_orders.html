@@ -1,0 +1,104 @@
+{% extends "adminpanel/base.html" %}
+{% load core_extras %}
+{% block title %}سفارش‌های سکه — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-bag'></i> سفارش‌های خرید / فروش سکه</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    تأیید سفارش‌ها پس از وصول وجه (خرید) یا واریز وجه (فروش). نتیجهٔ هر بررسی
+    با تیکت به کاربر اعلام می‌شود. ({{ pending_count }} سفارش در انتظار بررسی)
+  </p>
+</div>
+
+<div style='padding:0 2rem;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-list-ul'></i> فهرست سفارش‌ها ({{ total }} مورد)</div>
+    </div>
+
+    <form method='get' action="{% url 'adminpanel:wallet_orders' %}" style='display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;'>
+      <input type='text' name='q' value='{{ q }}' class='hb-form-control' style='max-width:220px;' placeholder='کد / موبایل / شبا…' autocomplete='off'>
+      <select name='kind' class='hb-form-control hb-form-select' style='max-width:140px;' onchange='this.form.submit()'>
+        <option value=''>نوع: همه</option>
+        <option value='buy' {% if kind == 'buy' %}selected{% endif %}>خرید</option>
+        <option value='sell' {% if kind == 'sell' %}selected{% endif %}>فروش</option>
+      </select>
+      <select name='status' class='hb-form-control hb-form-select' style='max-width:160px;' onchange='this.form.submit()'>
+        <option value=''>وضعیت: همه</option>
+        <option value='pending' {% if status == 'pending' %}selected{% endif %}>در انتظار بررسی</option>
+        <option value='approved' {% if status == 'approved' %}selected{% endif %}>تأییدشده</option>
+        <option value='rejected' {% if status == 'rejected' %}selected{% endif %}>ابطال‌شده</option>
+      </select>
+      <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>جستجو</button>
+      {% if q or kind or status %}<a href="{% url 'adminpanel:wallet_orders' %}" class='hb-btn hb-btn-outline hb-btn-sm'><i class='bi bi-x-lg'></i> حذف فیلترها</a>{% endif %}
+    </form>
+
+    {% if rows %}
+    <table style='width:100%;border-collapse:collapse;font-size:0.85rem;'>
+      <thead><tr style='color:var(--hb-text-muted);text-align:right;'>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کاربر</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نوع</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>سکه</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مبلغ کل (ریال)</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>شبا (فروش)</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>وضعیت</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+        <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>عملیات</th>
+      </tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'><code>{{ row.code }}</code></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            <strong>{{ row.user_label }}</strong>
+            <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ row.mobile }}</div>
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.kind == 'buy' %}<span class='hb-badge hb-badge-success'>خرید</span>{% else %}<span class='hb-badge hb-badge-danger'>فروش</span>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'><b style='color:var(--hb-gold-300);'>{{ row.coins }}</b></td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.total_rial }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{{ row.payout_iban|default:'—' }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.status == 'approved' %}<span class='hb-badge hb-badge-success'>تأییدشده</span>
+            {% elif row.status == 'rejected' %}<span class='hb-badge hb-badge-danger'>ابطال‌شده</span>
+            {% else %}<span class='hb-badge hb-badge-warning'>در انتظار</span>{% endif %}
+            {% if row.admin_note %}<div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.2rem;'>{{ row.admin_note }}</div>{% endif %}
+          </td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.75rem;color:var(--hb-text-muted);'>{{ row.created_at|jdatetime }}</td>
+          <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>
+            {% if row.status == 'pending' %}
+            <div style='display:flex;gap:0.35rem;flex-direction:column;align-items:stretch;'>
+              <form method='post' action="{% url 'adminpanel:wallet_order_action' row.pk %}" style='margin:0;' onsubmit="return confirm('تأیید سفارش «{{ row.code }}»؟');">
+                {% csrf_token %}<input type='hidden' name='action' value='approve'>
+                <button type='submit' class='hb-btn hb-btn-sm' style='color:var(--hb-success);width:100%;'><i class='bi bi-check-lg'></i> تأیید</button>
+              </form>
+              <form method='post' action="{% url 'adminpanel:wallet_order_action' row.pk %}" style='margin:0;'>
+                {% csrf_token %}<input type='hidden' name='action' value='reject'>
+                <input type='text' name='admin_note' placeholder='دلیل ابطال (اختیاری)' class='hb-form-control' style='font-size:0.75rem;margin-bottom:0.25rem;'>
+                <button type='submit' class='hb-btn hb-btn-sm hb-btn-dark' style='width:100%;'><i class='bi bi-x-lg' style='color:#c0392b;'></i> ابطال</button>
+              </form>
+            </div>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>سفارشی یافت نشد.</p>
+    {% endif %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div style='display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0.25rem;flex-wrap:wrap;'>
+    <span style='color:var(--hb-text-muted);font-size:0.85rem;'>صفحهٔ {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+    <div style='display:flex;gap:0.35rem;'>
+      {% if page_obj.has_previous %}<a href="{% url 'adminpanel:wallet_orders' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.previous_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'><i class='bi bi-chevron-right'></i> قبلی</a>{% endif %}
+      {% if page_obj.has_next %}<a href="{% url 'adminpanel:wallet_orders' %}?{% if base_query %}{{ base_query }}&{% endif %}page={{ page_obj.next_page_number }}" class='hb-btn hb-btn-dark hb-btn-sm'>بعدی <i class='bi bi-chevron-left'></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% comment %} نوار «تبلیغات» با موقعیت footer — مشترک برای همهٔ ماژول‌ها.
+   هر صفحه در انتهای محتوا (قبل از </main>) این قالب را include می‌کند.
+   placement از مسیر درخواست (dashboard/wallet/accounting/tickets/...) توسط
+   context processor «dashboard_ads» تشخیص داده می‌شود و تبلیغ‌های همان
+   هدر(هایی) که تبلیغ‌کننده انتخاب کرده، پخش می‌شوند.
+{% endcomment %}
+{% if dashboard_ads %}
+<div style='padding:0 2rem 1.5rem;'>
+  {% include "core/_ads_marquee.html" with ads_list=dashboard_ads ads_placement=dashboard_ads_placement ads_data_id="hb-ads-data-footer" %}
+</div>
+{% endif %}

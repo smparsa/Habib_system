@@ -1,0 +1,332 @@
+{% load static %}
+{% load wallet_extras %}
+{% load core_extras %}
+<!DOCTYPE html><html lang='fa'><head>  <meta charset='UTF-8'>  <meta name='viewport' content='width=device-width, initial-scale=1.0'>  <title data-page-title='wallet'>کیف پول و سکه — HabibHub</title>  <link rel='icon' href='{% static "core/assets/logo.png" %}' type='image/png'>  <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css' rel='stylesheet'>  <link href='{% static "core/css/style.css" %}?v=23' rel='stylesheet'><style>
+/* ---------- ماژول‌های درون-فریمی کیف پول ---------- */
+.hb-wallet-error {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: rgba(192,57,43,0.12); color: #e74c3c;
+  border: 1px solid rgba(192,57,43,0.4); border-radius: 8px;
+  padding: 0.55rem 0.75rem; font-size: 0.8rem; margin-top: 0.5rem;
+}
+.hb-input-error { border-color: #e74c3c !important; box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
+.hb-wallet-info-box {
+  border: 1px solid rgba(212,175,55,0.35); background: rgba(212,175,55,0.07);
+  border-radius: 10px; padding: 0.85rem 0.95rem; margin-top: 0.9rem; font-size: 0.82rem;
+}
+.hb-wallet-info-box .hb-wallet-info-title {
+  display: flex; align-items: center; gap: 0.45rem; font-weight: 700;
+  color: var(--hb-gold-300); margin-bottom: 0.55rem; font-size: 0.85rem;
+}
+.hb-wallet-info-row {
+  display: flex; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  padding: 0.3rem 0; border-bottom: 1px dashed rgba(212,175,55,0.2);
+}
+.hb-wallet-info-row:last-child { border-bottom: none; }
+.hb-wallet-info-row .hb-wallet-info-label { color: var(--hb-text-muted); }
+.hb-wallet-info-row .hb-wallet-info-value { color: var(--hb-text-primary); font-weight: 600; }
+.hb-wallet-receiver {
+  display: flex; align-items: center; gap: 0.55rem;
+  background: rgba(46,160,67,0.1); border: 1px solid rgba(46,160,67,0.35);
+  border-radius: 8px; padding: 0.55rem 0.75rem; margin-top: 0.5rem; font-size: 0.82rem;
+}
+</style></head><body><!-- Sidebar --><aside class='hb-sidebar' id='sidebar'>  <button class='hb-sidebar-toggle'><i class='bi bi-chevron-left'></i></button>  <div class='hb-sidebar-header'>    <img src='{% static "core/assets/logo.png" %}' alt='Logo' class='hb-sidebar-logo'>    <div>      <div class='hb-sidebar-brand'>Habib<span>Hub</span></div>      <small style='color:var(--hb-text-muted);font-size:0.7rem;'>سکه و کیف پول</small>    </div>  </div>  {% include "core/_sidebar_nav.html" with nav_active="wallet" %}  <div class='hb-sidebar-footer'>    <div style='display:flex;align-items:center;gap:0.75rem;'>      {% if profile.avatar %}<img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;object-fit:cover;'>{% else %}<img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar' style='width:36px;height:36px;'>{% endif %}      <div class='user-info'>        <div style='font-weight:600;font-size:0.85rem;'>{{ profile.full_name }}</div>        <div style='font-size:0.75rem;color:var(--hb-text-muted);' dir='ltr'>{{ request.user.mobile_number }}</div>      </div>      <form method='post' action="{% url 'accounts:logout' %}" style='margin-inline-start:auto;'>{% csrf_token %}<button type='submit' title='خروج' style='background:none;border:none;color:var(--hb-text-muted);cursor:pointer;font-size:1.1rem;'><i class='bi bi-box-arrow-right'></i></button></form>    </div>  </div></aside><!-- Overlay --><div class='hb-overlay'></div><!-- Header --><header class='hb-header'>  <div style='display:flex;align-items:center;gap:1rem;'>
+  {% include "core/_breaking_news_bar.html" %}    <button class='hb-mobile-toggle'><i class='bi bi-list'></i></button>    <div style='display:flex;align-items:center;gap:0.5rem;color:var(--hb-text-muted);font-size:0.85rem;'>      <i class='bi bi-wallet2' style='color:var(--hb-gold-300);'></i>      <span>کیف پول و سکه — تراکنش‌های امن با تیکت‌رسانی خودکار</span>    </div>  </div>  <div class='hb-header-actions'>    <a class='hb-header-btn' href="{% url 'tickets:center' %}" title='مرکز تیکت' style='text-decoration:none;'><i class='bi bi-chat-left-dots'></i></a>    <div class='hb-user-menu' style='position:relative;'>      {% if profile.avatar %}<img src='{{ profile.avatar.url }}' alt='User' class='hb-user-avatar hb-user-menu-toggle' style='object-fit:cover;'>{% else %}<img src='{% static "core/assets/logo.png" %}' alt='User' class='hb-user-avatar hb-user-menu-toggle'>{% endif %}      <div class='hb-user-menu-dropdown' style='position:absolute;left:0;top:110%;background:var(--hb-navy-700);border:1px solid var(--hb-navy-500);border-radius:10px;min-width:180px;padding:0.5rem;z-index:50;'>        <div style='padding:0.5rem 0.75rem;color:var(--hb-text-muted);font-size:0.8rem;border-bottom:1px solid var(--hb-navy-500);margin-bottom:0.25rem;' dir='ltr'>{{ request.user.mobile_number }}</div>        <a href="{% url 'core:profile' %}" style='display:block;padding:0.5rem 0.75rem;color:var(--hb-text-primary);text-decoration:none;border-radius:6px;'>پروفایل من</a>        <a href="{% url 'wallet:history' %}" style='display:block;padding:0.5rem 0.75rem;color:var(--hb-text-primary);text-decoration:none;border-radius:6px;'>تاریخچهٔ تراکنش‌ها</a>        <form method='post' action="{% url 'accounts:logout' %}" style='margin:0;'>{% csrf_token %}<button type='submit' style='width:100%;text-align:right;background:none;border:none;padding:0.5rem 0.75rem;color:var(--hb-text-primary);cursor:pointer;border-radius:6px;'>خروج</button></form>      </div>    </div>  </div></header><!-- Main Content --><main class='hb-main'>  <div class='hb-page-header'>    <h1><i class='bi bi-wallet2'></i> کیف پول و سکه</h1>    <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>خرید، فروش و انتقال سکه — هر جابه‌جایی با تیکت به طرفین اطلاع‌رسانی می‌شود.</p>  </div>
+
+  {% if messages %}
+  <div style='padding:0 2rem;'>
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.5rem;font-size:0.85rem;{% if message.tags == 'success' %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == 'error' %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- سفارش خریدِ بدون فیش: ادامهٔ پرداخت -->
+  {% if pending_buy_order %}
+  <div style='padding:0 2rem;'>
+    <div style='display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.4);border-radius:10px;padding:0.9rem 1.1rem;margin-bottom:1rem;'>
+      <i class='bi bi-hourglass-split' style='font-size:1.3rem;color:var(--hb-gold-300);'></i>
+      <div style='flex:1;min-width:220px;'>
+        <div style='font-size:0.9rem;color:var(--hb-text-primary);font-weight:600;'>سفارش خرید {{ pending_buy_order.code }} در انتظار پرداخت است</div>
+        <div style='font-size:0.8rem;color:var(--hb-text-muted);margin-top:0.15rem;'>مبلغ {{ pending_buy_order.total_rial }} ریال برای {{ pending_buy_order.coins }} سکه — برای نمایش اطلاعات حساب و ارسال فیش واریز، صفحهٔ پرداخت را باز کنید.</div>
+      </div>
+      <a href="{% url 'wallet:buy_payment' pending_buy_order.code %}" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-credit-card'></i> پرداخت و ارسال فیش</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- هشدار اطلاعات مالی ناقص: کیف پول شبا را از «اطلاعات مالی» پروفایل می‌خواند -->
+  {% if not has_bank_info %}
+  <div style='padding:0 2rem;'>
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.4);border-radius:10px;padding:0.9rem 1.1rem;margin-bottom:1rem;">
+      <i class='bi bi-bank2' style='font-size:1.3rem;color:var(--hb-gold-300);'></i>
+      <div style='flex:1;min-width:220px;'>
+        <div style='font-size:0.9rem;color:var(--hb-text-primary);font-weight:600;'>شماره شبا شما ثبت نشده است</div>
+        <div style='font-size:0.8rem;color:var(--hb-text-muted);margin-top:0.15rem;'>برای فروش سکه و دریافت وجه، فقط اعلام یک شماره شبا از بانک‌های ایران در بخش «اطلاعات مالی» پروفایل کافی است؛ نام بانک به‌صورت خودکار از شبا تشخیص داده می‌شود.</div>
+      </div>
+      <a href="{% url 'core:profile' %}#financial" class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-pencil-square'></i> تکمیل اطلاعات مالی</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- آمار -->
+  <div class='hb-stats-grid'>
+    <div class='hb-stat-card'>
+      <div class='hb-stat-icon gold'><i class='bi bi-coin'></i></div>
+      <div class='hb-stat-value'>{{ wallet.balance|fa_num }}</div>
+      <div class='hb-stat-label'>موجودی سکه</div>
+    </div>
+    <div class='hb-stat-card'>
+      <div class='hb-stat-icon blue'><i class='bi bi-cash-stack'></i></div>
+      <div class='hb-stat-value'>{{ wallet.value_rial|fa_num }}</div>
+      <div class='hb-stat-label'>ارزش ریالی موجودی</div>
+    </div>
+    <div class='hb-stat-card'>
+      <div class='hb-stat-icon green'><i class='bi bi-graph-up-arrow'></i></div>
+      <div class='hb-stat-value'>{{ setting.coin_value_rial|fa_num }}</div>
+      <div class='hb-stat-label'>نرخ هر سکه (ریال)</div>
+    </div>
+    <div class='hb-stat-card'>
+      <div class='hb-stat-icon gold'><i class='bi bi-star-fill'></i></div>
+      <div class='hb-stat-value'>{{ user_score|fa_num }}</div>
+      <div class='hb-stat-label'>موجودی امتیازات</div>
+      <div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.2rem;'>
+        {% if point_rate > 0 %}هر {{ point_rate|fa_num }} امتیاز = ۱ سکه (تعرفه امتیازها){% else %}تبدیل خودکار امتیاز به سکه غیرفعال است{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- خرید / فروش / انتقال -->
+  <div style='padding:1.5rem 2rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.25rem;'>
+    <!-- ============ فریم خرید سکه ============ -->
+    <div class='hb-card' data-wallet-frame='buy' data-rate='{{ setting.coin_value_rial|floatformat:"4" }}' data-min-buy='{{ setting.min_buy_coins }}' data-max-buy='{{ setting.max_buy_coins }}'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-bag-plus' style='color:var(--hb-success);'></i> خرید سکه</div>
+      </div>
+      {% if setting.buy_enabled %}
+      <form method='post' action="{% url 'wallet:dashboard' %}">
+        {% csrf_token %}<input type='hidden' name='action' value='buy'>
+        <div class='hb-form-group' style='margin-bottom:0.75rem;'>
+          <label class='hb-form-label' for='{{ buy_form.coins.id_for_label }}'>{{ buy_form.coins.label }}</label>
+          {{ buy_form.coins }}
+          {% if buy_form.coins.errors %}
+          <div class='hb-wallet-error' role='alert'>
+            <i class='bi bi-exclamation-circle'></i>
+            <span>{{ buy_form.coins.errors.0 }}</span>
+          </div>
+          {% else %}
+          <div class='hb-wallet-error' role='alert' data-wallet-error hidden></div>
+          {% endif %}
+        </div>
+
+        <!-- ماژول «اطلاعات سفارش و حساب مقصد» — زیر فیلد تعداد سکه؛ با تکمیل تعداد سکه نمایش داده می‌شود -->
+        <div id='wallet-dest-info' class='hb-wallet-info-box' hidden>
+          <div class='hb-wallet-info-title'><i class='bi bi-credit-card-2-front'></i> اطلاعات سفارش و حساب مقصد</div>
+          <div class='hb-wallet-info-row'>
+            <span class='hb-wallet-info-label'>تعداد سکهٔ سفارش</span>
+            <span class='hb-wallet-info-value' data-dest-coins>—</span>
+          </div>
+          <div class='hb-wallet-info-row'>
+            <span class='hb-wallet-info-label'>نرخ هر سکه</span>
+            <span class='hb-wallet-info-value' data-dest-rate>—</span>
+          </div>
+          <div class='hb-wallet-info-row'>
+            <span class='hb-wallet-info-label'>مبلغ قابل پرداخت</span>
+            <span class='hb-wallet-info-value' data-dest-total>—</span>
+          </div>
+          <div class='hb-wallet-info-row'>
+            <span class='hb-wallet-info-label'>بانک مقصد</span>
+            <span class='hb-wallet-info-value'>{{ setting.bank_name }}</span>
+          </div>
+          <div class='hb-wallet-info-row'>
+            <span class='hb-wallet-info-label'>شماره کارت مقصد</span>
+            <span class='hb-wallet-info-value' dir='ltr' style='font-family:ui-monospace,Consolas,monospace;letter-spacing:1px;'>{{ setting.receiving_card_number|default:'—' }}</span>
+          </div>
+          <div class='hb-wallet-info-row'>
+            <span class='hb-wallet-info-label'>شبأ مقصد</span>
+            <span class='hb-wallet-info-value' dir='ltr' style='font-family:ui-monospace,Consolas,monospace;font-size:0.75rem;'>{{ setting.receiving_iban|default:'—' }}</span>
+          </div>
+          {% if setting.receiving_card_number %}
+          <button type='button' class='hb-btn hb-btn-outline hb-btn-sm' style='width:100%;margin-top:0.6rem;justify-content:center;' data-copy-text='{{ setting.receiving_card_number }}'>
+            <i class='bi bi-clipboard'></i> <span>کپی شماره کارت</span>
+          </button>
+          {% endif %}
+        </div>
+
+        <small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin:0.75rem 0;'>
+          حداقل {{ setting.min_buy_coins|fa_num }} و حداکثر {{ setting.max_buy_coins|fa_num }} سکه در هر سفارش.
+          پس از ثبت درخواست، به صفحهٔ پرداخت (کارت‌به‌کارت) هدایت می‌شوید و فیش واریز را بارگذاری می‌کنید.
+        </small>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-cart-check'></i> ثبت درخواست خرید</button>
+      </form>
+      {% else %}
+      <p style='color:var(--hb-text-muted);font-size:0.85rem;'>خرید سکه فعلاً توسط مدیر سیستم غیرفعال است.</p>
+      {% endif %}
+    </div>
+
+    <!-- ============ فریم فروش سکه ============ -->
+    <div class='hb-card' data-wallet-frame='sell' data-rate='{{ setting.coin_value_rial|floatformat:"4" }}' data-min-sell='{{ setting.min_sell_coins }}' data-max-sell='{{ setting.max_sell_coins }}'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-bag-dash' style='color:#e74c3c;'></i> فروش سکه</div>
+      </div>
+      {% if setting.sell_enabled %}
+        {% if has_bank_info %}
+        <div style='margin-bottom:0.85rem;background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.25);border-radius:8px;padding:0.6rem 0.8rem;font-size:0.8rem;color:var(--hb-text-secondary);'>
+          <div style='display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem;'><i class='bi bi-bank2' style='color:var(--hb-info);'></i> وجه به حساب ثبت‌شده در «اطلاعات مالی» پروفایل شما واریز می‌شود:</div>
+          <div style='display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;'>
+            <b style='color:var(--hb-text-primary);'>{{ profile_bank_name }}</b>
+            <span style='font-family:ui-monospace,Consolas,monospace;letter-spacing:1px;color:var(--hb-gold-300);direction:ltr;display:inline-block;'>{{ profile_iban }}</span>
+            <a href="{% url 'core:profile' %}#financial" style='font-size:0.75rem;'><i class='bi bi-pencil-square'></i> ویرایش</a>
+          </div>
+        </div>
+        <form method='post' action="{% url 'wallet:dashboard' %}">
+          {% csrf_token %}<input type='hidden' name='action' value='sell'>
+          <div class='hb-form-group' style='margin-bottom:0.75rem;'>
+            <label class='hb-form-label' for='{{ sell_form.coins.id_for_label }}'>{{ sell_form.coins.label }}</label>
+            {{ sell_form.coins }}
+            {% if sell_form.coins.errors %}
+            <div class='hb-wallet-error' role='alert'>
+              <i class='bi bi-exclamation-circle'></i>
+              <span>{{ sell_form.coins.errors.0 }}</span>
+            </div>
+            {% else %}
+            <div class='hb-wallet-error' role='alert' data-wallet-error hidden></div>
+            {% endif %}
+          </div>
+
+          <!-- ماژول «اطلاعات سفارش بر حسب ریال» — زیر فیلد تعداد سکه؛ با تکمیل تعداد سکه نمایش داده می‌شود -->
+          <div id='wallet-rial-info' class='hb-wallet-info-box' hidden>
+            <div class='hb-wallet-info-title'><i class='bi bi-cash-stack'></i> اطلاعات سفارش بر حسب ریال</div>
+            <div class='hb-wallet-info-row'>
+              <span class='hb-wallet-info-label'>تعداد سکهٔ سفارش</span>
+              <span class='hb-wallet-info-value' data-rial-coins>—</span>
+            </div>
+            <div class='hb-wallet-info-row'>
+              <span class='hb-wallet-info-label'>نرخ هر سکه</span>
+              <span class='hb-wallet-info-value' data-rial-rate>—</span>
+            </div>
+            <div class='hb-wallet-info-row'>
+              <span class='hb-wallet-info-label'>مبلغ قابل دریافت (ریال)</span>
+              <span class='hb-wallet-info-value' data-rial-total>—</span>
+            </div>
+            <div class='hb-wallet-info-row'>
+              <span class='hb-wallet-info-label'>شبأ دریافت وجه</span>
+              <span class='hb-wallet-info-value' dir='ltr' style='font-family:ui-monospace,Consolas,monospace;font-size:0.75rem;'>{{ profile_iban }}</span>
+            </div>
+          </div>
+
+          <small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin:0.75rem 0;'>
+            سکه در لحظهٔ ثبت سفارش از کیف پول شما رزرو می‌شود؛ تیکت درخواست فروش برای مدیر ارسال می‌گردد و پس از تأیید، مبلغ به شبأ یادشده واریز می‌شود.
+          </small>
+          <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-cash-coin'></i> ثبت درخواست فروش</button>
+        </form>
+        {% else %}
+        <div style='text-align:center;padding:0.5rem 0 0.25rem;'>
+          <p style='color:var(--hb-text-muted);font-size:0.85rem;line-height:1.9;'>شماره شبأ شما در «اطلاعات مالی» پروفایل ثبت نشده است. برای فروش سکه فقط یک شماره شبا اعلام کنید؛ وجه فروش به همان حساب واریز می‌شود.</p>
+          <a href="{% url 'core:profile' %}#financial" class='hb-btn hb-btn-outline hb-btn-sm' style='margin-top:0.25rem;'><i class='bi bi-pencil-square'></i> تکمیل اطلاعات مالی در پروفایل</a>
+        </div>
+        {% endif %}
+      {% else %}
+      <p style='color:var(--hb-text-muted);font-size:0.85rem;'>فروش سکه فعلاً توسط مدیر سیستم غیرفعال است.</p>
+      {% endif %}
+    </div>
+
+    <!-- ============ فریم انتقال سکه به دیگران ============ -->
+    <div class='hb-card' data-wallet-frame='transfer'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-send' style='color:var(--hb-gold-300);'></i> انتقال سکه به دیگران</div>
+      </div>
+      {% if setting.transfer_enabled %}
+      <form method='post' action="{% url 'wallet:dashboard' %}">
+        {% csrf_token %}<input type='hidden' name='action' value='transfer'>
+        <div class='hb-form-group' style='margin-bottom:0.75rem;'>
+          <label class='hb-form-label' for='{{ transfer_form.receiver_national_id.id_for_label }}'>{{ transfer_form.receiver_national_id.label }}</label>
+          {{ transfer_form.receiver_national_id }}
+          {% if transfer_form.receiver_national_id.errors %}
+          <div class='hb-wallet-error' role='alert'>
+            <i class='bi bi-exclamation-circle'></i>
+            <span>{{ transfer_form.receiver_national_id.errors.0 }}</span>
+          </div>
+          {% else %}
+          <div class='hb-wallet-error' role='alert' data-wallet-error hidden></div>
+          {% endif %}
+          <!-- جست‌وجوی زندهٔ کد ملی → نام کاربر (Query)؛ پس از انتخاب، نام در صفحه درج می‌شود -->
+          <div id='wallet-receiver-name' class='hb-wallet-receiver' hidden>
+            <i class='bi bi-person-check-fill' style='color:var(--hb-success);'></i>
+            <div>
+              <div style='font-weight:700;color:var(--hb-text-primary);' data-receiver-fullname>—</div>
+              <div style='font-size:0.75rem;color:var(--hb-text-muted);'>کد ملی: <span dir='ltr' data-receiver-nid>—</span>{% if request.user.is_staff == False %} · موبایل: <span dir='ltr' data-receiver-mobile>—</span>{% endif %}</div>
+            </div>
+          </div>
+        </div>
+        <div class='hb-form-group' style='margin-bottom:0.75rem;'>
+          <label class='hb-form-label' for='{{ transfer_form.coins.id_for_label }}'>{{ transfer_form.coins.label }}</label>
+          {{ transfer_form.coins }}
+          {% if transfer_form.coins.errors %}
+          <div class='hb-wallet-error' role='alert'>
+            <i class='bi bi-exclamation-circle'></i>
+            <span>{{ transfer_form.coins.errors.0 }}</span>
+          </div>
+          {% else %}
+          <div class='hb-wallet-error' role='alert' data-wallet-error hidden></div>
+          {% endif %}
+        </div>
+        <div class='hb-form-group' style='margin-bottom:0.75rem;'>
+          <label class='hb-form-label' for='{{ transfer_form.note.id_for_label }}'>{{ transfer_form.note.label }}</label>
+          {{ transfer_form.note }}
+        </div>
+        <small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-bottom:0.75rem;'>
+          فیلد کد ملی فقط رقم می‌پذیرد؛ چند رقم از کد ملی گیرنده را تایپ کنید تا فهرست آبشاریِ «کد ملی + نام»
+          کاربران متناظر (Query) باز شود و گیرنده را از همان‌جا انتخاب کنید؛ سپس پس از دو مرحله تأیید، انتقال انجام می‌شود
+          و تیکت «پرداخت سکه» برای شما و تیکت «دریافت سکه» برای گیرنده ارسال می‌گردد.
+        </small>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'><i class='bi bi-send'></i> انتقال سکه</button>
+      </form>
+      {% else %}
+      <p style='color:var(--hb-text-muted);font-size:0.85rem;'>انتقال سکه فعلاً توسط مدیر سیستم غیرفعال است.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- تراکنش‌های اخیر: فقط خرید سکه / فروش سکه / انتقال سکه -->
+  <div style='padding:0 2rem 2rem;'>
+    <div class='hb-card'>
+      <div class='hb-card-header'>
+        <div class='hb-card-title'><i class='bi bi-activity'></i> تراکنش‌های اخیر</div>
+        <a href="{% url 'wallet:history' %}" style='font-size:0.85rem;'>مشاهده همه</a>
+      </div>
+      {% if recent_ledger %}
+      <table style='width:100%;border-collapse:collapse;font-size:0.88rem;'>
+        <thead>
+          <tr style='color:var(--hb-text-muted);text-align:right;'>
+            <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>نوع</th>
+            <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مبلغ (سکه)</th>
+            <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>مانده</th>
+            <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>کد مرجع</th>
+            <th style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>زمان</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in recent_ledger %}
+          <tr>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.get_kind_display }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);{% if row.amount > 0 %}color:var(--hb-success);{% else %}color:#e74c3c;{% endif %}'>{% if row.amount > 0 %}+{% endif %}{{ row.amount|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);'>{{ row.balance_after|fa_num }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);' dir='ltr'>{{ row.ref_code|default:'—' }}</td>
+            <td style='padding:0.6rem 0.75rem;border-bottom:1px solid var(--hb-navy-500);font-size:0.78rem;color:var(--hb-text-muted);'>{{ row.created_at|jdatetime }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style='color:var(--hb-text-muted);font-size:0.85rem;padding:0.5rem 0;'>هنوز تراکنشی ثبت نشده است.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- نوار تبلیغات (footer) -->
+  {% include "core/_ads_footer.html" %}
+</main><script src='{% static "core/js/app.js" %}?v=49'></script>{% include "core/_sidebar_nav_script.html" %}</body></html>

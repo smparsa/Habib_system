@@ -1,0 +1,130 @@
+{% extends "ads/base_ads.html" %}
+{% load core_extras %}
+{% block title %}تبلیغات - HabibHub{% endblock %}
+{% block ads_content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-megaphone'></i> تبلیغات</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    لوگوی تبلیغاتی خود را ثبت کنید تا پس از پرداخت هزینه و تأیید مدیر، در نوار متحرک پایین داشبورد همهٔ کاربران پخش شود.
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;max-width:900px;'>
+  {% if messages %}
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;{% if message.tags == "success" %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == "error" %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi {% if message.tags == "success" %}bi-check-circle{% elif message.tags == "error" %}bi-exclamation-circle{% else %}bi-info-circle{% endif %}'></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- ثبت تبلیغ جدید -->
+  <div class='hb-card' style='display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;'>
+    <div style='width:46px;height:46px;border-radius:12px;background:var(--hb-accent-12);display:flex;align-items:center;justify-content:center;color:var(--hb-gold-300);font-size:1.4rem;flex-shrink:0;'><i class='bi bi-plus-circle'></i></div>
+    <div style='flex:1;min-width:220px;'>
+      <div style='font-weight:700;font-size:1.02rem;margin-bottom:0.25rem;'>ثبت تبلیغ جدید</div>
+      <div style='font-size:0.82rem;color:var(--hb-text-muted);line-height:1.9;'>
+        {% if ad_cost %}
+          هزینهٔ ثبت: <b style='color:var(--hb-gold-300);'>{{ ad_cost.coins|floatformat }} سکه به ازای هر ۲۴ ساعت × هر هدر</b> — هزینهٔ کل = تعداد روزهای انتخاب‌شده × تعداد هدرهای انتخابی × این تعرفه و از کیف پول شما کسر می‌شود.
+        {% else %}
+          تعرفهٔ ثبت تبلیغ هنوز فعال نشده است؛ لطفاً بعداً مراجعه کنید.
+        {% endif %}
+      </div>
+    </div>
+    {% if ad_cost and ad_cost.coins > 0 %}
+    <a class='hb-btn hb-btn-primary hb-btn-sm' href="{% url 'ads:create' %}" style='text-decoration:none;'>
+      <i class='bi bi-plus-lg'></i> ثبت تبلیغ
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- ثبت اسلایدشوی آمار داشبورد (اسلایدشو A) -->
+  <div class='hb-card' style='margin-top:1rem;'>
+    <div style='display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;'>
+    <div style='width:46px;height:46px;border-radius:12px;background:var(--hb-accent-12);display:flex;align-items:center;justify-content:center;color:var(--hb-gold-300);font-size:1.4rem;flex-shrink:0;'><i class='bi bi-collection-play'></i></div>
+      <div style='flex:1;min-width:220px;'>
+        <div style='font-weight:700;font-size:1.02rem;margin-bottom:0.25rem;'>ثبت اسلایدشوی آمار داشبورد</div>
+        <div style='font-size:0.82rem;color:var(--hb-text-muted);line-height:1.9;'>
+          {% if slide_cost %}
+            هزینهٔ ثبت: <b style='color:var(--hb-gold-300);'>{{ slide_cost.coins|floatformat }} سکه به ازای هر ۲۴ ساعت</b> — هزینهٔ کل = تعداد روزهای انتخاب‌شده × این تعرفه و از کیف پول شما کسر می‌شود.
+            {% if slide_cost_code != 'stat_slide_submission' %}<span style='font-size:0.72rem;'>(طبق تعرفهٔ تبلیغات)</span>{% endif %}
+            {% if slide_create_cost %}<br>اگر تصویرتان با مشخصات بنر (۲۴۰۰×۶۰۰) سازگار نبود، با «<b>ساخت اسلایدشو</b>» (<b style='color:var(--hb-gold-300);'>{{ slide_create_cost.coins|floatformat }} سکه، یک‌بار</b>) تصویر مناسب ساخته می‌شود.{% endif %}
+          {% else %}
+            تعرفهٔ ثبت اسلایدشو هنوز فعال نشده است؛ لطفاً بعداً مراجعه کنید.
+          {% endif %}
+        </div>
+      </div>
+      {% if slide_cost and slide_cost.coins > 0 %}
+      <a class='hb-btn hb-btn-primary hb-btn-sm' href="{% url 'slideshow:create' %}" style='text-decoration:none;'>
+        <i class='bi bi-plus-lg'></i> اسلایدشو
+      </a>
+      {% endif %}
+    </div>
+    <div style='display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;'>
+      {% for b in boxes_capacity %}
+      <div style='flex:1;min-width:150px;max-width:320px;background:var(--hb-navy-800);border:1px solid var(--hb-border);border-radius:10px;padding:0.6rem 0.9rem;{% if not b.obj.is_active %}opacity:0.55;{% endif %}'>
+        <div style='font-size:0.8rem;font-weight:600;'>{{ b.obj.title }}</div>
+        <div style='font-size:0.72rem;color:var(--hb-text-muted);margin-top:0.2rem;'>
+          {% if b.obj.is_active %}
+            {{ b.in_box }} از {{ b.capacity }} اسلاید
+            {% if b.in_box >= b.capacity %}<span class='hb-badge hb-badge-danger'>ظرفیت کامل</span>{% endif %}
+          {% else %}
+            <span class='hb-badge hb-badge-warning'>پذیرش اسلاید غیرفعال</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style='font-size:0.78rem;color:var(--hb-text-muted);line-height:1.9;margin:0.9rem 0.25rem 0;'>
+    <i class='bi bi-info-circle'></i>
+    پس از ثبت و کسر هزینه، درخواست شما به‌صورت تیکت برای مدیر ارسال می‌شود و پس از تأیید در صف نمایش قرار می‌گیرد.
+    در صورت عدم تأیید، {{ reject_fee_percent }}٪ هزینه کسر و مابقی به کیف پول شما بازمی‌گردد؛ همهٔ جابه‌جایی‌های مالی با تیکت اطلاع‌رسانی می‌شود.
+  </div>
+
+  <!-- تبلیغ‌های من -->
+  {% if ads_current or ads_history %}
+  <div class='hb-card' style='margin-top:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-collection'></i> تبلیغ‌های من</div>
+    </div>
+    {% if ads_current %}
+      {% include "ads/_items_table.html" with items=ads_current kind='ad' %}
+    {% else %}
+      <div style='padding:0.75rem 1.25rem;font-size:0.82rem;color:var(--hb-text-muted);'>تبلیغ جاری ندارید.</div>
+    {% endif %}
+    {% if ads_history %}
+    <details style='margin-top:0.75rem;'>
+      <summary style='cursor:pointer;padding:0.5rem 1.25rem;font-size:0.85rem;color:var(--hb-gold-300);'>
+        <i class='bi bi-clock-history'></i> تاریخچهٔ تبلیغ‌ها ({{ ads_history|length }})
+      </summary>
+      {% include "ads/_items_table.html" with items=ads_history kind='ad' %}
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- اسلایدهای من -->
+  {% if slides_current or slides_history %}
+  <div class='hb-card' style='margin-top:1rem;'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-collection-play'></i> اسلایدهای من</div>
+    </div>
+    {% if slides_current %}
+      {% include "ads/_items_table.html" with items=slides_current kind='slide' %}
+    {% else %}
+      <div style='padding:0.75rem 1.25rem;font-size:0.82rem;color:var(--hb-text-muted);'>اسلاید جاری ندارید.</div>
+    {% endif %}
+    {% if slides_history %}
+    <details style='margin-top:0.75rem;'>
+      <summary style='cursor:pointer;padding:0.5rem 1.25rem;font-size:0.85rem;color:var(--hb-gold-300);'>
+        <i class='bi bi-clock-history'></i> تاریخچهٔ اسلایدها ({{ slides_history|length }})
+      </summary>
+      {% include "ads/_items_table.html" with items=slides_history kind='slide' %}
+    </details>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

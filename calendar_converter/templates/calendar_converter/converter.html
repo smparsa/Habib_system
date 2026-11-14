@@ -1,0 +1,701 @@
+{% extends "calendar_converter/base_calendar.html" %}
+{% block title %}تقویم و ساعت جاری - HabibHub{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ریشهٔ ماژول: همهٔ استایل‌ها زیر .cc-root محدود شده‌اند تا با style.css سایت تداخل نکنند */
+.cc-root { max-width: 950px; margin: 0 auto; color: var(--hb-text-primary,#e8eaf0); }
+.cc-root *, .cc-root *::before, .cc-root *::after { box-sizing: border-box; }
+.cc-wrap { padding: 1.5rem 2rem; }
+@media (max-width: 768px) { .cc-wrap { padding: 1rem; } }
+.cc-root .page-title { font-size: 26px; font-weight: bold; margin-bottom: 5px; margin-top: 40px;
+}
+.cc-root .page-title:first-of-type { margin-top: 0;
+}
+.cc-root .page-subtitle { color: var(--hb-text-muted,#9aa3b5); margin-bottom: 20px;
+}
+.cc-root .card {
+            background: var(--hb-navy-700,#141b2d);
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.cc-root .form-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;
+}
+.cc-root .form-group { flex: 1; min-width: 150px;
+}
+.cc-root label { display: block; margin-bottom: 8px; font-size: 14px; color: var(--hb-text-secondary,#c3c9d8);
+}
+.cc-root .hh-select {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--hb-border,#2a3348);
+            background: var(--hb-navy-800,#0d1420);
+            color: var(--hb-text-primary,#fff);
+            font-size: 15px;
+}
+.cc-root .hh-select:focus { outline: none; border-color: var(--hb-gold-300,#f0b429);
+}
+.cc-root .field-error { color: #ff6b6b; font-size: 13px; margin-top: 5px;
+}
+.cc-root .btn-submit {
+            background: linear-gradient(135deg, var(--hb-gold-300,#f0b429), var(--hb-gold-400,#d99a1f));
+            color: #1a1a1a;
+            font-weight: bold;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: opacity 0.2s;
+}
+.cc-root .btn-submit:hover { opacity: 0.9;
+}
+.cc-root .btn-submit:disabled { opacity: 0.5; cursor: not-allowed;
+}
+.cc-root .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+}
+.cc-root .result-card {
+            background: var(--hb-navy-800,#0d1420);
+            border: 1px solid var(--hb-border,#2a3348);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+}
+.cc-root .result-card .label { color: var(--hb-text-muted,#9aa3b5); font-size: 13px; margin-bottom: 10px;
+}
+.cc-root .result-card .date-number { font-size: 22px; font-weight: bold; color: var(--hb-gold-300,#f0b429); margin-bottom: 5px;
+}
+.cc-root .result-card .date-text { font-size: 14px; color: var(--hb-text-secondary,#c3c9d8);
+}
+.cc-root .weekday-badge { text-align: center; margin-bottom: 15px; color: var(--hb-gold-300,#f0b429); font-weight: bold; font-size: 16px;
+}
+.cc-root .error-box {
+            background: #3a1d1d; border: 1px solid #c0392b; color: #ff8080;
+            padding: 15px; border-radius: 10px; margin-bottom: 20px; display: none;
+}
+.cc-root .loading-spinner { display: none; text-align: center; padding: 20px; color: var(--hb-gold-300,#f0b429);
+}
+.cc-root .api-info {
+            background: var(--hb-navy-800,#0d1420); border: 1px dashed var(--hb-border,#2a3348); border-radius: 10px;
+            padding: 15px; font-size: 13px; color: var(--hb-text-muted,#9aa3b5); margin-top: 20px;
+}
+.cc-root .api-info code {
+            background: var(--hb-navy-600,#1a2235); padding: 2px 8px; border-radius: 5px;
+            color: var(--hb-gold-300,#f0b429); direction: ltr; display: inline-block;
+}
+.cc-root .date-picker-wrapper { position: relative;
+}
+.cc-root .date-picker-input {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 15px; border-radius: 10px; border: 1px solid var(--hb-border,#2a3348);
+            background: var(--hb-navy-800,#0d1420); color: var(--hb-text-primary,#fff); cursor: pointer; font-size: 15px;
+            user-select: none;
+}
+.cc-root .date-picker-input:hover { border-color: var(--hb-gold-300,#f0b429);
+}
+.cc-root .calendar-icon { font-size: 18px;
+}
+.cc-root .calendar-popup {
+            display: none; position: absolute; top: calc(100% + 8px); right: 0;
+            width: 320px; background: var(--hb-navy-600,#1a2235); border: 1px solid var(--hb-border,#2a3348);
+            border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            padding: 15px; z-index: 100;
+}
+.cc-root .calendar-popup.cal-popup-open { display: block;
+}
+.cc-root .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;
+}
+.cc-root .cal-nav-btn {
+            background: var(--hb-navy-800,#0d1420); border: 1px solid var(--hb-border,#2a3348); color: var(--hb-gold-300,#f0b429);
+            width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+            font-size: 18px; display: flex; align-items: center; justify-content: center;
+}
+.cc-root .cal-nav-btn:hover { background: var(--hb-border,#2a3348);
+}
+.cc-root .calendar-title { display: flex; align-items: center; gap: 8px; font-weight: bold;
+}
+.cc-root .cal-year-input {
+            width: 70px; padding: 6px 8px; background: var(--hb-navy-800,#0d1420);
+            border: 1px solid var(--hb-border,#2a3348); border-radius: 8px; color: var(--hb-gold-300,#f0b429);
+            text-align: center; font-size: 14px;
+}
+.cc-root .calendar-weekdays {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            text-align: center; color: var(--hb-text-muted,#9aa3b5); font-size: 12px; margin-bottom: 8px;
+}
+.cc-root .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+}
+.cc-root .cal-day {
+            text-align: center; padding: 8px 0; border-radius: 8px;
+            cursor: pointer; font-size: 14px; color: var(--hb-text-primary,#e8eaf0);
+}
+.cc-root .cal-day:hover { background: var(--hb-border,#2a3348);
+}
+.cc-root .cal-day-empty { cursor: default;
+}
+.cc-root .cal-day-empty:hover { background: transparent;
+}
+.cc-root .cal-day-today { border: 1px solid var(--hb-gold-300,#f0b429);
+}
+.cc-root .cal-day-selected {
+            background: linear-gradient(135deg, var(--hb-gold-300,#f0b429), var(--hb-gold-400,#d99a1f));
+            color: #1a1a1a; font-weight: bold;
+}
+.cc-root .calendar-footer { margin-top: 10px; text-align: center;
+}
+.cc-root .cal-today-btn {
+            background: transparent; border: 1px solid var(--hb-border,#2a3348); color: var(--hb-gold-300,#f0b429);
+            padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.cc-root .cal-today-btn:hover { background: var(--hb-border,#2a3348);
+}
+.cc-root .clocks-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+}
+.cc-root .clock-card {
+            background: var(--hb-navy-800,#0d1420);
+            border: 1px solid var(--hb-border,#2a3348);
+            border-radius: 14px;
+            padding: 25px 20px;
+            text-align: center;
+}
+.cc-root .clock-flag { font-size: 28px; margin-bottom: 8px;
+}
+.cc-root .clock-label { color: var(--hb-text-muted,#9aa3b5); font-size: 14px; margin-bottom: 14px; min-height: 20px;
+}
+.cc-root .clock-time {
+            font-size: 34px;
+            font-weight: bold;
+            color: var(--hb-gold-300,#f0b429);
+            letter-spacing: 2px;
+            direction: ltr;
+            margin-bottom: 8px;
+            font-variant-numeric: tabular-nums;
+}
+.cc-root .clock-date { color: var(--hb-text-secondary,#c3c9d8); font-size: 13px; margin-bottom: 6px;
+}
+.cc-root .clock-offset {
+            color: var(--hb-text-muted,#6b7490); font-size: 12px; direction: ltr;
+            background: var(--hb-navy-600,#1a2235); display: inline-block; padding: 3px 10px; border-radius: 20px;
+}
+.cc-root .country-select-box { margin-bottom: 15px;
+}
+.cc-root #country-clock-placeholder {
+            color: var(--hb-text-muted,#6b7490); text-align: center; padding: 30px 0; font-size: 14px;
+}
+@media (max-width: 768px) {
+.cc-root .results-grid { grid-template-columns: 1fr;
+}
+.cc-root .clocks-grid { grid-template-columns: 1fr;
+}
+.cc-root .form-row { flex-direction: column;
+}
+.cc-root .calendar-popup { width: 100%; right: 0; left: 0;
+}
+.cc-root .clock-time { font-size: 40px;
+}
+}</style>
+{% endblock %}
+
+{% block calendar_content %}
+  <div class='hb-page-header'>
+    <h1><i class='bi bi-calendar-event'></i> <span>تقویم و ساعت جاری</span></h1>
+    <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>تبدیل تاریخ شمسی، قمری و میلادی و ساعت زندهٔ ایران، گرینویچ و کشورهای جهان</p>
+  </div>
+
+  <div class="cc-wrap">
+    <div class="cc-root">
+
+            <div class="page-title">📅 تبدیل تقویم</div>
+            <div class="page-subtitle">تبدیل تاریخ بین شمسی، قمری و میلادی — با انتخاب بصری از تقویم</div>
+
+            <div class="error-box" id="errorBox"></div>
+
+            <div class="card">
+                <form id="convertForm">
+                    {% csrf_token %}
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>{{ form.calendar_type.label }}</label>
+                            {{ form.calendar_type }}
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group date-picker-wrapper">
+                            <label>تاریخ</label>
+                            <div class="date-picker-input" id="datePickerTrigger">
+                                <span id="selectedDateText">برای انتخاب تاریخ کلیک کنید</span>
+                                <span class="calendar-icon">📅</span>
+                            </div>
+
+                            <div class="calendar-popup" id="calendarPopup">
+                                <div class="calendar-header">
+                                    <button type="button" class="cal-nav-btn" id="prevMonthBtn">‹</button>
+                                    <div class="calendar-title">
+                                        <span id="calMonthName"></span>
+                                        <input type="text" id="calYearInput" class="cal-year-input" inputmode="numeric">
+                                    </div>
+                                    <button type="button" class="cal-nav-btn" id="nextMonthBtn">›</button>
+                                </div>
+                                <div class="calendar-weekdays">
+                                    <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+                                </div>
+                                <div class="calendar-days" id="calendarDaysGrid"></div>
+                                <div class="calendar-footer">
+                                    <button type="button" class="cal-today-btn" id="todayBtn">🔹 امروز</button>
+                                </div>
+                            </div>
+
+                            <div class="field-error" id="err-year"></div>
+                            <div class="field-error" id="err-day"></div>
+                        </div>
+                    </div>
+
+                    {{ form.year }}
+                    {{ form.month }}
+                    {{ form.day }}
+
+                    <button type="submit" class="btn-submit" id="submitBtn">🔄 تبدیل تاریخ</button>
+                </form>
+            </div>
+
+            <div class="loading-spinner" id="loadingSpinner">⏳ در حال تبدیل...</div>
+
+            <div class="card" id="resultsCard" style="display:none;">
+                <div class="weekday-badge" id="weekdayBadge"></div>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="label">شمسی</div>
+                        <div class="date-number" id="res-shamsi-numeric"></div>
+                        <div class="date-text" id="res-shamsi-text"></div>
+                    </div>
+                    <div class="result-card">
+                        <div class="label">قمری</div>
+                        <div class="date-number" id="res-ghamari-numeric"></div>
+                        <div class="date-text" id="res-ghamari-text"></div>
+                    </div>
+                    <div class="result-card">
+                        <div class="label">میلادی</div>
+                        <div class="date-number" id="res-miladi-numeric"></div>
+                        <div class="date-text" id="res-miladi-text"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="api-info">
+                📡 <strong>برای توسعه‌دهندگان:</strong> سرویس تبدیل تاریخ به صورت API هم در دسترس است (حداکثر ۳۰ درخواست در دقیقه):<br>
+                <code>GET /calendar/api/convert/?calendar_type=shamsi&year=1403&month=1&day=1</code>
+            </div>
+
+            <div class="page-title">🕐 ساعت جهانی</div>
+            <div class="page-subtitle">ساعت دقیق ایران، نصف‌النهار مبدأ (گرینویچ) و هر کشور دلخواه — به‌روزرسانی زنده</div>
+
+            <div class="card">
+                <div class="clocks-grid">
+
+                    <div class="clock-card">
+                        <div class="clock-flag">🇮🇷</div>
+                        <div class="clock-label">ساعت ایران (تهران)</div>
+                        <div class="clock-time" id="iran-clock-time">--:--:--</div>
+                        <div class="clock-date" id="iran-clock-date">—</div>
+                        <div class="clock-offset" id="iran-clock-offset">—</div>
+                    </div>
+
+                    <div class="clock-card">
+                        <div class="clock-flag">🌍</div>
+                        <div class="clock-label">نصف‌النهار گرینویچ (UTC)</div>
+                        <div class="clock-time" id="gmt-clock-time">--:--:--</div>
+                        <div class="clock-date" id="gmt-clock-date">—</div>
+                        <div class="clock-offset" id="gmt-clock-offset">—</div>
+                    </div>
+
+                    <div class="clock-card">
+                        <div class="clock-label">🌐 انتخاب کشور دلخواه</div>
+                        <div class="country-select-box">
+                            <select id="countryTimezoneSelect" class="hh-select">
+                                <option value="">— یک کشور انتخاب کنید —</option>
+                                {% for country_name, tz_id in timezones %}
+                                    <option value="{{ tz_id }}">{{ country_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div id="country-clock-placeholder">
+                            کشور مورد نظر را از لیست بالا انتخاب کنید
+                        </div>
+                        <div id="country-clock-content" style="display:none;">
+                            <div class="clock-time" id="country-clock-time">--:--:--</div>
+                            <div class="clock-date" id="country-clock-date">—</div>
+                            <div class="clock-offset" id="country-clock-offset">—</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="todayDatesData">{{ today_dates_json|safe }}</script>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+(function () {
+        'use strict';
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function toPersianDigitsJS(num) {
+            const d = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+            return String(num).replace(/[0-9]/g, x => d[x]);
+        }
+
+        function toEnglishDigitsJS(str) {
+            const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+            return String(str).replace(/[۰-۹]/g, ch => persianDigits.indexOf(ch));
+        }
+
+        const csrfInput = document.querySelector('#convertForm [name=csrfmiddlewaretoken]');
+        const csrftoken = (csrfInput && csrfInput.value) || getCookie('csrftoken');
+        const todayData = JSON.parse(document.getElementById('todayDatesData').textContent);
+
+        const state = {
+            calendarType: 'shamsi',
+            viewYear: todayData.shamsi.year,
+            viewMonth: todayData.shamsi.month,
+            selectedYear: null,
+            selectedMonth: null,
+            selectedDay: null,
+        };
+
+        const calendarPopup = document.getElementById('calendarPopup');
+        const datePickerTrigger = document.getElementById('datePickerTrigger');
+
+        async function fetchGrid(calendarType, year, month) {
+            const url = `{% url 'calendar_converter:calendar_grid' %}?calendar_type=${calendarType}&year=${year}&month=${month}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (res.status === 429) {
+                throw new Error(data.error || 'تعداد درخواست بیش از حد مجاز است');
+            }
+            if (!data.success) throw new Error(data.error);
+            return data.data;
+        }
+
+        async function renderCalendar() {
+            try {
+                const gridData = await fetchGrid(state.calendarType, state.viewYear, state.viewMonth);
+
+                document.getElementById('calMonthName').textContent = gridData.month_name;
+                document.getElementById('calYearInput').value = gridData.year_fa;
+
+                const grid = document.getElementById('calendarDaysGrid');
+                grid.innerHTML = '';
+
+                for (let i = 0; i < gridData.first_weekday; i++) {
+                    const empty = document.createElement('div');
+                    empty.className = 'cal-day cal-day-empty';
+                    grid.appendChild(empty);
+                }
+
+                for (let d = 1; d <= gridData.days_in_month; d++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cal-day';
+                    cell.textContent = toPersianDigitsJS(d);
+
+                    if (gridData.today_day === d) {
+                        cell.classList.add('cal-day-today');
+                    }
+                    if (state.selectedYear === gridData.year &&
+                        state.selectedMonth === gridData.month &&
+                        state.selectedDay === d) {
+                        cell.classList.add('cal-day-selected');
+                    }
+
+                    cell.addEventListener('click', () => {
+                        selectDay(gridData.year, gridData.month, d, gridData.month_name);
+                    });
+
+                    grid.appendChild(cell);
+                }
+            } catch (err) {
+                showGeneralError('خطا در بارگذاری تقویم: ' + err.message);
+            }
+        }
+
+        function selectDay(year, month, day, monthName) {
+            state.selectedYear = year;
+            state.selectedMonth = month;
+            state.selectedDay = day;
+
+            document.getElementById('id_year').value = year;
+            document.getElementById('id_month').value = month;
+            document.getElementById('id_day').value = day;
+
+            document.getElementById('selectedDateText').textContent =
+                `${toPersianDigitsJS(day)} ${monthName} ${toPersianDigitsJS(year)}`;
+
+            closeCalendarPopup();
+        }
+
+        function closeCalendarPopup() {
+            calendarPopup.classList.remove('cal-popup-open');
+        }
+
+        datePickerTrigger.addEventListener('click', () => {
+            const isOpen = calendarPopup.classList.contains('cal-popup-open');
+            if (isOpen) {
+                closeCalendarPopup();
+            } else {
+                calendarPopup.classList.add('cal-popup-open');
+                renderCalendar();
+            }
+        });
+
+        document.getElementById('prevMonthBtn').addEventListener('click', () => {
+            state.viewMonth -= 1;
+            if (state.viewMonth < 1) { state.viewMonth = 12; state.viewYear -= 1; }
+            renderCalendar();
+        });
+
+        document.getElementById('nextMonthBtn').addEventListener('click', () => {
+            state.viewMonth += 1;
+            if (state.viewMonth > 12) { state.viewMonth = 1; state.viewYear += 1; }
+            renderCalendar();
+        });
+
+        document.getElementById('calYearInput').addEventListener('change', (e) => {
+            const newYear = parseInt(toEnglishDigitsJS(e.target.value));
+            if (!isNaN(newYear) && newYear > 0) {
+                state.viewYear = newYear;
+                renderCalendar();
+            }
+        });
+
+        document.getElementById('todayBtn').addEventListener('click', () => {
+            const t = todayData[state.calendarType];
+            state.viewYear = t.year;
+            state.viewMonth = t.month;
+            renderCalendar();
+        });
+
+        document.getElementById('id_calendar_type').addEventListener('change', (e) => {
+            state.calendarType = e.target.value;
+            const t = todayData[state.calendarType];
+            state.viewYear = t.year;
+            state.viewMonth = t.month;
+            state.selectedYear = null;
+            state.selectedMonth = null;
+            state.selectedDay = null;
+
+            document.getElementById('id_year').value = '';
+            document.getElementById('id_month').value = '';
+            document.getElementById('id_day').value = '';
+            document.getElementById('selectedDateText').textContent = 'برای انتخاب تاریخ کلیک کنید';
+
+            renderCalendar();
+        });
+
+        document.addEventListener('click', (e) => {
+            const wrapper = document.querySelector('.date-picker-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                closeCalendarPopup();
+            }
+        });
+
+        const form = document.getElementById('convertForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorBox = document.getElementById('errorBox');
+        const resultsCard = document.getElementById('resultsCard');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        function clearErrors() {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+            document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+        }
+
+        function showGeneralError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = 'block';
+        }
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            clearErrors();
+            resultsCard.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            submitBtn.disabled = true;
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch("{% url 'calendar_converter:ajax_convert' %}", {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData,
+                });
+
+                if (response.status === 429) {
+                    const data = await response.json();
+                    showGeneralError(data.error || 'تعداد درخواست‌های شما بیش از حد مجاز است.');
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const result = data.data;
+                    document.getElementById('weekdayBadge').textContent = '📆 ' + result.weekday;
+
+                    document.getElementById('res-shamsi-numeric').textContent = result.shamsi.numeric_fa;
+                    document.getElementById('res-shamsi-text').textContent = result.shamsi.formatted_fa;
+
+                    document.getElementById('res-ghamari-numeric').textContent = result.ghamari.numeric_fa;
+                    document.getElementById('res-ghamari-text').textContent = result.ghamari.formatted_fa;
+
+                    document.getElementById('res-miladi-numeric').textContent = result.miladi.numeric_fa;
+                    document.getElementById('res-miladi-text').textContent = result.miladi.formatted_fa;
+
+                    resultsCard.style.display = 'block';
+                } else {
+                    if (data.details) {
+                        for (const [field, msg] of Object.entries(data.details)) {
+                            const el = document.getElementById('err-' + field);
+                            if (el) el.textContent = msg;
+                        }
+                    } else {
+                        showGeneralError(data.error || 'خطایی رخ داد');
+                    }
+                }
+            } catch (err) {
+                showGeneralError('خطا در ارتباط با سرور: ' + err.message);
+            } finally {
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        let serverOffsetMs = 0;
+        let selectedCountryTimezone = '';
+
+        async function syncServerTime() {
+            try {
+                const res = await fetch("{% url 'calendar_converter:api_server_time' %}");
+                const data = await res.json();
+                if (data.success) {
+                    const serverMs = data.timestamp_ms;
+                    const localMs = Date.now();
+                    serverOffsetMs = serverMs - localMs;
+                }
+            } catch (e) {
+                console.warn('عدم امکان همگام‌سازی با سرور، استفاده از ساعت سیستم کاربر', e);
+                serverOffsetMs = 0;
+            }
+        }
+
+        function correctedNow() {
+            return new Date(Date.now() + serverOffsetMs);
+        }
+
+        function getZonedDateTimeParts(date, timeZone) {
+            const dtf = new Intl.DateTimeFormat('en-US', {
+                timeZone,
+                hour12: false,
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                weekday: 'long'
+            });
+            return dtf.formatToParts(date).reduce((acc, p) => {
+                acc[p.type] = p.value;
+                return acc;
+            }, {});
+        }
+
+        function getUtcOffsetString(date, timeZone) {
+            const parts = getZonedDateTimeParts(date, timeZone);
+            const asUTC = Date.UTC(
+                parseInt(parts.year), parseInt(parts.month) - 1, parseInt(parts.day),
+                parseInt(parts.hour), parseInt(parts.minute), parseInt(parts.second)
+            );
+            const diffMinutes = Math.round((asUTC - date.getTime()) / 60000);
+            const sign = diffMinutes >= 0 ? '+' : '-';
+            const absMinutes = Math.abs(diffMinutes);
+            const hours = Math.floor(absMinutes / 60).toString().padStart(2, '0');
+            const minutes = (absMinutes % 60).toString().padStart(2, '0');
+            return `${sign}${hours}:${minutes}`;
+        }
+
+        const WEEKDAY_FA_MAP = {
+            'Monday': 'دوشنبه', 'Tuesday': 'سه‌شنبه', 'Wednesday': 'چهارشنبه',
+            'Thursday': 'پنجشنبه', 'Friday': 'جمعه', 'Saturday': 'شنبه', 'Sunday': 'یکشنبه'
+        };
+
+        function updateClockDisplay(elementPrefix, date, timeZone) {
+            const parts = getZonedDateTimeParts(date, timeZone);
+            const timeStr = `${parts.hour}:${parts.minute}:${parts.second}`;
+            const offsetStr = getUtcOffsetString(date, timeZone);
+            const weekdayFa = WEEKDAY_FA_MAP[parts.weekday] || parts.weekday;
+            const dateStr = `${parts.year}/${parts.month}/${parts.day}`;
+
+            const timeEl = document.getElementById(elementPrefix + '-time');
+            const dateEl = document.getElementById(elementPrefix + '-date');
+            const offsetEl = document.getElementById(elementPrefix + '-offset');
+
+            if (timeEl) timeEl.textContent = toPersianDigitsJS(timeStr);
+            if (dateEl) dateEl.textContent = `${weekdayFa} ${toPersianDigitsJS(dateStr)}`;
+            if (offsetEl) offsetEl.textContent = 'UTC' + toPersianDigitsJS(offsetStr);
+        }
+
+        function tickClocks() {
+            const now = correctedNow();
+            updateClockDisplay('iran-clock', now, 'Asia/Tehran');
+            updateClockDisplay('gmt-clock', now, 'UTC');
+            if (selectedCountryTimezone) {
+                updateClockDisplay('country-clock', now, selectedCountryTimezone);
+            }
+        }
+
+        document.getElementById('countryTimezoneSelect').addEventListener('change', (e) => {
+            selectedCountryTimezone = e.target.value;
+            const placeholder = document.getElementById('country-clock-placeholder');
+            const content = document.getElementById('country-clock-content');
+
+            if (selectedCountryTimezone) {
+                placeholder.style.display = 'none';
+                content.style.display = 'block';
+                tickClocks();
+            } else {
+                placeholder.style.display = 'block';
+                content.style.display = 'none';
+            }
+        });
+
+        (async function initClocks() {
+            await syncServerTime();
+            tickClocks();
+            setInterval(tickClocks, 1000);
+            setInterval(syncServerTime, 10 * 60 * 1000);
+        })();
+    })();
+</script>
+{% endblock %}

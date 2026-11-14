@@ -1,0 +1,102 @@
+{% extends "cloudstorage/base_cloud.html" %}
+{% load core_extras %}
+{% block title %}عملیات آپلود - فضای ابری{% endblock %}
+{% block cloud_content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-receipt'></i> عملیات آپلود — {{ session.get_source_display }}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    پیش‌فاکتور و وضعیت این عملیات؛ پس از قطع ارتباط می‌توانید از همین صفحه ادامه دهید.
+    شمارهٔ سشن: <code dir='ltr'>{{ session.token|slice:":14" }}…</code>
+  </p>
+</div>
+<div style='padding:0 2rem 2rem;max-width:900px;'>
+  {% if messages %}
+    {% for message in messages %}
+      <div style='padding:0.75rem 1rem;border-radius:8px;margin-bottom:0.75rem;font-size:0.85rem;{% if message.tags == "success" %}background:rgba(46,160,67,0.12);color:var(--hb-success);{% elif message.tags == "error" %}background:rgba(192,57,43,0.12);color:#e74c3c;{% else %}background:rgba(200,140,20,0.12);color:var(--hb-text-primary);{% endif %}'>
+        <i class='bi bi-info-circle'></i> {{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-file-earmark-text'></i> پیش‌فاکتور «{{ session.folder_name }}»</div>
+      {% if session.status == 'draft' %}<span class='hb-badge hb-badge-warning'>در انتظار پرداخت</span>
+      {% elif session.status == 'paid' %}<span class='hb-badge hb-badge-success'>پرداخت‌شده — آمادهٔ آپلود</span>
+      {% elif session.status == 'uploading' %}<span class='hb-badge hb-badge-info'>در حال آپلود</span>
+      {% elif session.status == 'finished' %}<span class='hb-badge hb-badge-success'>کامل‌شده</span>
+      {% elif session.status == 'refunded' %}<span class='hb-badge hb-badge-info'>بازپرداخت‌شده</span>
+      {% else %}<span class='hb-badge hb-badge-danger'>{{ session.get_status_display }}</span>{% endif %}
+    </div>
+    <div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;font-size:0.83rem;'>
+      <div><span style='color:var(--hb-text-muted);'>فایل‌های جدید:</span> <b>{{ stats.new_count|default:0 }}</b></div>
+      <div><span style='color:var(--hb-text-muted);'>تغییرکرده:</span> <b>{{ stats.changed_count|default:0 }}</b></div>
+      <div><span style='color:var(--hb-text-muted);'>بدون تغییر (رایگان):</span> <b>{{ stats.unchanged_count|default:0 }}</b></div>
+      <div><span style='color:var(--hb-text-muted);'>حجم کل:</span> <b>{{ stats.bytes_total|filesizeformat }}</b></div>
+      <div><span style='color:var(--hb-text-muted);'>هزینهٔ ذخیره‌سازی + انتقال:</span> <b style='color:var(--hb-gold-300);'>{{ stats.total_cost|default:0 }} سکه</b></div>
+      <div><span style='color:var(--hb-text-muted);'>آپلودشده تاکنون:</span> <b>{{ session.uploaded_count }} فایل</b></div>
+      <div><span style='color:var(--hb-text-muted);'>تکراری:</span> <b>{{ stats.duplicate_count|default:0 }}</b></div>
+      <div><span style='color:var(--hb-text-muted);'>روش پرداخت:</span> <b>کیف پول سکه</b></div>
+    </div>
+
+    <div style='display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:1.25rem;'>
+      {% if session.status == 'draft' %}
+      <button type='button' class='hb-btn hb-btn-primary' id='btnPay'>
+        <i class='bi bi-wallet2'></i> پرداخت {{ stats.total_cost|default:0 }} سکه
+      </button>
+      <span style='font-size:0.78rem;color:var(--hb-text-muted);align-self:center;'>
+        آپلود فقط پس از پرداخت موفق آغاز می‌شود. <span id='payErr' style='color:#e74c3c;'></span>
+      </span>
+      {% elif session.status == 'paid' or session.status == 'uploading' %}
+      <a class='hb-btn hb-btn-primary' href="{% url 'cloudstorage:home' %}" style='text-decoration:none;'>
+        <i class='bi bi-arrow-repeat'></i> ادامهٔ آپلود (پوشه را دوباره انتخاب کنید)
+      </a>
+      <span style='font-size:0.78rem;color:var(--hb-text-muted);align-self:center;'>
+        فایل‌های قبلاً آپلودشده تشخیص داده و تکرار نمی‌شوند.
+      </span>
+      {% elif session.status == 'finished' and session.target_folder %}
+      <a class='hb-btn hb-btn-primary' href="{% url 'cloudstorage:folder_detail' session.target_folder.uid %}" style='text-decoration:none;'>
+        <i class='bi bi-folder-symlink'></i> رفتن به پوشه
+      </a>
+      {% endif %}
+      {% if session.status == 'draft' or session.status == 'paid' or session.status == 'uploading' %}
+      <form method='post' action="{% url 'cloudstorage:session_cancel' session.token %}" onsubmit='return confirm("عملیات لغو شود؟ در صورت پرداخت، مبلغ بخش انجام‌نشده بازگردانده می‌شود.");'>
+        {% csrf_token %}
+        <button type='submit' class='hb-btn hb-btn-dark'><i class='bi bi-x-lg'></i> لغو عملیات</button>
+      </form>
+      {% endif %}
+      <a class='hb-btn hb-btn-outline' href="{% url 'cloudstorage:home' %}" style='text-decoration:none;'>بازگشت</a>
+    </div>
+  </div>
+
+  {% if manifest_upload %}
+  <div class='hb-card'>
+    <div class='hb-card-header'><div class='hb-card-title'><i class='bi bi-list-check'></i> فایل‌های برنامه‌ریزی‌شده برای آپلود ({{ manifest_upload|length }})</div></div>
+    <div style='max-height:260px;overflow:auto;font-size:0.78rem;font-family:monospace;direction:ltr;text-align:left;'>
+      {% for m in manifest_upload %}<div>{{ m.relpath }} — {{ m.size|filesizeformat }} — {{ m.state }}</div>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+<script>
+(function(){
+  var btn = document.getElementById('btnPay');
+  if(!btn) return;
+  var CSRF = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1] || '';
+  btn.addEventListener('click', function(){
+    btn.disabled = true; btn.textContent = 'در حال پرداخت…';
+    fetch("{% url 'cloudstorage:api_pay' session.token %}", {method:'POST',
+      headers:{'X-CSRFToken':CSRF,'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(res){
+        if(!res.ok || !res.d.ok){
+          document.getElementById('payErr').textContent = res.d.error || 'پرداخت ناموفق؛ موجودی کیف پول را بررسی کنید.';
+          btn.disabled=false; btn.innerHTML='<i class="bi bi-wallet2"></i> پرداخت مجدد';
+          return;
+        }
+        location.reload();
+      })
+      .catch(function(){ document.getElementById('payErr').textContent = 'خطای شبکه؛ دوباره تلاش کنید.'; btn.disabled=false; });
+  });
+})();
+</script>
+{% endblock %}

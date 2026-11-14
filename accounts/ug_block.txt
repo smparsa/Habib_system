@@ -1,0 +1,18 @@
+class UserGroup(models.Model):
+    name = models.CharField(max_length=120, verbose_name='نام گروه')
+    code = models.CharField(max_length=60, unique=True, verbose_name='کد گروه')
+    description = models.TextField(blank=True, verbose_name='توضیحات')
+    is_active = models.BooleanField(default=True, verbose_name='فعال')
+    created_at = models.DateTimeField(auto_now_add=True)
+    members = models.ManyToManyField('User', blank=True, related_name='user_groups', verbose_name='اعضا')
+
+    class Meta:
+        verbose_name = 'گروه کاربری'
+        verbose_name_plural = 'گروه‌های کاربری'
+        ordering = ['name']
+        filter_horizontal = ['members']
+
+    def __str__(self):
+        return self.name
+
+

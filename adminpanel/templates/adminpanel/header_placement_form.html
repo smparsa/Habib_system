@@ -1,0 +1,79 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{% if is_edit %}ویرایش محل تبلیغ هدر{% else %}افزودن محل تبلیغ هدر{% endif %} — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-megaphone'></i> {% if is_edit %}ویرایش{% else %}افزودن{% endif %} محل تبلیغ هدر</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:header_placements_list' %}" style='color:var(--hb-gold-300);text-decoration:none;'>محل‌های تبلیغ فوتر</a>
+    › {% if is_edit %}ویرایش{% else %}افزودن{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:720px;'>
+  <div class='hb-card'>
+    <div class='hb-card-header'>
+      <div class='hb-card-title'><i class='bi bi-info-circle'></i> راهنما</div>
+    </div>
+    <ul style='font-size:0.8rem;color:var(--hb-text-secondary);line-height:2;margin:0;padding-right:1.2rem;'>
+      <li><b>کد:</b> شناسهٔ یکتای محل پخش (کدهای آماده: <span dir='ltr'>dashboard / wallet / accounting / tickets</span>). پس از ثبت، در چک‌باکس‌های «ثبت تبلیغ» کاربر استفاده می‌شود.</li>
+      <li><b>عنوان و توضیح:</b> چیزی که در پنل و کنار چک‌باکس‌های کاربر دیده می‌شود.</li>
+      <li><b>پذیرش تبلیغ (فعال):</b> غیرفعال = این محل در فرم ثبت تبلیغ کاربران نشان داده نمی‌شود (بدون حذف رکورد).</li>
+      <li><b>ترتیب:</b> ترتیب نمایش چک‌باکس‌ها در فرم کاربر (عدد کمتر = بالاتر).</li>
+    </ul>
+  </div>
+
+  <div class='hb-card' style='margin-top:1rem;'>
+    <form method='post' novalidate>
+      {% csrf_token %}
+      {% if form.errors %}
+      <div style='padding:0.75rem 1rem;background:rgba(192,57,43,0.08);color:#e74c3c;border-radius:8px;margin-bottom:1rem;font-size:0.85rem;'>
+        {% for field, error in form.errors.items %}{{ error }}{% endfor %}
+      </div>
+      {% endif %}
+      <div class='hb-form-group'>
+        <label class='hb-form-label' for='id_code'>کد *</label>
+        <input type='text' name='code' id='id_code' class='hb-form-control'
+               value="{{ form.code.value|default_if_none:'' }}" placeholder='مثال: dashboard' dir='ltr' maxlength='30'>
+        {% if form.code.errors %}<div style='color:#e74c3c;font-size:0.8rem;'>{{ form.code.errors }}</div>{% endif %}
+        {% if form.code.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;'>{{ form.code.help_text }}</small>{% endif %}
+      </div>
+      <div class='hb-form-group'>
+        <label class='hb-form-label' for='id_title'>عنوان *</label>
+        <input type='text' name='title' id='id_title' class='hb-form-control'
+               value="{{ form.title.value|default_if_none:'' }}" maxlength='120' dir='rtl'>
+        {% if form.title.errors %}<div style='color:#e74c3c;font-size:0.8rem;'>{{ form.title.errors }}</div>{% endif %}
+        {% if form.title.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;'>{{ form.title.help_text }}</small>{% endif %}
+      </div>
+      <div class='hb-form-group'>
+        <label class='hb-form-label' for='id_description'>توضیح</label>
+        <input type='text' name='description' id='id_description' class='hb-form-control'
+               value="{{ form.description.value|default_if_none:'' }}" maxlength='300' dir='rtl'>
+        {% if form.description.errors %}<div style='color:#e74c3c;font-size:0.8rem;'>{{ form.description.errors }}</div>{% endif %}
+        {% if form.description.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;'>{{ form.description.help_text }}</small>{% endif %}
+      </div>
+      <div class='hb-form-group'>
+        <label class='hb-form-label' style='display:inline-flex;align-items:center;gap:0.5rem;cursor:pointer;'>
+          <input type='checkbox' name='is_active' id='id_is_active'
+                 {% if form.is_active.value or form.is_active.initial %}checked{% endif %}>
+          <span>پذیرش تبلیغ (فعال)</span>
+        </label>
+        {% if form.is_active.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;'>{{ form.is_active.help_text }}</small>{% endif %}
+      </div>
+      <div class='hb-form-group'>
+        <label class='hb-form-label' for='id_sort_order'>ترتیب نمایش</label>
+        <input type='number' name='sort_order' id='id_sort_order' class='hb-form-control'
+               value="{{ form.sort_order.value|default_if_none:'0' }}" min='0' step='1' dir='ltr' style='max-width:140px;'>
+        {% if form.sort_order.errors %}<div style='color:#e74c3c;font-size:0.8rem;'>{{ form.sort_order.errors }}</div>{% endif %}
+        {% if form.sort_order.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;'>{{ form.sort_order.help_text }}</small>{% endif %}
+      </div>
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+          <i class='bi {% if is_edit %}bi-check-lg{% else %}bi-plus-lg{% endif %}'></i>
+          {% if is_edit %}ذخیرهٔ تغییرات{% else %}ثبت محل{% endif %}
+        </button>
+        <a href="{{ next_url }}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

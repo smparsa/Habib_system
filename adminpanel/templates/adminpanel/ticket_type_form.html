@@ -1,0 +1,39 @@
+{% extends "adminpanel/base.html" %}
+{% block title %}{% if mode == "add" %}افزودن{% else %}ویرایش{% endif %} نوع تیکت — پنل مدیریت{% endblock %}
+{% block content %}
+<div class='hb-page-header'>
+  <h1><i class='bi bi-tags'></i> {% if mode == "add" %}افزودن نوع تیکت{% else %}ویرایش «{{ form.instance.name_fa }}»{% endif %}</h1>
+  <p style='color:var(--hb-text-muted);margin-top:0.5rem;'>
+    <a href="{% url 'adminpanel:ticket_types_list' %}" style='color:var(--hb-gold-300);'>انواع تیکت</a>
+    › {% if mode == "add" %}افزودن{% else %}ویرایش{% endif %}
+  </p>
+</div>
+
+<div style='padding:0 2rem;max-width:720px;'>
+  <div class='hb-card'>
+    <form method='post' novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div style='color:#e74c3c;margin-bottom:1rem;font-size:0.85rem;'>{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+      <div class='hb-form-group' style='margin-bottom:1rem;'>
+        {% if field.errors %}
+          <div style='color:#e74c3c;font-size:0.8rem;margin-bottom:0.25rem;'>{{ field.errors }}</div>
+        {% endif %}
+        <label class='hb-form-label' for='{{ field.id_for_label }}'>{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<small style='color:var(--hb-text-muted);font-size:0.75rem;display:block;margin-top:0.25rem;'>{{ field.help_text }}</small>{% endif %}
+      </div>
+      {% endfor %}
+      <div style='display:flex;gap:0.5rem;margin-top:1rem;'>
+        <button type='submit' class='hb-btn hb-btn-primary hb-btn-sm'>
+          <i class='bi {% if mode == "add" %}bi-plus-lg{% else %}bi-check-lg{% endif %}'></i>
+          {% if mode == "add" %}ثبت نوع تیکت{% else %}ذخیره تغییرات{% endif %}
+        </button>
+        <a href="{% url 'adminpanel:ticket_types_list' %}" class='hb-btn hb-btn-dark hb-btn-sm'>انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

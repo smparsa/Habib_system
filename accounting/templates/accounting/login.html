@@ -1,0 +1,48 @@
+{% extends "accounting/base.html" %}
+
+{% block title %}رمز عبور حسابداری{% endblock %}
+
+{% block content %}
+  <div class="acc-auth">
+    <div class="acc-card card">
+      <h2>🔐 رمز عبور</h2>
+      <p style="color:var(--acc-muted);">
+        سال مالی: <b>{{ fy.name }}</b>
+      </p>
+      <hr style="border:none;border-top:1px solid var(--acc-line);">
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="acc-msg error">
+            {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="acc-field">
+          <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+          {{ form.username }}
+          {% for e in form.username.errors %}<div class="acc-msg error">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="acc-field">
+          <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+          {{ form.password }}
+          {% for e in form.password.errors %}<div class="acc-msg error">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div style="display:flex;gap:.5rem;justify-content:space-between;margin-top:1rem;">
+          <a class="acc-btn outline" href="{% url 'accounting:index' %}">❌ انصراف</a>
+          <button type="submit" class="acc-btn success">✔ تأیید</button>
+        </div>
+      </form>
+
+      <p class="acc-modal-note">
+        نام کاربری/کلمه عبور را از «پروفایل من ← اطلاعات امنیتی» تعریف کنید؛ این اعتبارنامه
+        مستقل از اکانت اصلی سایت است و فقط برای همین ماژول کاربرد دارد.
+        کارکنان دفتر (حسابدار/مشاهده‌کننده) نیز از «سیستم ← تنظیمات» توسط مدیر قابل تعریف‌اند.
+        پس از ۵ تلاش ناموفق، ورود ۱۵ دقیقه قفل می‌شود.
+      </p>
+    </div>
+  </div>
+{% endblock %}
